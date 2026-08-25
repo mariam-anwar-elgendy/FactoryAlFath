@@ -62,17 +62,21 @@
                         </li>
                         {% endif %}
 
+                        {% if current_user.role in ['meg', 'admin', 'mariam', 'rehab'] %}
                         <li class="nav-item">
                             <a class="nav-link text-white" href="{{ url_for('financial_transactions') }}">
                                 <i class="fas fa-money-bill-wave ms-2"></i> معاملات مالية
                             </a>
                         </li>
+                        {% endif %}
 
+                        {% if current_user.role in ['meg', 'admin', 'mariam', 'rehab'] %}
                         <li class="nav-item">
                             <a class="nav-link text-white" href="{{ url_for('reports_index') }}">
                                 <i class="fas fa-chart-bar ms-2"></i> التقارير
                             </a>
                         </li>
+                        {% endif %}
 
                         {% if current_user.role in ['meg', 'admin'] %}
                         <li class="nav-item">
