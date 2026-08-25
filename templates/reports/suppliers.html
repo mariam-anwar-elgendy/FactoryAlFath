@@ -1,0 +1,25 @@
+{% extends "base.html" %}
+{% block title %}تقرير الموردين{% endblock %}
+{% block content %}
+<div class="text-center mb-4">
+    <h2 class="fw-bold text-purple-dark">🏭 شركة الفتح</h2>
+    <h4>تقرير الموردين</h4>
+    <button onclick="window.print()" class="btn btn-purple no-print">🖨️ طباعة</button>
+</div>
+<div class="table-responsive">
+    <table class="table table-striped table-hover">
+        <thead class="bg-purple text-white">
+            <tr><th>اسم المورد</th><th>الهاتف</th><th>تفاصيل</th></tr>
+        </thead>
+        <tbody>
+            {% for supplier in suppliers %}
+            <tr>
+                <td>{{ supplier.name }}</td>
+                <td>{{ supplier.phone or '-' }}</td>
+                <td><a href="{{ url_for('report_single_supplier', supplier_id=supplier.id) }}" class="btn btn-sm btn-purple">عرض</a></td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% endblock %}
