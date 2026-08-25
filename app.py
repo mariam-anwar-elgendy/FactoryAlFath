@@ -516,7 +516,20 @@ def store_sales():
                     db.session.commit()
 
                 record.date = datetime.strptime(request.form.get('date'), '%Y-%m-%d').date()
-                record.customer_name = request.form.get('customer_name')
+                # تحديد اسم العميل
+                customer_select = request.form.get('customer_select')
+                if customer_select == 'new':
+                    customer_name = request.form.get('customer_name')
+                    if customer_name:
+                        existing_customer = Customer.query.filter_by(name=customer_name).first()
+                        if not existing_customer:
+                            new_customer = Customer(name=customer_name, phone=request.form.get('customer_phone', ''))
+                            db.session.add(new_customer)
+                            db.session.commit()
+                        record.customer_name = customer_name
+                else:
+                    record.customer_name = customer_select if customer_select else request.form.get('customer_name')
+
                 record.customer_phone = request.form.get('customer_phone')
                 record.product_type = request.form.get('product_type')
                 record.product_size = request.form.get('product_size')
@@ -546,7 +559,19 @@ def store_sales():
             return redirect(url_for('store_sales'))
 
         record_date = datetime.strptime(request.form.get('date'), '%Y-%m-%d').date()
-        customer_name = request.form.get('customer_name')
+        # تحديد اسم العميل
+        customer_select = request.form.get('customer_select')
+        if customer_select == 'new':
+            customer_name = request.form.get('customer_name')
+            if customer_name:
+                existing_customer = Customer.query.filter_by(name=customer_name).first()
+                if not existing_customer:
+                    new_customer = Customer(name=customer_name, phone=request.form.get('customer_phone', ''))
+                    db.session.add(new_customer)
+                    db.session.commit()
+        else:
+            customer_name = customer_select if customer_select else request.form.get('customer_name')
+
         customer_phone = request.form.get('customer_phone')
         product_type = request.form.get('product_type')
         product_size = request.form.get('product_size')
@@ -615,7 +640,8 @@ def store_sales():
         return redirect(url_for('store_sales'))
 
     sales = StoreSale.query.order_by(StoreSale.date.asc(), StoreSale.id.asc()).all()
-    return render_template('store/sales.html', sales=sales)
+    customers = Customer.query.order_by(Customer.name.asc()).all()
+    return render_template('store/sales.html', sales=sales, customers=customers)
 
 @app.route('/store/purchases', methods=['GET', 'POST'])
 @custom_login_required
@@ -656,7 +682,20 @@ def store_purchases():
                     db.session.commit()
 
                 record.date = datetime.strptime(request.form.get('date'), '%Y-%m-%d').date()
-                record.supplier_name = request.form.get('supplier_name')
+                # تحديد اسم المورد
+                supplier_select = request.form.get('supplier_select')
+                if supplier_select == 'new':
+                    supplier_name = request.form.get('supplier_name')
+                    if supplier_name:
+                        existing_supplier = Supplier.query.filter_by(name=supplier_name).first()
+                        if not existing_supplier:
+                            new_supplier = Supplier(name=supplier_name, phone=request.form.get('supplier_phone', ''))
+                            db.session.add(new_supplier)
+                            db.session.commit()
+                        record.supplier_name = supplier_name
+                else:
+                    record.supplier_name = supplier_select if supplier_select else request.form.get('supplier_name')
+
                 record.supplier_phone = request.form.get('supplier_phone')
                 record.product_type = request.form.get('product_type')
                 record.product_size = request.form.get('product_size')
@@ -686,7 +725,19 @@ def store_purchases():
             return redirect(url_for('store_purchases'))
 
         record_date = datetime.strptime(request.form.get('date'), '%Y-%m-%d').date()
-        supplier_name = request.form.get('supplier_name')
+        # تحديد اسم المورد
+        supplier_select = request.form.get('supplier_select')
+        if supplier_select == 'new':
+            supplier_name = request.form.get('supplier_name')
+            if supplier_name:
+                existing_supplier = Supplier.query.filter_by(name=supplier_name).first()
+                if not existing_supplier:
+                    new_supplier = Supplier(name=supplier_name, phone=request.form.get('supplier_phone', ''))
+                    db.session.add(new_supplier)
+                    db.session.commit()
+        else:
+            supplier_name = supplier_select if supplier_select else request.form.get('supplier_name')
+
         supplier_phone = request.form.get('supplier_phone')
         product_type = request.form.get('product_type')
         product_size = request.form.get('product_size')
@@ -755,7 +806,8 @@ def store_purchases():
         return redirect(url_for('store_purchases'))
 
     purchases = StorePurchase.query.order_by(StorePurchase.date.asc(), StorePurchase.id.asc()).all()
-    return render_template('store/purchases.html', purchases=purchases)
+    suppliers = Supplier.query.order_by(Supplier.name.asc()).all()
+    return render_template('store/purchases.html', purchases=purchases, suppliers=suppliers)
 
 # ==================== المخزون والمرتجعات واليوميات ====================
 @app.route('/store/inventory')
