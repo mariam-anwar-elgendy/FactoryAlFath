@@ -1,1 +1,100 @@
+{% extends "base.html" %}
 
+{% block title %}التحويلات{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h2 class="fw-bold text-purple-dark">🔄 التحويلات</h2>
+    <button class="btn btn-purple" data-bs-toggle="modal" data-bs-target="#addTransferModal">
+        ➕ تسجيل تحويل
+    </button>
+</div>
+
+<div class="table-responsive">
+    <table class="table table-striped table-hover align-middle">
+        <thead class="bg-purple text-white">
+            <tr>
+                <th>التاريخ</th>
+                <th>من</th>
+                <th>إلى</th>
+                <th>المبلغ</th>
+                <th>طريقة الدفع</th>
+                <th>ملاحظات</th>
+                <th>المسؤول</th>
+                <th>إجراءات</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for t in transfers %}
+            <tr>
+                <td>{{ t.date.strftime('%Y-%m-%d') }}</td>
+                <td>{{ t.from_person }}</td>
+                <td>{{ t.to_person }}</td>
+                <td>{{ t.amount }}</td>
+                <td>{{ t.payment_method or '-' }}</td>
+                <td>{{ t.notes or '-' }}</td>
+                <td>{{ t.created_by }}</td>
+                <td>
+                    {% if current_user.role in ['meg','admin'] %}
+                    <form action="{{ url_for('treasury_transfers') }}" method="POST" class="d-inline" onsubmit="return confirm('هل أنت متأكد من الحذف؟');">
+                        <input type="hidden" name="delete_id" value="{{ t.id }}">
+                        <button type="submit" class="btn btn-sm btn-danger">🗑️</button>
+                    </form>
+                    {% endif %}
+                </td>
+            </tr>
+            {% else %}
+            <tr><td colspan="8" class="text-center text-muted">لا توجد تحويلات</td></tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+
+<!-- Modal إضافة -->
+<div class="modal fade" id="addTransferModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <form method="POST" action="{{ url_for('treasury_transfers') }}">
+                <div class="modal-header bg-purple text-white">
+                    <h5 class="modal-title">➕ تسجيل تحويل</h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label class="form-label fw-bold">التاريخ</label>
+                        <input type="date" name="date" class="form-control" value="{{ now.strftime('%Y-%m-%d') }}" required>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label fw-bold">من</label>
+                        <input type="text" name="from_person" class="form-control" required>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label fw-bold">إلى</label>
+                        <input type="text" name="to_person" class="form-control" required>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label fw-bold">المبلغ</label>
+                        <input type="number" step="0.01" name="amount" class="form-control" required>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label fw-bold">طريقة الدفع</label>
+                        <select name="payment_method" class="form-select">
+                            <option value="نقدي">نقدي</option>
+                            <option value="فودافون كاش">فودافون كاش</option>
+                            <option value="انستا باي">انستا باي</option>
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label fw-bold">ملاحظات</label>
+                        <textarea name="notes" class="form-control"></textarea>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">إلغاء</button>
+                    <button type="submit" class="btn btn-purple">حفظ</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}
