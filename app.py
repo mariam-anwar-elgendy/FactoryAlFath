@@ -2,7 +2,6 @@
 import os
 from datetime import datetime, date, timedelta
 from functools import wraps
-import json
 
 from flask import Flask, render_template, request, redirect, url_for, session, flash, jsonify, send_file
 from flask_sqlalchemy import SQLAlchemy
@@ -69,6 +68,7 @@ def load_user(user_id):
     return User.query.get(int(user_id))
 
 # ==================== خدمة Google Drive ====================
+# تعمل بدون client_secrets.json حتى يتوفر الملف
 drive_service = GoogleDriveService(
     credentials_file=os.environ.get('GOOGLE_CREDENTIALS_FILE', 'client_secrets.json'),
     folder_id=os.environ.get('GOOGLE_DRIVE_FOLDER_ID', '')
@@ -232,7 +232,6 @@ def dashboard():
         'today_sales': db.session.query(db.func.sum(StoreSale.total)).filter(StoreSale.date == date.today()).scalar() or 0,
         'today_purchases': db.session.query(db.func.sum(StorePurchase.total)).filter(StorePurchase.date == date.today()).scalar() or 0,
         'low_inventory_count': StoreInventory.query.filter(StoreInventory.current_quantity <= StoreInventory.min_quantity).count(),
-        'recent_entries': []
     }
 
     # أحدث الإدخالات
@@ -264,6 +263,37 @@ def factory_index():
 @role_required('meg', 'admin', 'mariam', 'rehab', 'mohamed')
 def factory_raw_materials():
     if request.method == 'POST':
+        # دعم الحذف
+        if request.form.get('delete_id'):
+            record_id = int(request.form.get('delete_id'))
+            record = FactoryRawMaterial.query.get_or_404(record_id)
+            if current_user.role in ['meg', 'admin']:
+                db.session.delete(record)
+                db.session.commit()
+                flash('تم حذف السجل بنجاح', 'success')
+                return redirect(url_for('factory_raw_materials'))
+            else:
+                flash('غير مصرح لك بالحذف', 'danger')
+                return redirect(url_for('factory_raw_materials'))
+
+        # دعم التعديل
+        if request.form.get('edit_id'):
+            record_id = int(request.form.get('edit_id'))
+            record = FactoryRawMaterial.query.get_or_404(record_id)
+            if can_edit(current_user.role, record.date, record.created_by, current_user.id):
+                record.date = datetime.strptime(request.form.get('date'), '%Y-%m-%d').date()
+                record.pipe_size = request.form.get('pipe_size')
+                record.pipe_thickness = request.form.get('pipe_thickness')
+                record.quantity = float(request.form.get('quantity', 0))
+                record.supplier = request.form.get('supplier')
+                record.notes = request.form.get('notes')
+                db.session.commit()
+                flash('تم تحديث السجل بنجاح', 'success')
+            else:
+                flash('غير مصرح لك بالتعديل أو انتهت صلاحية التعديل', 'danger')
+            return redirect(url_for('factory_raw_materials'))
+
+        # إضافة جديد
         record_date = datetime.strptime(request.form.get('date'), '%Y-%m-%d').date()
         pipe_size = request.form.get('pipe_size')
         pipe_thickness = request.form.get('pipe_thickness')
@@ -304,6 +334,34 @@ def factory_raw_materials():
 @role_required('meg', 'admin', 'mariam', 'rehab', 'mohamed')
 def factory_production():
     if request.method == 'POST':
+        if request.form.get('delete_id'):
+            record_id = int(request.form.get('delete_id'))
+            record = FactoryProduction.query.get_or_404(record_id)
+            if current_user.role in ['meg', 'admin']:
+                db.session.delete(record)
+                db.session.commit()
+                flash('تم حذف السجل بنجاح', 'success')
+                return redirect(url_for('factory_production'))
+            else:
+                flash('غير مصرح لك بالحذف', 'danger')
+                return redirect(url_for('factory_production'))
+
+        if request.form.get('edit_id'):
+            record_id = int(request.form.get('edit_id'))
+            record = FactoryProduction.query.get_or_404(record_id)
+            if can_edit(current_user.role, record.date, record.created_by, current_user.id):
+                record.date = datetime.strptime(request.form.get('date'), '%Y-%m-%d').date()
+                record.elbow_size = request.form.get('elbow_size')
+                record.elbow_thickness = request.form.get('elbow_thickness')
+                record.quantity = float(request.form.get('quantity', 0))
+                record.raw_material_used = float(request.form.get('raw_material_used', 0))
+                record.notes = request.form.get('notes')
+                db.session.commit()
+                flash('تم تحديث السجل بنجاح', 'success')
+            else:
+                flash('غير مصرح لك بالتعديل أو انتهت صلاحية التعديل', 'danger')
+            return redirect(url_for('factory_production'))
+
         record_date = datetime.strptime(request.form.get('date'), '%Y-%m-%d').date()
         elbow_size = request.form.get('elbow_size')
         elbow_thickness = request.form.get('elbow_thickness')
@@ -324,7 +382,6 @@ def factory_production():
         db.session.add(new_record)
         db.session.commit()
 
-        # إضافة إلى ملف Excel
         row_data = [record_date.strftime('%Y-%m-%d'), 'إنتاج', elbow_size, elbow_thickness,
                     quantity, raw_material_used, notes, current_user.full_name]
         excel_path = add_row_to_excel('يوميات المصنع.xlsx',
@@ -344,6 +401,31 @@ def factory_production():
 @role_required('meg', 'admin', 'mariam', 'rehab', 'mohamed')
 def factory_diary():
     if request.method == 'POST':
+        if request.form.get('delete_id'):
+            record_id = int(request.form.get('delete_id'))
+            record = FactoryDiary.query.get_or_404(record_id)
+            if current_user.role in ['meg', 'admin']:
+                db.session.delete(record)
+                db.session.commit()
+                flash('تم حذف السجل بنجاح', 'success')
+                return redirect(url_for('factory_diary'))
+            else:
+                flash('غير مصرح لك بالحذف', 'danger')
+                return redirect(url_for('factory_diary'))
+
+        if request.form.get('edit_id'):
+            record_id = int(request.form.get('edit_id'))
+            record = FactoryDiary.query.get_or_404(record_id)
+            if can_edit(current_user.role, record.date, record.created_by, current_user.id):
+                record.date = datetime.strptime(request.form.get('date'), '%Y-%m-%d').date()
+                record.description = request.form.get('description')
+                record.amount = float(request.form.get('amount', 0))
+                db.session.commit()
+                flash('تم تحديث السجل بنجاح', 'success')
+            else:
+                flash('غير مصرح لك بالتعديل أو انتهت صلاحية التعديل', 'danger')
+            return redirect(url_for('factory_diary'))
+
         record_date = datetime.strptime(request.form.get('date'), '%Y-%m-%d').date()
         description = request.form.get('description')
         amount = float(request.form.get('amount', 0))
@@ -358,7 +440,6 @@ def factory_diary():
         db.session.add(new_record)
         db.session.commit()
 
-        # إضافة إلى ملف Excel
         row_data = [record_date.strftime('%Y-%m-%d'), description, amount, current_user.full_name]
         excel_path = add_row_to_excel('يوميات المصنع.xlsx',
                                       ['التاريخ', 'الوصف', 'المبلغ', 'المسؤول'],
@@ -391,6 +472,73 @@ def store_index():
 @role_required('meg', 'admin', 'mariam', 'rehab', 'ahmed')
 def store_sales():
     if request.method == 'POST':
+        if request.form.get('delete_id'):
+            record_id = int(request.form.get('delete_id'))
+            record = StoreSale.query.get_or_404(record_id)
+            if current_user.role in ['meg', 'admin']:
+                # إعادة الكمية للمخزون
+                inventory_item = StoreInventory.query.filter_by(
+                    product_type=record.product_type,
+                    product_size=record.product_size,
+                    product_spec=record.product_spec
+                ).first()
+                if inventory_item:
+                    inventory_item.current_quantity += record.quantity
+                    db.session.commit()
+                db.session.delete(record)
+                db.session.commit()
+                flash('تم حذف البيع بنجاح', 'success')
+                return redirect(url_for('store_sales'))
+            else:
+                flash('غير مصرح لك بالحذف', 'danger')
+                return redirect(url_for('store_sales'))
+
+        if request.form.get('edit_id'):
+            record_id = int(request.form.get('edit_id'))
+            record = StoreSale.query.get_or_404(record_id)
+            if can_edit(current_user.role, record.date, record.created_by, current_user.id):
+                # تعديل المخزون أولاً: نرجع الكمية القديمة ثم نخصم الجديدة
+                old_qty = record.quantity
+                inventory_item = StoreInventory.query.filter_by(
+                    product_type=record.product_type,
+                    product_size=record.product_size,
+                    product_spec=record.product_spec
+                ).first()
+                if inventory_item:
+                    inventory_item.current_quantity += old_qty
+                    db.session.commit()
+
+                record.date = datetime.strptime(request.form.get('date'), '%Y-%m-%d').date()
+                record.customer_name = request.form.get('customer_name')
+                record.customer_phone = request.form.get('customer_phone')
+                record.product_type = request.form.get('product_type')
+                record.product_size = request.form.get('product_size')
+                record.product_spec = request.form.get('product_spec')
+                record.quantity = float(request.form.get('quantity', 0))
+                record.unit_price = float(request.form.get('unit_price', 0))
+                record.payment_type = request.form.get('payment_type', 'آجل')
+                record.total = record.quantity * record.unit_price
+
+                # خصم الكمية الجديدة
+                if inventory_item:
+                    inventory_item.current_quantity -= record.quantity
+                    db.session.commit()
+                else:
+                    new_inv = StoreInventory(
+                        product_type=record.product_type,
+                        product_size=record.product_size,
+                        product_spec=record.product_spec,
+                        current_quantity=-record.quantity
+                    )
+                    db.session.add(new_inv)
+                    db.session.commit()
+
+                db.session.commit()
+                flash('تم تحديث البيع بنجاح', 'success')
+            else:
+                flash('غير مصرح لك بالتعديل أو انتهت صلاحية التعديل', 'danger')
+            return redirect(url_for('store_sales'))
+
         record_date = datetime.strptime(request.form.get('date'), '%Y-%m-%d').date()
         customer_name = request.form.get('customer_name')
         customer_phone = request.form.get('customer_phone')
@@ -420,7 +568,7 @@ def store_sales():
         db.session.add(new_sale)
         db.session.commit()
 
-        # تحديث مخزون المحل
+        # تحديث مخزون المحل (خصم)
         inventory_item = StoreInventory.query.filter_by(
             product_type=product_type,
             product_size=product_size,
@@ -438,7 +586,6 @@ def store_sales():
             db.session.add(inventory_item)
         db.session.commit()
 
-        # إضافة إلى ملف Excel
         row_data = [record_date.strftime('%Y-%m-%d'), 'بيع', customer_name, product_type,
                     product_size, product_spec, quantity, unit_price, total, payment_type, current_user.full_name]
         excel_path = add_row_to_excel('يوميات المحل.xlsx',
@@ -459,6 +606,71 @@ def store_sales():
 @role_required('meg', 'admin', 'mariam', 'rehab', 'ahmed')
 def store_purchases():
     if request.method == 'POST':
+        if request.form.get('delete_id'):
+            record_id = int(request.form.get('delete_id'))
+            record = StorePurchase.query.get_or_404(record_id)
+            if current_user.role in ['meg', 'admin']:
+                # إعادة الكمية للمخزون (ناقص)
+                inventory_item = StoreInventory.query.filter_by(
+                    product_type=record.product_type,
+                    product_size=record.product_size,
+                    product_spec=record.product_spec
+                ).first()
+                if inventory_item:
+                    inventory_item.current_quantity -= record.quantity
+                    db.session.commit()
+                db.session.delete(record)
+                db.session.commit()
+                flash('تم حذف الشراء بنجاح', 'success')
+                return redirect(url_for('store_purchases'))
+            else:
+                flash('غير مصرح لك بالحذف', 'danger')
+                return redirect(url_for('store_purchases'))
+
+        if request.form.get('edit_id'):
+            record_id = int(request.form.get('edit_id'))
+            record = StorePurchase.query.get_or_404(record_id)
+            if can_edit(current_user.role, record.date, record.created_by, current_user.id):
+                old_qty = record.quantity
+                inventory_item = StoreInventory.query.filter_by(
+                    product_type=record.product_type,
+                    product_size=record.product_size,
+                    product_spec=record.product_spec
+                ).first()
+                if inventory_item:
+                    inventory_item.current_quantity -= old_qty
+                    db.session.commit()
+
+                record.date = datetime.strptime(request.form.get('date'), '%Y-%m-%d').date()
+                record.supplier_name = request.form.get('supplier_name')
+                record.supplier_phone = request.form.get('supplier_phone')
+                record.product_type = request.form.get('product_type')
+                record.product_size = request.form.get('product_size')
+                record.product_spec = request.form.get('product_spec')
+                record.quantity = float(request.form.get('quantity', 0))
+                record.unit_price = float(request.form.get('unit_price', 0))
+                record.payment_type = request.form.get('payment_type', 'آجل')
+                record.total = record.quantity * record.unit_price
+
+                if inventory_item:
+                    inventory_item.current_quantity += record.quantity
+                    db.session.commit()
+                else:
+                    new_inv = StoreInventory(
+                        product_type=record.product_type,
+                        product_size=record.product_size,
+                        product_spec=record.product_spec,
+                        current_quantity=record.quantity
+                    )
+                    db.session.add(new_inv)
+                    db.session.commit()
+
+                db.session.commit()
+                flash('تم تحديث الشراء بنجاح', 'success')
+            else:
+                flash('غير مصرح لك بالتعديل أو انتهت صلاحية التعديل', 'danger')
+            return redirect(url_for('store_purchases'))
+
         record_date = datetime.strptime(request.form.get('date'), '%Y-%m-%d').date()
         supplier_name = request.form.get('supplier_name')
         supplier_phone = request.form.get('supplier_phone')
@@ -488,7 +700,7 @@ def store_purchases():
         db.session.add(new_purchase)
         db.session.commit()
 
-        # تحديث مخزون المحل
+        # تحديث مخزون المحل (إضافة)
         inventory_item = StoreInventory.query.filter_by(
             product_type=product_type,
             product_size=product_size,
@@ -506,7 +718,6 @@ def store_purchases():
             db.session.add(inventory_item)
         db.session.commit()
 
-        # إضافة إلى ملف Excel
         row_data = [record_date.strftime('%Y-%m-%d'), 'شراء', supplier_name, product_type,
                     product_size, product_spec, quantity, unit_price, total, payment_type, current_user.full_name]
         excel_path = add_row_to_excel('يوميات المحل.xlsx',
@@ -534,6 +745,18 @@ def store_inventory():
 @role_required('meg', 'admin', 'mariam', 'rehab', 'ahmed')
 def store_returns():
     if request.method == 'POST':
+        if request.form.get('delete_id'):
+            record_id = int(request.form.get('delete_id'))
+            record = StoreReturn.query.get_or_404(record_id)
+            if current_user.role in ['meg', 'admin']:
+                db.session.delete(record)
+                db.session.commit()
+                flash('تم حذف المرتجع بنجاح', 'success')
+                return redirect(url_for('store_returns'))
+            else:
+                flash('غير مصرح لك بالحذف', 'danger')
+                return redirect(url_for('store_returns'))
+
         record_date = datetime.strptime(request.form.get('date'), '%Y-%m-%d').date()
         return_type = request.form.get('return_type')
         party_name = request.form.get('party_name')
@@ -558,7 +781,6 @@ def store_returns():
         db.session.add(new_return)
         db.session.commit()
 
-        # إضافة إلى ملف Excel
         row_data = [record_date.strftime('%Y-%m-%d'), return_type, party_name, product_type,
                     product_size, product_spec, quantity, reason, current_user.full_name]
         excel_path = add_row_to_excel('يوميات المحل.xlsx',
@@ -579,6 +801,31 @@ def store_returns():
 @role_required('meg', 'admin', 'mariam', 'rehab', 'ahmed')
 def store_diary():
     if request.method == 'POST':
+        if request.form.get('delete_id'):
+            record_id = int(request.form.get('delete_id'))
+            record = StoreDiary.query.get_or_404(record_id)
+            if current_user.role in ['meg', 'admin']:
+                db.session.delete(record)
+                db.session.commit()
+                flash('تم حذف اليومية بنجاح', 'success')
+                return redirect(url_for('store_diary'))
+            else:
+                flash('غير مصرح لك بالحذف', 'danger')
+                return redirect(url_for('store_diary'))
+
+        if request.form.get('edit_id'):
+            record_id = int(request.form.get('edit_id'))
+            record = StoreDiary.query.get_or_404(record_id)
+            if can_edit(current_user.role, record.date, record.created_by, current_user.id):
+                record.date = datetime.strptime(request.form.get('date'), '%Y-%m-%d').date()
+                record.description = request.form.get('description')
+                record.amount = float(request.form.get('amount', 0))
+                db.session.commit()
+                flash('تم تحديث اليومية بنجاح', 'success')
+            else:
+                flash('غير مصرح لك بالتعديل أو انتهت صلاحية التعديل', 'danger')
+            return redirect(url_for('store_diary'))
+
         record_date = datetime.strptime(request.form.get('date'), '%Y-%m-%d').date()
         description = request.form.get('description')
         amount = float(request.form.get('amount', 0))
@@ -593,7 +840,6 @@ def store_diary():
         db.session.add(new_record)
         db.session.commit()
 
-        # إضافة إلى ملف Excel
         row_data = [record_date.strftime('%Y-%m-%d'), description, amount, current_user.full_name]
         excel_path = add_row_to_excel('يوميات المحل.xlsx',
                                       ['التاريخ', 'الوصف', 'المبلغ', 'المسؤول'],
@@ -636,6 +882,62 @@ def treasury_index():
 @role_required('meg', 'admin', 'mariam', 'ahmed', 'eid', 'abdo')
 def treasury_transactions():
     if request.method == 'POST':
+        if request.form.get('delete_id'):
+            record_id = int(request.form.get('delete_id'))
+            record = TreasuryTransaction.query.get_or_404(record_id)
+            if current_user.role in ['meg', 'admin']:
+                # إعادة الرصيد
+                account = TreasuryAccount.query.get(record.account_id)
+                if account:
+                    if record.transaction_type == 'deposit':
+                        account.balance -= record.amount
+                    else:
+                        account.balance += record.amount
+                    db.session.commit()
+                db.session.delete(record)
+                db.session.commit()
+                flash('تم حذف الحركة بنجاح', 'success')
+                return redirect(url_for('treasury_transactions'))
+            else:
+                flash('غير مصرح لك بالحذف', 'danger')
+                return redirect(url_for('treasury_transactions'))
+
+        if request.form.get('edit_id'):
+            record_id = int(request.form.get('edit_id'))
+            record = TreasuryTransaction.query.get_or_404(record_id)
+            if can_edit(current_user.role, record.date, record.created_by, current_user.id):
+                old_account = TreasuryAccount.query.get(record.account_id)
+                # عكس الحركة القديمة
+                if old_account:
+                    if record.transaction_type == 'deposit':
+                        old_account.balance -= record.amount
+                    else:
+                        old_account.balance += record.amount
+                    db.session.commit()
+
+                record.date = datetime.strptime(request.form.get('date'), '%Y-%m-%d').date()
+                new_account_id = int(request.form.get('account_id'))
+                record.transaction_type = request.form.get('transaction_type')
+                record.amount = float(request.form.get('amount', 0))
+                record.source = request.form.get('source')
+                record.payment_method = request.form.get('payment_method')
+                record.notes = request.form.get('notes')
+                record.account_id = new_account_id
+
+                new_account = TreasuryAccount.query.get(new_account_id)
+                if new_account:
+                    if record.transaction_type == 'deposit':
+                        new_account.balance += record.amount
+                    else:
+                        new_account.balance -= record.amount
+                    db.session.commit()
+
+                db.session.commit()
+                flash('تم تحديث الحركة بنجاح', 'success')
+            else:
+                flash('غير مصرح لك بالتعديل أو انتهت صلاحية التعديل', 'danger')
+            return redirect(url_for('treasury_transactions'))
+
         record_date = datetime.strptime(request.form.get('date'), '%Y-%m-%d').date()
         account_id = int(request.form.get('account_id'))
         transaction_type = request.form.get('transaction_type')
@@ -667,7 +969,6 @@ def treasury_transactions():
         db.session.add(new_transaction)
         db.session.commit()
 
-        # إضافة إلى ملف Excel
         account_name = account.person_name if account else ''
         row_data = [record_date.strftime('%Y-%m-%d'), account_name, transaction_type,
                     amount, payment_method, source, notes, current_user.full_name]
@@ -685,6 +986,7 @@ def treasury_transactions():
         accounts = TreasuryAccount.query.all()
         transactions = TreasuryTransaction.query.order_by(TreasuryTransaction.date.desc()).all()
     else:
+        # نعرض الحسابات المرتبطة بنفس الشخص
         accounts = TreasuryAccount.query.filter_by(person_name=current_user.full_name).all()
         transactions = TreasuryTransaction.query.filter_by(created_by=current_user.id).order_by(TreasuryTransaction.date.desc()).all()
 
@@ -695,6 +997,18 @@ def treasury_transactions():
 @role_required('meg', 'admin', 'mariam')
 def treasury_transfers():
     if request.method == 'POST':
+        if request.form.get('delete_id'):
+            record_id = int(request.form.get('delete_id'))
+            record = TreasuryTransfer.query.get_or_404(record_id)
+            if current_user.role in ['meg', 'admin']:
+                db.session.delete(record)
+                db.session.commit()
+                flash('تم حذف التحويل بنجاح', 'success')
+                return redirect(url_for('treasury_transfers'))
+            else:
+                flash('غير مصرح لك بالحذف', 'danger')
+                return redirect(url_for('treasury_transfers'))
+
         record_date = datetime.strptime(request.form.get('date'), '%Y-%m-%d').date()
         from_person = request.form.get('from_person')
         to_person = request.form.get('to_person')
@@ -893,7 +1207,6 @@ def admin_edit_user(user_id):
 def admin_delete_user(user_id):
     user = User.query.get_or_404(user_id)
     
-    # منع حذف MEG
     if user.role == 'meg':
         flash('لا يمكن حذف حساب MEG', 'danger')
         return redirect(url_for('admin_users'))
@@ -945,6 +1258,46 @@ def admin_add_category():
     db.session.commit()
     flash('تمت الإضافة بنجاح', 'success')
     return redirect(url_for('admin_categories'))
+
+# ==================== Routes الإعدادات الشخصية ====================
+@app.route('/settings/profile', methods=['GET', 'POST'])
+@custom_login_required
+def settings_profile():
+    if request.method == 'POST':
+        current_user.full_name = request.form.get('full_name')
+        current_user.phone = request.form.get('phone')
+        db.session.commit()
+        flash('تم تحديث الملف الشخصي بنجاح', 'success')
+        return redirect(url_for('settings_profile'))
+
+    return render_template('settings/profile.html')
+
+@app.route('/settings/password', methods=['GET', 'POST'])
+@custom_login_required
+def settings_password():
+    if request.method == 'POST':
+        current_password = request.form.get('current_password')
+        new_password = request.form.get('new_password')
+        confirm_password = request.form.get('confirm_password')
+
+        if not current_user.check_password(current_password):
+            flash('كلمة المرور الحالية غير صحيحة', 'danger')
+            return redirect(url_for('settings_password'))
+
+        if new_password != confirm_password:
+            flash('كلمة المرور الجديدة غير متطابقة', 'danger')
+            return redirect(url_for('settings_password'))
+
+        if len(new_password) < 6:
+            flash('كلمة المرور يجب ألا تقل عن 6 أحرف', 'danger')
+            return redirect(url_for('settings_password'))
+
+        current_user.set_password(new_password)
+        db.session.commit()
+        flash('تم تغيير كلمة المرور بنجاح', 'success')
+        return redirect(url_for('dashboard'))
+
+    return render_template('settings/password.html')
 
 # ==================== تشغيل التطبيق ====================
 if __name__ == '__main__':
