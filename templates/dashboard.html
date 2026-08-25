@@ -6,170 +6,175 @@
 <h2 class="fw-bold mb-4 text-purple-dark">📊 لوحة التحكم</h2>
 
 {% if current_user.role in ['meg', 'admin', 'mariam', 'rehab', 'mohamed', 'ahmed'] %}
-<!-- إحصائيات المديرين والمشرفين -->
-<div class="row g-3 mb-4">
-    <div class="col-6 col-md-4 col-lg-2">
-        <div class="card stat-card border-0 shadow-sm">
-            <div class="card-body text-center">
-                <h5 class="fw-bold text-purple">{{ stats.raw_materials_count }}</h5>
-                <p class="mb-0">وارد مصنع</p>
+    <!-- ========== محتوى المديرين والمشرفين ========== -->
+    <div class="row g-3 mb-4">
+        <div class="col-6 col-md-4 col-lg-2">
+            <div class="card stat-card border-0 shadow-sm">
+                <div class="card-body text-center">
+                    <h5 class="fw-bold text-purple">{{ stats.raw_materials_count }}</h5>
+                    <p class="mb-0">وارد مصنع</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-6 col-md-4 col-lg-2">
+            <div class="card stat-card border-0 shadow-sm">
+                <div class="card-body text-center">
+                    <h5 class="fw-bold text-purple">{{ stats.production_count }}</h5>
+                    <p class="mb-0">إنتاج</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-6 col-md-4 col-lg-2">
+            <div class="card stat-card border-0 shadow-sm">
+                <div class="card-body text-center">
+                    <h5 class="fw-bold text-purple">{{ stats.sales_count }}</h5>
+                    <p class="mb-0">مبيعات</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-6 col-md-4 col-lg-2">
+            <div class="card stat-card border-0 shadow-sm">
+                <div class="card-body text-center">
+                    <h5 class="fw-bold text-purple">{{ stats.purchases_count }}</h5>
+                    <p class="mb-0">مشتريات</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-6 col-md-4 col-lg-2">
+            <div class="card stat-card border-0 shadow-sm">
+                <div class="card-body text-center">
+                    <h5 class="fw-bold text-purple">{{ stats.customers_count }}</h5>
+                    <p class="mb-0">عملاء</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-6 col-md-4 col-lg-2">
+            <div class="card stat-card border-0 shadow-sm">
+                <div class="card-body text-center">
+                    <h5 class="fw-bold text-purple">{{ stats.suppliers_count }}</h5>
+                    <p class="mb-0">موردين</p>
+                </div>
             </div>
         </div>
     </div>
-    <div class="col-6 col-md-4 col-lg-2">
-        <div class="card stat-card border-0 shadow-sm">
-            <div class="card-body text-center">
-                <h5 class="fw-bold text-purple">{{ stats.production_count }}</h5>
-                <p class="mb-0">إنتاج</p>
-            </div>
-        </div>
-    </div>
-    <div class="col-6 col-md-4 col-lg-2">
-        <div class="card stat-card border-0 shadow-sm">
-            <div class="card-body text-center">
-                <h5 class="fw-bold text-purple">{{ stats.sales_count }}</h5>
-                <p class="mb-0">مبيعات</p>
-            </div>
-        </div>
-    </div>
-    <div class="col-6 col-md-4 col-lg-2">
-        <div class="card stat-card border-0 shadow-sm">
-            <div class="card-body text-center">
-                <h5 class="fw-bold text-purple">{{ stats.purchases_count }}</h5>
-                <p class="mb-0">مشتريات</p>
-            </div>
-        </div>
-    </div>
-    <div class="col-6 col-md-4 col-lg-2">
-        <div class="card stat-card border-0 shadow-sm">
-            <div class="card-body text-center">
-                <h5 class="fw-bold text-purple">{{ stats.customers_count }}</h5>
-                <p class="mb-0">عملاء</p>
-            </div>
-        </div>
-    </div>
-    <div class="col-6 col-md-4 col-lg-2">
-        <div class="card stat-card border-0 shadow-sm">
-            <div class="card-body text-center">
-                <h5 class="fw-bold text-purple">{{ stats.suppliers_count }}</h5>
-                <p class="mb-0">موردين</p>
-            </div>
-        </div>
-    </div>
-</div>
 
-<div class="row g-3 mb-4">
-    <div class="col-md-4">
-        <div class="card border-0 shadow-sm bg-light-purple">
-            <div class="card-body">
-                <h6 class="fw-bold">💰 رصيد الخزينة</h6>
-                <h3 class="fw-bold text-purple">{{ stats.treasury_balance }}</h3>
+    <div class="row g-3 mb-4">
+        <div class="col-md-4">
+            <div class="card border-0 shadow-sm bg-light-purple">
+                <div class="card-body">
+                    <h6 class="fw-bold">💰 رصيد الخزينة</h6>
+                    <h3 class="fw-bold text-purple">{{ stats.treasury_balance }}</h3>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="card border-0 shadow-sm bg-light-purple">
+                <div class="card-body">
+                    <h6 class="fw-bold">مبيعات اليوم</h6>
+                    <h3 class="fw-bold text-purple">{{ stats.today_sales }}</h3>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="card border-0 shadow-sm bg-light-purple">
+                <div class="card-body">
+                    <h6 class="fw-bold">مشتريات اليوم</h6>
+                    <h3 class="fw-bold text-purple">{{ stats.today_purchases }}</h3>
+                </div>
             </div>
         </div>
     </div>
-    <div class="col-md-4">
-        <div class="card border-0 shadow-sm bg-light-purple">
-            <div class="card-body">
-                <h6 class="fw-bold">مبيعات اليوم</h6>
-                <h3 class="fw-bold text-purple">{{ stats.today_sales }}</h3>
-            </div>
-        </div>
-    </div>
-    <div class="col-md-4">
-        <div class="card border-0 shadow-sm bg-light-purple">
-            <div class="card-body">
-                <h6 class="fw-bold">مشتريات اليوم</h6>
-                <h3 class="fw-bold text-purple">{{ stats.today_purchases }}</h3>
-            </div>
-        </div>
-    </div>
-</div>
 
-<!-- تنبيهات المخزون -->
-{% if stats.low_inventory_count > 0 and current_user.role in ['meg','admin','mariam','rehab','ahmed'] %}
-<div class="alert alert-warning">
-    ⚠️ يوجد {{ stats.low_inventory_count }} صنف وصل للحد الأدنى في المخزون.
-</div>
-{% endif %}
+    {% if stats.low_inventory_count > 0 and current_user.role in ['meg','admin','mariam','rehab','ahmed'] %}
+    <div class="alert alert-warning">
+        ⚠️ يوجد {{ stats.low_inventory_count }} صنف وصل للحد الأدنى في المخزون.
+    </div>
+    {% endif %}
 
-<!-- أحدث المعاملات -->
-<div class="row">
-    <div class="col-lg-4 mb-3">
-        <div class="card border-0 shadow-sm">
-            <div class="card-header bg-purple text-white fw-bold">🏭 أحدث الإنتاج</div>
-            <div class="card-body">
-                {% for p in recent_production %}
-                <p class="mb-1"><small>{{ p.date.strftime('%Y-%m-%d') }} - {{ p.elbow_size }} ({{ p.quantity }})</small></p>
-                {% else %}
-                <p class="text-muted">لا يوجد إنتاج حديث</p>
-                {% endfor %}
+    <div class="row">
+        <div class="col-lg-4 mb-3">
+            <div class="card border-0 shadow-sm">
+                <div class="card-header bg-purple text-white fw-bold">🏭 أحدث الإنتاج</div>
+                <div class="card-body">
+                    {% for p in recent_production %}
+                    <p class="mb-1"><small>{{ p.date.strftime('%Y-%m-%d') }} - {{ p.elbow_size }} ({{ p.quantity }})</small></p>
+                    {% else %}
+                    <p class="text-muted">لا يوجد إنتاج حديث</p>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+        <div class="col-lg-4 mb-3">
+            <div class="card border-0 shadow-sm">
+                <div class="card-header bg-purple text-white fw-bold">🏪 أحدث المبيعات</div>
+                <div class="card-body">
+                    {% for s in recent_sales %}
+                    <p class="mb-1"><small>{{ s.date.strftime('%Y-%m-%d') }} - {{ s.customer_name }} ({{ s.total }})</small></p>
+                    {% else %}
+                    <p class="text-muted">لا توجد مبيعات حديثة</p>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+        <div class="col-lg-4 mb-3">
+            <div class="card border-0 shadow-sm">
+                <div class="card-header bg-purple text-white fw-bold">💰 أحدث حركات الخزينة</div>
+                <div class="card-body">
+                    {% for t in recent_transactions %}
+                    <p class="mb-1"><small>{{ t.date.strftime('%Y-%m-%d') }} - {{ t.transaction_type }} ({{ t.amount }})</small></p>
+                    {% else %}
+                    <p class="text-muted">لا توجد حركات</p>
+                    {% endfor %}
+                </div>
             </div>
         </div>
     </div>
-    <div class="col-lg-4 mb-3">
-        <div class="card border-0 shadow-sm">
-            <div class="card-header bg-purple text-white fw-bold">🏪 أحدث المبيعات</div>
-            <div class="card-body">
-                {% for s in recent_sales %}
-                <p class="mb-1"><small>{{ s.date.strftime('%Y-%m-%d') }} - {{ s.customer_name }} ({{ s.total }})</small></p>
-                {% else %}
-                <p class="text-muted">لا توجد مبيعات حديثة</p>
-                {% endfor %}
+
+{% elif current_user.role in ['eid', 'abdo'] %}
+    <!-- ========== محتوى عيد وعبدالله (خزينة فقط) ========== -->
+    <div class="row g-3 mb-4">
+        <div class="col-md-6">
+            <div class="card border-0 shadow-sm bg-light-purple">
+                <div class="card-body text-center">
+                    <h5 class="fw-bold">💰 رصيدك الحالي</h5>
+                    <h3 class="fw-bold text-purple">{{ stats.treasury_balance }}</h3>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-6">
+            <div class="card border-0 shadow-sm bg-light-purple">
+                <div class="card-body text-center">
+                    <h5 class="fw-bold">📋 عدد حركاتك</h5>
+                    <h3 class="fw-bold text-purple">{{ recent_transactions|length }}</h3>
+                </div>
             </div>
         </div>
     </div>
-    <div class="col-lg-4 mb-3">
-        <div class="card border-0 shadow-sm">
-            <div class="card-header bg-purple text-white fw-bold">💰 أحدث حركات الخزينة</div>
-            <div class="card-body">
-                {% for t in recent_transactions %}
-                <p class="mb-1"><small>{{ t.date.strftime('%Y-%m-%d') }} - {{ t.transaction_type }} ({{ t.amount }})</small></p>
-                {% else %}
-                <p class="text-muted">لا توجد حركات</p>
-                {% endfor %}
-            </div>
+
+    <div class="card border-0 shadow-sm">
+        <div class="card-header bg-purple text-white fw-bold">💰 أحدث حركاتك</div>
+        <div class="card-body">
+            <table class="table table-sm">
+                <thead>
+                    <tr><th>التاريخ</th><th>النوع</th><th>المبلغ</th><th>الطريقة</th></tr>
+                </thead>
+                <tbody>
+                    {% for t in recent_transactions %}
+                    <tr>
+                        <td>{{ t.date.strftime('%Y-%m-%d') }}</td>
+                        <td>{{ 'إيداع' if t.transaction_type == 'deposit' else 'سحب' }}</td>
+                        <td>{{ t.amount }}</td>
+                        <td>{{ t.payment_method }}</td>
+                    </tr>
+                    {% else %}
+                    <tr><td colspan="4" class="text-center">لا توجد حركات</td></tr>
+                    {% endfor %}
+                </tbody>
+            </table>
         </div>
     </div>
-</div>
 
 {% else %}
-<!-- إحصائيات خاصة بعيد وعبدالله (خزينة فقط) -->
-<div class="row g-3 mb-4">
-    <div class="col-md-6">
-        <div class="card border-0 shadow-sm bg-light-purple">
-            <div class="card-body text-center">
-                <h5 class="fw-bold">💰 رصيدك الحالي</h5>
-                <h3 class="fw-bold text-purple">{{ stats.treasury_balance }}</h3>
-            </div>
-        </div>
-    </div>
-    <div class="col-md-6">
-        <div class="card border-0 shadow-sm bg-light-purple">
-            <div class="card-body text-center">
-                <h5 class="fw-bold">📋 عدد حركاتك</h5>
-                <h3 class="fw-bold text-purple">{{ recent_transactions|length }}</h3>
-            </div>
-        </div>
-    </div>
-</div>
-
-<div class="card border-0 shadow-sm">
-    <div class="card-header bg-purple text-white fw-bold">💰 أحدث حركاتك</div>
-    <div class="card-body">
-        <table class="table table-sm">
-            <thead><tr><th>التاريخ</th><th>النوع</th><th>المبلغ</th><th>الطريقة</th></tr></thead>
-            <tbody>
-                {% for t in recent_transactions %}
-                <tr>
-                    <td>{{ t.date.strftime('%Y-%m-%d') }}</td>
-                    <td>{{ 'إيداع' if t.transaction_type == 'deposit' else 'سحب' }}</td>
-                    <td>{{ t.amount }}</td>
-                    <td>{{ t.payment_method }}</td>
-                </tr>
-                {% endfor %}
-            </tbody>
-        </table>
-    </div>
-</div>
+    <p>غير مصرح لك بعرض هذه الصفحة.</p>
 {% endif %}
 {% endblock %}
