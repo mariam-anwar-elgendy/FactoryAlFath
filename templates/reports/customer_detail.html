@@ -1,0 +1,27 @@
+{% extends "base.html" %}
+{% block title %}تقرير عميل{% endblock %}
+{% block content %}
+<div class="text-center mb-4">
+    <h2 class="fw-bold text-purple-dark">🏭 شركة الفتح</h2>
+    <h4>تقرير العميل: {{ customer.name }}</h4>
+    <button onclick="window.print()" class="btn btn-purple no-print">🖨️ طباعة</button>
+</div>
+<div class="card mb-4"><div class="card-body">
+    <p><strong>الهاتف:</strong> {{ customer.phone or '-' }}</p>
+    <p><strong>إجمالي المشتريات:</strong> {{ total_purchases }}</p>
+</div></div>
+<h5>الفواتير</h5>
+<table class="table table-bordered">
+    <thead><tr><th>التاريخ</th><th>الصنف</th><th>الكمية</th><th>الإجمالي</th></tr></thead>
+    <tbody>
+        {% for sale in sales %}
+        <tr>
+            <td>{{ sale.date.strftime('%Y-%m-%d') }}</td>
+            <td>{{ sale.product_type }} {{ sale.product_size }} {{ sale.product_spec }}</td>
+            <td>{{ sale.quantity }}</td>
+            <td>{{ sale.total }}</td>
+        </tr>
+        {% endfor %}
+    </tbody>
+</table>
+{% endblock %}
