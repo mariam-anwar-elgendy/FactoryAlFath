@@ -7,7 +7,11 @@
     <button onclick="window.print()" class="btn btn-purple no-print">🖨️ طباعة</button>
 </div>
 <div class="row g-3 mb-4">
-    <div class="col-md-6"><a href="{{ url_for('generate_word_report_route', report_type='factory', period='weekly') }}" class="btn btn-purple w-100">📄 تقرير المصنع (Word)</a></div>
-    <div class="col-md-6"><a href="{{ url_for('generate_word_report_route', report_type='store', period='weekly') }}" class="btn btn-purple w-100">📄 تقرير المحل (Word)</a></div>
+    <div class="col-md-6">
+        <a href="{{ url_for('generate_word_report_route', report_type='factory', period='weekly') }}" class="btn btn-purple w-100">📄 تقرير المصنع (Word)</a>
+    </div>
+    <div class="col-md-6">
+        <a href="{{ url_for('generate_word_report_route', report_type='store', period='weekly') }}" class="btn btn-purple w-100">📄 تقرير المحل (Word)</a>
+    </div>
 </div>
 {% endblock %}
