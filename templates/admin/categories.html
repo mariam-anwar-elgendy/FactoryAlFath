@@ -1,1 +1,134 @@
+{% extends "base.html" %}
 
+{% block title %}الفئات والإعدادات{% endblock %}
+
+{% block content %}
+<h2 class="fw-bold mb-4 text-purple-dark">🏷️ الفئات والإعدادات</h2>
+
+<div class="row g-4">
+    <!-- الأصناف -->
+    <div class="col-md-4">
+        <div class="card border-0 shadow-sm">
+            <div class="card-header bg-purple text-white fw-bold">الأصناف</div>
+            <div class="card-body">
+                <ul class="list-group mb-3">
+                    {% for category in categories %}
+                    <li class="list-group-item d-flex justify-content-between align-items-center">
+                        {{ category.name }}
+                    </li>
+                    {% else %}
+                    <li class="list-group-item text-muted">لا يوجد أصناف</li>
+                    {% endfor %}
+                </ul>
+                <form method="POST" action="{{ url_for('admin_add_category') }}">
+                    <input type="hidden" name="category_type" value="category">
+                    <div class="input-group">
+                        <input type="text" name="name" class="form-control" placeholder="صنف جديد" required>
+                        <button type="submit" class="btn btn-purple">إضافة</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- المقاسات -->
+    <div class="col-md-4">
+        <div class="card border-0 shadow-sm">
+            <div class="card-header bg-purple text-white fw-bold">المقاسات</div>
+            <div class="card-body">
+                <ul class="list-group mb-3">
+                    {% for size in sizes %}
+                    <li class="list-group-item">{{ size.value }}</li>
+                    {% else %}
+                    <li class="list-group-item text-muted">لا يوجد مقاسات</li>
+                    {% endfor %}
+                </ul>
+                <form method="POST" action="{{ url_for('admin_add_category') }}">
+                    <input type="hidden" name="category_type" value="size">
+                    <div class="input-group">
+                        <input type="text" name="name" class="form-control" placeholder="مقاس جديد" required>
+                        <button type="submit" class="btn btn-purple">إضافة</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- السماكات -->
+    <div class="col-md-4">
+        <div class="card border-0 shadow-sm">
+            <div class="card-header bg-purple text-white fw-bold">السماكات</div>
+            <div class="card-body">
+                <ul class="list-group mb-3">
+                    {% for thickness in thicknesses %}
+                    <li class="list-group-item">{{ thickness.value }}</li>
+                    {% else %}
+                    <li class="list-group-item text-muted">لا يوجد سماكات</li>
+                    {% endfor %}
+                </ul>
+                <form method="POST" action="{{ url_for('admin_add_category') }}">
+                    <input type="hidden" name="category_type" value="thickness">
+                    <div class="input-group">
+                        <input type="text" name="name" class="form-control" placeholder="سماكة جديدة" required>
+                        <button type="submit" class="btn btn-purple">إضافة</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row g-4 mt-3">
+    <!-- الموردين -->
+    <div class="col-md-6">
+        <div class="card border-0 shadow-sm">
+            <div class="card-header bg-purple text-white fw-bold">الموردين</div>
+            <div class="card-body">
+                <ul class="list-group mb-3">
+                    {% for supplier in suppliers %}
+                    <li class="list-group-item d-flex justify-content-between align-items-center">
+                        {{ supplier.name }}
+                        <small class="text-muted">{{ supplier.phone or '' }}</small>
+                    </li>
+                    {% else %}
+                    <li class="list-group-item text-muted">لا يوجد موردين</li>
+                    {% endfor %}
+                </ul>
+                <form method="POST" action="{{ url_for('admin_add_category') }}">
+                    <input type="hidden" name="category_type" value="supplier">
+                    <div class="input-group">
+                        <input type="text" name="name" class="form-control" placeholder="اسم المورد" required>
+                        <button type="submit" class="btn btn-purple">إضافة</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- العملاء -->
+    <div class="col-md-6">
+        <div class="card border-0 shadow-sm">
+            <div class="card-header bg-purple text-white fw-bold">العملاء</div>
+            <div class="card-body">
+                <ul class="list-group mb-3">
+                    {% for customer in customers %}
+                    <li class="list-group-item d-flex justify-content-between align-items-center">
+                        {{ customer.name }}
+                        <small class="text-muted">{{ customer.phone or '' }}</small>
+                    </li>
+                    {% else %}
+                    <li class="list-group-item text-muted">لا يوجد عملاء</li>
+                    {% endfor %}
+                </ul>
+                <form method="POST" action="{{ url_for('admin_add_category') }}">
+                    <input type="hidden" name="category_type" value="customer">
+                    <div class="input-group">
+                        <input type="text" name="name" class="form-control" placeholder="اسم العميل" required>
+                        <button type="submit" class="btn btn-purple">إضافة</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
