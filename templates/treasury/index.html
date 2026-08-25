@@ -9,7 +9,9 @@
             <div class="card-header bg-purple text-white fw-bold">💵 الأرصدة الحالية</div>
             <div class="card-body">
                 <table class="table table-striped">
-                    <thead><tr><th>الشخص</th><th>الطريقة</th><th>الرصيد</th></tr></thead>
+                    <thead>
+                        <tr><th>الشخص</th><th>الطريقة</th><th>الرصيد</th></tr>
+                    </thead>
                     <tbody>
                         {% for account in accounts %}
                         <tr>
@@ -38,7 +40,9 @@
     <div class="card-header bg-purple text-white fw-bold">🕐 أحدث الحركات</div>
     <div class="card-body">
         <table class="table table-sm">
-            <thead><tr><th>التاريخ</th><th>الشخص</th><th>النوع</th><th>المبلغ</th><th>الطريقة</th></tr></thead>
+            <thead>
+                <tr><th>التاريخ</th><th>الشخص</th><th>النوع</th><th>المبلغ</th><th>الطريقة</th></tr>
+            </thead>
             <tbody>
                 {% for t in transactions %}
                 <tr>
