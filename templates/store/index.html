@@ -1,1 +1,70 @@
+{% extends "base.html" %}
 
+{% block title %}المحل{% endblock %}
+
+{% block content %}
+<h2 class="fw-bold mb-4 text-purple-dark">🏪 المحل</h2>
+
+<div class="row g-3 mb-4">
+    <div class="col-md-3">
+        <div class="card border-0 shadow-sm">
+            <div class="card-body text-center">
+                <i class="fas fa-shopping-cart fa-3x text-purple mb-3"></i>
+                <h5 class="fw-bold">المبيعات</h5>
+                <a href="{{ url_for('store_sales') }}" class="btn btn-purple w-100">إدارة المبيعات</a>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card border-0 shadow-sm">
+            <div class="card-body text-center">
+                <i class="fas fa-truck fa-3x text-purple mb-3"></i>
+                <h5 class="fw-bold">المشتريات</h5>
+                <a href="{{ url_for('store_purchases') }}" class="btn btn-purple w-100">إدارة المشتريات</a>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card border-0 shadow-sm">
+            <div class="card-body text-center">
+                <i class="fas fa-boxes fa-3x text-purple mb-3"></i>
+                <h5 class="fw-bold">المخزون</h5>
+                <a href="{{ url_for('store_inventory') }}" class="btn btn-purple w-100">عرض المخزون</a>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card border-0 shadow-sm">
+            <div class="card-body text-center">
+                <i class="fas fa-undo fa-3x text-purple mb-3"></i>
+                <h5 class="fw-bold">المرتجعات</h5>
+                <a href="{{ url_for('store_returns') }}" class="btn btn-purple w-100">إدارة المرتجعات</a>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row g-3 mb-4">
+    <div class="col-md-4">
+        <div class="card border-0 shadow-sm">
+            <div class="card-body text-center">
+                <i class="fas fa-book fa-3x text-purple mb-3"></i>
+                <h5 class="fw-bold">اليوميات</h5>
+                <a href="{{ url_for('store_diary') }}" class="btn btn-purple w-100">إدارة اليوميات</a>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- ملخص اليوم -->
+<div class="card border-0 shadow-sm">
+    <div class="card-header bg-purple text-white fw-bold">
+        📅 ملخص اليوم ({{ now.strftime('%Y-%m-%d') }})
+    </div>
+    <div class="card-body">
+        <p>مبيعات اليوم: {{ sales|length }} عملية</p>
+        <p>مشتريات اليوم: {{ purchases|length }} عملية</p>
+        <p>استلام اليوم: {{ receiving|length }} عملية</p>
+    </div>
+</div>
+{% endblock %}
