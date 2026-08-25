@@ -1,0 +1,30 @@
+# بيئة التطوير
+.env
+.venv
+venv/
+env/
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.Python
+
+# قاعدة البيانات المحلية
+instance/
+*.db
+*.sqlite3
+
+# ملفات Excel و Word المؤقتة
+excel_files/
+word_reports/
+
+# ملفات Google
+client_secrets.json
+credentials.json
+
+# نظام التشغيل
+.DS_Store
+Thumbs.db
+
+# سجلات
+*.log
