@@ -1,1 +1,49 @@
+{% extends "base.html" %}
 
+{% block title %}المصنع{% endblock %}
+
+{% block content %}
+<h2 class="fw-bold mb-4 text-purple-dark">🏭 المصنع</h2>
+
+<div class="row g-3 mb-4">
+    <div class="col-md-4">
+        <div class="card border-0 shadow-sm">
+            <div class="card-body text-center">
+                <i class="fas fa-truck-loading fa-3x text-purple mb-3"></i>
+                <h5 class="fw-bold">وارد المواسير</h5>
+                <a href="{{ url_for('factory_raw_materials') }}" class="btn btn-purple w-100">إدارة الوارد</a>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="card border-0 shadow-sm">
+            <div class="card-body text-center">
+                <i class="fas fa-industry fa-3x text-purple mb-3"></i>
+                <h5 class="fw-bold">الإنتاج</h5>
+                <a href="{{ url_for('factory_production') }}" class="btn btn-purple w-100">إدارة الإنتاج</a>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="card border-0 shadow-sm">
+            <div class="card-body text-center">
+                <i class="fas fa-book fa-3x text-purple mb-3"></i>
+                <h5 class="fw-bold">اليوميات</h5>
+                <a href="{{ url_for('factory_diary') }}" class="btn btn-purple w-100">إدارة اليوميات</a>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- ملخص اليوم -->
+<div class="card border-0 shadow-sm">
+    <div class="card-header bg-purple text-white fw-bold">
+        📅 ملخص اليوم ({{ now.strftime('%Y-%m-%d') }})
+    </div>
+    <div class="card-body">
+        <p>وارد اليوم: {{ raw_materials|length }} سجل</p>
+        <p>إنتاج اليوم: {{ production|length }} سجل</p>
+        <p>يوميات اليوم: {{ diary|length }} سجل</p>
+    </div>
+</div>
+{% endblock %}
