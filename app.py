@@ -235,26 +235,47 @@ def logout():
     session.clear()
     flash('تم تسجيل الخروج بنجاح', 'info')
     return redirect(url_for('login'))
-
 @app.route('/dashboard')
 @custom_login_required
 def dashboard():
+    # إحصائيات عامة مع فلترة حسب الدور
     stats = {
-        'raw_materials_count': FactoryRawMaterial.query.count(),
-        'production_count': FactoryProduction.query.count(),
-        'sales_count': StoreSale.query.count(),
-        'purchases_count': StorePurchase.query.count(),
-        'customers_count': Customer.query.count(),
-        'suppliers_count': Supplier.query.count(),
-        'treasury_balance': db.session.query(db.func.sum(TreasuryAccount.balance)).scalar() or 0,
+        'raw_materials_count': FactoryRawMaterial.query.count() if current_user.role in ['meg','admin','mariam','rehab','mohamed'] else 0,
+        'production_count': FactoryProduction.query.count() if current_user.role in ['meg','admin','mariam','rehab','mohamed'] else 0,
+        'sales_count': StoreSale.query.count() if current_user.role in ['meg','admin','mariam','rehab','ahmed'] else 0,
+        'purchases_count': StorePurchase.query.count() if current_user.role in ['meg','admin','mariam','rehab','ahmed'] else 0,
+        'customers_count': Customer.query.count() if current_user.role in ['meg','admin','mariam','rehab','ahmed'] else 0,
+        'suppliers_count': Supplier.query.count() if current_user.role in ['meg','admin','mariam','rehab','ahmed'] else 0,
+        'treasury_balance': 0,
         'today_sales': db.session.query(db.func.sum(StoreSale.total)).filter(StoreSale.date == date.today()).scalar() or 0,
         'today_purchases': db.session.query(db.func.sum(StorePurchase.total)).filter(StorePurchase.date == date.today()).scalar() or 0,
-        'low_inventory_count': StoreInventory.query.filter(StoreInventory.current_quantity <= StoreInventory.min_quantity).count(),
+        'low_inventory_count': StoreInventory.query.filter(StoreInventory.current_quantity <= StoreInventory.min_quantity).count() if current_user.role in ['meg','admin','mariam','rehab','ahmed'] else 0,
     }
 
-    recent_sales = StoreSale.query.order_by(StoreSale.date.desc()).limit(5).all()
-    recent_production = FactoryProduction.query.order_by(FactoryProduction.date.desc()).limit(5).all()
-    recent_transactions = TreasuryTransaction.query.order_by(TreasuryTransaction.date.desc()).limit(5).all()
+    # حساب رصيد الخزينة حسب الصلاحية
+    if current_user.role in ['meg', 'admin', 'mariam']:
+        # المديرون يرون إجمالي كل الحسابات
+        stats['treasury_balance'] = db.session.query(db.func.sum(TreasuryAccount.balance)).scalar() or 0
+    elif current_user.role in ['ahmed', 'eid', 'abdo']:
+        # صاحب الخزينة يرى مجموع أرصدته فقط
+        person_name = current_user.full_name
+        stats['treasury_balance'] = db.session.query(db.func.sum(TreasuryAccount.balance)).filter(TreasuryAccount.person_name == person_name).scalar() or 0
+    else:
+        stats['treasury_balance'] = 0
+
+    # جلب المعاملات الأخيرة حسب الصلاحية
+    if current_user.role in ['meg', 'admin', 'mariam', 'rehab', 'mohamed', 'ahmed']:
+        recent_sales = StoreSale.query.order_by(StoreSale.date.desc()).limit(5).all()
+        recent_production = FactoryProduction.query.order_by(FactoryProduction.date.desc()).limit(5).all()
+        if current_user.role in ['meg', 'admin', 'mariam']:
+            recent_transactions = TreasuryTransaction.query.order_by(TreasuryTransaction.date.desc()).limit(5).all()
+        else:
+            recent_transactions = TreasuryTransaction.query.filter_by(created_by=current_user.id).order_by(TreasuryTransaction.date.desc()).limit(5).all()
+    else:
+        # لـ eid و abdo فقط معاملاتهم
+        recent_sales = []
+        recent_production = []
+        recent_transactions = TreasuryTransaction.query.filter_by(created_by=current_user.id).order_by(TreasuryTransaction.date.desc()).limit(5).all()
 
     return render_template('dashboard.html', stats=stats,
                            recent_sales=recent_sales,
