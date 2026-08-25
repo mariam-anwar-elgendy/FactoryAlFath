@@ -1,1 +1,36 @@
+{% extends "base.html" %}
 
+{% block title %}الصلاحيات{% endblock %}
+
+{% block content %}
+<h2 class="fw-bold mb-4 text-purple-dark">🔐 مصفوفة الصلاحيات</h2>
+
+<div class="table-responsive">
+    <table class="table table-bordered table-striped text-center align-middle">
+        <thead class="bg-purple text-white">
+            <tr>
+                <th>الميزة</th>
+                <th>MEG</th>
+                <th>Admin</th>
+                <th>Mariam</th>
+                <th>Rehab</th>
+                <th>Mohamed</th>
+                <th>Ahmed</th>
+                <th>Eid</th>
+                <th>Abdo</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr><td>إدارة المستخدمين</td><td>✅</td><td>✅</td><td>❌</td><td>❌</td><td>❌</td><td>❌</td><td>❌</td><td>❌</td></tr>
+            <tr><td>مشاهدة كلمات المرور</td><td>✅</td><td>❌</td><td>❌</td><td>❌</td><td>❌</td><td>❌</td><td>❌</td><td>❌</td></tr>
+            <tr><td>تعديل كلمات المرور</td><td>✅</td><td>✅</td><td>❌</td><td>❌</td><td>❌</td><td>❌</td><td>❌</td><td>❌</td></tr>
+            <tr><td>المصنع</td><td>✅</td><td>✅</td><td>✅</td><td>✅</td><td>✅</td><td>❌</td><td>❌</td><td>❌</td></tr>
+            <tr><td>المحل</td><td>✅</td><td>✅</td><td>✅</td><td>✅</td><td>❌</td><td>✅</td><td>❌</td><td>❌</td></tr>
+            <tr><td>الخزينة (الكل)</td><td>✅</td><td>✅</td><td>✅</td><td>❌</td><td>❌</td><td>❌</td><td>❌</td><td>❌</td></tr>
+            <tr><td>خزينته الشخصية</td><td>✅</td><td>✅</td><td>❌</td><td>❌</td><td>❌</td><td>✅</td><td>✅</td><td>✅</td></tr>
+            <tr><td>التقارير</td><td>✅</td><td>✅</td><td>✅</td><td>✅</td><td>جزئي</td><td>جزئي</td><td>❌</td><td>❌</td></tr>
+            <tr><td>مدة التعديل</td><td>دائم</td><td>دائم</td><td>دائم</td><td>7 أيام</td><td>يوم</td><td>يوم</td><td>يوم</td><td>يوم</td></tr>
+        </tbody>
+    </table>
+</div>
+{% endblock %}
