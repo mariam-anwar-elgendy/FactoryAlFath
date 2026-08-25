@@ -1,5 +1,4 @@
 /* ========== مصنع الفتح - التصميم البنفسجي ========== */
-
 :root {
     --purple-50: #F5F3FF;
     --purple-100: #EDE9FE;
@@ -13,34 +12,17 @@
     --purple-900: #4C1D95;
 }
 
-/* ========== عام ========== */
 body {
     font-family: 'Segoe UI', Tahoma, Arial, sans-serif;
     background-color: var(--purple-50);
     min-height: 100vh;
-    margin: 0;
-    padding: 0;
 }
 
-.bg-purple {
-    background-color: var(--purple-600) !important;
-}
-
-.bg-purple-dark {
-    background-color: var(--purple-800) !important;
-}
-
-.bg-light-purple {
-    background-color: var(--purple-100) !important;
-}
-
-.text-purple {
-    color: var(--purple-600) !important;
-}
-
-.text-purple-dark {
-    color: var(--purple-800) !important;
-}
+.bg-purple { background-color: var(--purple-600) !important; }
+.bg-purple-dark { background-color: var(--purple-800) !important; }
+.bg-light-purple { background-color: var(--purple-100) !important; }
+.text-purple { color: var(--purple-600) !important; }
+.text-purple-dark { color: var(--purple-800) !important; }
 
 .btn-purple {
     background-color: var(--purple-600);
@@ -51,19 +33,13 @@ body {
     font-weight: bold;
     transition: background-color 0.2s;
 }
+.btn-purple:hover { background-color: var(--purple-700); color: white; }
 
-.btn-purple:hover {
-    background-color: var(--purple-700);
-    color: white;
-}
-
-/* ========== القائمة الجانبية ========== */
 .sidebar {
     min-height: calc(100vh - 56px);
     background-color: var(--purple-800);
     padding: 15px;
 }
-
 .sidebar .nav-link {
     padding: 12px 15px;
     margin-bottom: 5px;
@@ -71,59 +47,25 @@ body {
     font-weight: bold;
     transition: background-color 0.2s;
 }
+.sidebar .nav-link:hover { background-color: var(--purple-600); color: white; }
+.sidebar .nav-link i { width: 20px; }
 
-.sidebar .nav-link:hover {
-    background-color: var(--purple-600);
-    color: white;
-}
+.card { border-radius: 12px; overflow: hidden; }
+.card-header { border-bottom: none; }
+.stat-card { transition: transform 0.2s; cursor: default; }
+.stat-card:hover { transform: translateY(-3px); box-shadow: 0 5px 15px rgba(92, 33, 182, 0.15) !important; }
 
-.sidebar .nav-link i {
-    width: 20px;
-}
+.table th { font-weight: bold; white-space: nowrap; }
+.table td { vertical-align: middle; }
 
-/* ========== البطاقات ========== */
-.card {
-    border-radius: 12px;
-    overflow: hidden;
-}
-
-.card-header {
-    border-bottom: none;
-}
-
-.stat-card {
-    transition: transform 0.2s;
-    cursor: default;
-}
-
-.stat-card:hover {
-    transform: translateY(-3px);
-    box-shadow: 0 5px 15px rgba(92, 33, 182, 0.15) !important;
-}
-
-/* ========== الجداول ========== */
-.table th {
-    font-weight: bold;
-    white-space: nowrap;
-}
-
-.table td {
-    vertical-align: middle;
-}
-
-/* ========== النماذج ========== */
 .form-control:focus,
 .form-select:focus {
     border-color: var(--purple-500);
     box-shadow: 0 0 0 0.2rem rgba(124, 58, 237, 0.25);
 }
 
-/* ========== التنبيهات ========== */
-.alert {
-    border-radius: 10px;
-}
+.alert { border-radius: 10px; }
 
-/* ========== الشاشات الصغيرة (التليفون) ========== */
 @media (max-width: 768px) {
     .sidebar {
         min-height: auto;
@@ -136,24 +78,15 @@ body {
         padding: 10px;
         border-radius: 0 0 10px 10px;
     }
-
-    .navbar-brand {
-        font-size: 1rem;
-    }
-
-    .btn-purple {
-        padding: 12px 18px;
-        font-size: 16px;
-    }
-
-    .display-6 {
-        font-size: 1.5rem;
-    }
+    .navbar-brand { font-size: 1rem; }
+    .btn-purple { padding: 12px 18px; font-size: 16px; }
+    .display-6 { font-size: 1.5rem; }
 }
 
 /* ========== الطباعة ========== */
 @media print {
-    .sidebar, .navbar, .btn, .no-print {
-        display: none !important;
-    }
+    .sidebar, .navbar, .btn, .no-print { display: none !important; }
+    main { width: 100% !important; margin: 0 !important; padding: 0 !important; }
+    .card { border: none !important; box-shadow: none !important; }
+    body { background-color: white !important; }
 }
