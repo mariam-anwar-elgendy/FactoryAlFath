@@ -1,1 +1,46 @@
+{% extends "base.html" %}
 
+{% block title %}تعديل مستخدم{% endblock %}
+
+{% block content %}
+<div class="card border-0 shadow-sm" style="max-width: 600px; margin: auto;">
+    <div class="card-header bg-warning text-dark fw-bold">
+        ✏️ تعديل بيانات المستخدم
+    </div>
+    <div class="card-body">
+        <form method="POST" action="{{ url_for('admin_edit_user', user_id=user.id) }}">
+            <div class="mb-3">
+                <label class="form-label fw-bold">الاسم الكامل</label>
+                <input type="text" name="full_name" class="form-control" value="{{ user.full_name }}" required>
+            </div>
+            <div class="mb-3">
+                <label class="form-label fw-bold">اسم المستخدم</label>
+                <input type="text" class="form-control" value="{{ user.username }}" disabled>
+            </div>
+            <div class="mb-3">
+                <label class="form-label fw-bold">الدور</label>
+                <select name="role" class="form-select" required>
+                    <option value="meg" {% if user.role == 'meg' %}selected{% endif %}>MEG</option>
+                    <option value="admin" {% if user.role == 'admin' %}selected{% endif %}>Admin</option>
+                    <option value="mariam" {% if user.role == 'mariam' %}selected{% endif %}>Mariam</option>
+                    <option value="rehab" {% if user.role == 'rehab' %}selected{% endif %}>Rehab</option>
+                    <option value="mohamed" {% if user.role == 'mohamed' %}selected{% endif %}>Mohamed</option>
+                    <option value="ahmed" {% if user.role == 'ahmed' %}selected{% endif %}>Ahmed</option>
+                    <option value="eid" {% if user.role == 'eid' %}selected{% endif %}>Eid</option>
+                    <option value="abdo" {% if user.role == 'abdo' %}selected{% endif %}>Abdo</option>
+                </select>
+                <small class="text-muted">فقط MEG يمكنه تعديل دور MEG</small>
+            </div>
+            <div class="mb-3">
+                <label class="form-label fw-bold">الهاتف</label>
+                <input type="text" name="phone" class="form-control" value="{{ user.phone or '' }}">
+            </div>
+            <div class="mb-3">
+                <label class="form-label fw-bold">كلمة مرور جديدة (اتركها فارغة إذا لم ترد التغيير)</label>
+                <input type="password" name="password" class="form-control">
+            </div>
+            <button type="submit" class="btn btn-warning w-100">حفظ التعديلات</button>
+        </form>
+    </div>
+</div>
+{% endblock %}
