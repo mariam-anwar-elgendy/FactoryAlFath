@@ -1,1 +1,39 @@
+{% extends "base.html" %}
 
+{% block title %}التقرير الشهري{% endblock %}
+
+{% block content %}
+<h2 class="fw-bold mb-4 text-purple-dark">📊 التقرير الشهري</h2>
+
+<div class="row g-3 mb-4">
+    <div class="col-md-4">
+        <div class="card border-0 shadow-sm">
+            <div class="card-body">
+                <h5 class="fw-bold">📅 من تاريخ</h5>
+                <p class="display-6 text-purple">{{ month_start.strftime('%Y-%m-%d') }}</p>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="card border-0 shadow-sm">
+            <div class="card-body">
+                <h5 class="fw-bold">📅 إلى تاريخ</h5>
+                <p class="display-6 text-purple">{{ now.strftime('%Y-%m-%d') }}</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row g-3 mb-4">
+    <div class="col-md-6">
+        <a href="{{ url_for('generate_word_report_route', report_type='factory', period='monthly') }}" class="btn btn-purple w-100">
+            📄 تقرير المصنع (Word)
+        </a>
+    </div>
+    <div class="col-md-6">
+        <a href="{{ url_for('generate_word_report_route', report_type='store', period='monthly') }}" class="btn btn-purple w-100">
+            📄 تقرير المحل (Word)
+        </a>
+    </div>
+</div>
+{% endblock %}
