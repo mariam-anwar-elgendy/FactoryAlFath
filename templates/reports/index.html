@@ -1,0 +1,25 @@
+{% extends "base.html" %}
+{% block title %}التقارير{% endblock %}
+{% block content %}
+<h2 class="fw-bold mb-4 text-purple-dark">📊 التقارير</h2>
+<div class="row g-3">
+    <div class="col-md-3">
+        <a href="{{ url_for('reports_daily') }}" class="btn btn-purple w-100">📅 التقرير اليومي</a>
+    </div>
+    <div class="col-md-3">
+        <a href="{{ url_for('reports_weekly') }}" class="btn btn-purple w-100">📆 التقرير الأسبوعي</a>
+    </div>
+    <div class="col-md-3">
+        <a href="{{ url_for('reports_monthly') }}" class="btn btn-purple w-100">📆 التقرير الشهري</a>
+    </div>
+    <div class="col-md-3">
+        <a href="{{ url_for('reports_customers') }}" class="btn btn-purple w-100">👥 تقرير العملاء</a>
+    </div>
+    <div class="col-md-3">
+        <a href="{{ url_for('reports_suppliers') }}" class="btn btn-purple w-100">🏢 تقرير الموردين</a>
+    </div>
+    <div class="col-md-3">
+        <a href="{{ url_for('financial_transactions') }}" class="btn btn-purple w-100">💰 معاملات مالية</a>
+    </div>
+</div>
+{% endblock %}
