@@ -63,7 +63,13 @@
                         {% endif %}
 
                         <li class="nav-item">
-                            <a class="nav-link text-white" href="{{ url_for('reports_daily') }}">
+                            <a class="nav-link text-white" href="{{ url_for('financial_transactions') }}">
+                                <i class="fas fa-money-bill-wave ms-2"></i> معاملات مالية
+                            </a>
+                        </li>
+
+                        <li class="nav-item">
+                            <a class="nav-link text-white" href="{{ url_for('reports_index') }}">
                                 <i class="fas fa-chart-bar ms-2"></i> التقارير
                             </a>
                         </li>
