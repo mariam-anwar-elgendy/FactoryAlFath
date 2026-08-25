@@ -7,12 +7,37 @@
     <button onclick="window.print()" class="btn btn-purple no-print">🖨️ طباعة</button>
 </div>
 <div class="row g-3 mb-4">
-    <div class="col-md-4"><div class="card border-0 shadow-sm"><div class="card-body"><h5>📅 التاريخ</h5><p class="display-6 text-purple">{{ today.strftime('%Y-%m-%d') }}</p></div></div></div>
-    <div class="col-md-4"><div class="card border-0 shadow-sm"><div class="card-body"><h5>💰 مبيعات اليوم</h5><p class="display-6 text-purple">0</p></div></div></div>
-    <div class="col-md-4"><div class="card border-0 shadow-sm"><div class="card-body"><h5>📦 مشتريات اليوم</h5><p class="display-6 text-purple">0</p></div></div></div>
+    <div class="col-md-4">
+        <div class="card border-0 shadow-sm">
+            <div class="card-body text-center">
+                <h5 class="fw-bold">📅 التاريخ</h5>
+                <p class="display-6 text-purple">{{ today.strftime('%Y-%m-%d') }}</p>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="card border-0 shadow-sm">
+            <div class="card-body text-center">
+                <h5 class="fw-bold">💰 مبيعات اليوم</h5>
+                <p class="display-6 text-purple">0</p>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="card border-0 shadow-sm">
+            <div class="card-body text-center">
+                <h5 class="fw-bold">📦 مشتريات اليوم</h5>
+                <p class="display-6 text-purple">0</p>
+            </div>
+        </div>
+    </div>
 </div>
 <div class="row g-3 mb-4">
-    <div class="col-md-6"><a href="{{ url_for('generate_word_report_route', report_type='factory', period='daily') }}" class="btn btn-purple w-100">📄 تقرير المصنع (Word)</a></div>
-    <div class="col-md-6"><a href="{{ url_for('generate_word_report_route', report_type='store', period='daily') }}" class="btn btn-purple w-100">📄 تقرير المحل (Word)</a></div>
+    <div class="col-md-6">
+        <a href="{{ url_for('generate_word_report_route', report_type='factory', period='daily') }}" class="btn btn-purple w-100">📄 تقرير المصنع (Word)</a>
+    </div>
+    <div class="col-md-6">
+        <a href="{{ url_for('generate_word_report_route', report_type='store', period='daily') }}" class="btn btn-purple w-100">📄 تقرير المحل (Word)</a>
+    </div>
 </div>
 {% endblock %}
