@@ -115,17 +115,17 @@ def init_db():
              'is_hidden': False},
             {'username': os.environ.get('AHMED_USERNAME', 'a'),
              'password': os.environ.get('AHMED_PASSWORD', '#123456#'),
-             'full_name': 'Ahmed',
+             'full_name': 'الحاج أحمد',
              'role': 'ahmed',
              'is_hidden': False},
             {'username': os.environ.get('EID_USERNAME', 'eid'),
              'password': os.environ.get('EID_PASSWORD', 'eid123#'),
-             'full_name': 'Eid',
+             'full_name': 'عيد',
              'role': 'eid',
              'is_hidden': False},
             {'username': os.environ.get('ABDO_USERNAME', 'abdo'),
              'password': os.environ.get('ABDO_PASSWORD', 'abdo123#'),
-             'full_name': 'Abdo',
+             'full_name': 'عبدالله',
              'role': 'abdo',
              'is_hidden': False},
         ]
@@ -152,7 +152,6 @@ init_db()
 # ==================== أدوات مساعدة للقوالب ====================
 @app.context_processor
 def inject_globals():
-    """إضافة متغيرات عامة للقوالب"""
     unread_notifications = 0
     if current_user.is_authenticated:
         unread_notifications = Notification.query.filter_by(user_id=current_user.id, is_read=False).count()
@@ -163,7 +162,6 @@ def inject_globals():
 
 # ==================== دوال مساعدة للخزينة ====================
 def get_or_create_treasury_account(person_name, account_type):
-    """جلب أو إنشاء حساب خزينة لشخص معين وطريقة دفع"""
     account = TreasuryAccount.query.filter_by(person_name=person_name, account_type=account_type).first()
     if not account:
         account = TreasuryAccount(person_name=person_name, account_type=account_type, balance=0)
@@ -172,7 +170,6 @@ def get_or_create_treasury_account(person_name, account_type):
     return account
 
 def get_visible_accounts_for_current_user():
-    """إرجاع الحسابات المتاحة للمستخدم الحالي"""
     if current_user.role in ['meg', 'admin', 'mariam']:
         return TreasuryAccount.query.all()
     elif current_user.role == 'ahmed':
@@ -255,24 +252,24 @@ def dashboard():
         'low_inventory_count': StoreInventory.query.filter(StoreInventory.current_quantity <= StoreInventory.min_quantity).count(),
     }
 
-    recent_sales = StoreSale.query.order_by(StoreSale.created_at.desc()).limit(5).all()
-    recent_production = FactoryProduction.query.order_by(FactoryProduction.created_at.desc()).limit(5).all()
-    recent_transactions = TreasuryTransaction.query.order_by(TreasuryTransaction.created_at.desc()).limit(5).all()
+    recent_sales = StoreSale.query.order_by(StoreSale.date.desc()).limit(5).all()
+    recent_production = FactoryProduction.query.order_by(FactoryProduction.date.desc()).limit(5).all()
+    recent_transactions = TreasuryTransaction.query.order_by(TreasuryTransaction.date.desc()).limit(5).all()
 
     return render_template('dashboard.html', stats=stats,
                            recent_sales=recent_sales,
                            recent_production=recent_production,
                            recent_transactions=recent_transactions)
 
-# ==================== Routes المصنع ====================
+# ==================== المصنع ====================
 @app.route('/factory')
 @custom_login_required
 @role_required('meg', 'admin', 'mariam', 'rehab', 'mohamed')
 def factory_index():
     today = date.today()
-    raw_materials = FactoryRawMaterial.query.filter_by(date=today).all()
-    production = FactoryProduction.query.filter_by(date=today).all()
-    diary = FactoryDiary.query.filter_by(date=today).all()
+    raw_materials = FactoryRawMaterial.query.filter_by(date=today).order_by(FactoryRawMaterial.id.asc()).all()
+    production = FactoryProduction.query.filter_by(date=today).order_by(FactoryProduction.id.asc()).all()
+    diary = FactoryDiary.query.filter_by(date=today).order_by(FactoryDiary.id.asc()).all()
     return render_template('factory/index.html',
                            raw_materials=raw_materials,
                            production=production,
@@ -341,7 +338,7 @@ def factory_raw_materials():
         flash('تم إضافة وارد المواسير بنجاح', 'success')
         return redirect(url_for('factory_raw_materials'))
 
-    materials = FactoryRawMaterial.query.order_by(FactoryRawMaterial.date.desc()).all()
+    materials = FactoryRawMaterial.query.order_by(FactoryRawMaterial.date.asc(), FactoryRawMaterial.id.asc()).all()
     return render_template('factory/raw_materials.html', materials=materials)
 
 @app.route('/factory/production', methods=['GET', 'POST'])
@@ -407,7 +404,7 @@ def factory_production():
         flash('تم تسجيل الإنتاج بنجاح', 'success')
         return redirect(url_for('factory_production'))
 
-    production = FactoryProduction.query.order_by(FactoryProduction.date.desc()).all()
+    production = FactoryProduction.query.order_by(FactoryProduction.date.asc(), FactoryProduction.id.asc()).all()
     return render_template('factory/production.html', production=production)
 
 @app.route('/factory/diary', methods=['GET', 'POST'])
@@ -463,18 +460,18 @@ def factory_diary():
         flash('تم تسجيل اليومية بنجاح', 'success')
         return redirect(url_for('factory_diary'))
 
-    diary = FactoryDiary.query.order_by(FactoryDiary.date.desc()).all()
+    diary = FactoryDiary.query.order_by(FactoryDiary.date.asc(), FactoryDiary.id.asc()).all()
     return render_template('factory/diary.html', diary=diary)
 
-# ==================== Routes المحل ====================
+# ==================== المحل ====================
 @app.route('/store')
 @custom_login_required
 @role_required('meg', 'admin', 'mariam', 'rehab', 'ahmed')
 def store_index():
     today = date.today()
-    sales = StoreSale.query.filter_by(date=today).all()
-    purchases = StorePurchase.query.filter_by(date=today).all()
-    receiving = StoreReceiving.query.filter_by(date=today).all()
+    sales = StoreSale.query.filter_by(date=today).order_by(StoreSale.id.asc()).all()
+    purchases = StorePurchase.query.filter_by(date=today).order_by(StorePurchase.id.asc()).all()
+    receiving = StoreReceiving.query.filter_by(date=today).order_by(StoreReceiving.id.asc()).all()
     return render_template('store/index.html',
                            sales=sales,
                            purchases=purchases,
@@ -594,6 +591,17 @@ def store_sales():
             db.session.add(inventory_item)
         db.session.commit()
 
+        # تسجيل تلقائي في يوميات المحل
+        diary_entry = StoreDiary(
+            date=record_date,
+            description=f"بيع {quantity} {product_type} {product_size} {product_spec} إلى {customer_name}",
+            amount=total,
+            created_by=current_user.id,
+            created_at=datetime.utcnow()
+        )
+        db.session.add(diary_entry)
+        db.session.commit()
+
         row_data = [record_date.strftime('%Y-%m-%d'), 'بيع', customer_name, product_type,
                     product_size, product_spec, quantity, unit_price, total, payment_type, current_user.full_name]
         excel_path = add_row_to_excel('يوميات المحل.xlsx',
@@ -606,7 +614,7 @@ def store_sales():
         flash('تم تسجيل البيع بنجاح', 'success')
         return redirect(url_for('store_sales'))
 
-    sales = StoreSale.query.order_by(StoreSale.date.desc()).all()
+    sales = StoreSale.query.order_by(StoreSale.date.asc(), StoreSale.id.asc()).all()
     return render_template('store/sales.html', sales=sales)
 
 @app.route('/store/purchases', methods=['GET', 'POST'])
@@ -723,6 +731,17 @@ def store_purchases():
             db.session.add(inventory_item)
         db.session.commit()
 
+        # تسجيل تلقائي في يوميات المحل
+        diary_entry = StoreDiary(
+            date=record_date,
+            description=f"شراء {quantity} {product_type} {product_size} {product_spec} من {supplier_name}",
+            amount=total,
+            created_by=current_user.id,
+            created_at=datetime.utcnow()
+        )
+        db.session.add(diary_entry)
+        db.session.commit()
+
         row_data = [record_date.strftime('%Y-%m-%d'), 'شراء', supplier_name, product_type,
                     product_size, product_spec, quantity, unit_price, total, payment_type, current_user.full_name]
         excel_path = add_row_to_excel('يوميات المحل.xlsx',
@@ -735,14 +754,15 @@ def store_purchases():
         flash('تم تسجيل الشراء بنجاح', 'success')
         return redirect(url_for('store_purchases'))
 
-    purchases = StorePurchase.query.order_by(StorePurchase.date.desc()).all()
+    purchases = StorePurchase.query.order_by(StorePurchase.date.asc(), StorePurchase.id.asc()).all()
     return render_template('store/purchases.html', purchases=purchases)
 
+====store===
 @app.route('/store/inventory')
 @custom_login_required
 @role_required('meg', 'admin', 'mariam', 'rehab', 'ahmed')
 def store_inventory():
-    inventory = StoreInventory.query.all()
+    inventory = StoreInventory.query.order_by(StoreInventory.product_type.asc(), StoreInventory.product_size.asc()).all()
     return render_template('store/inventory.html', inventory=inventory)
 
 @app.route('/store/returns', methods=['GET', 'POST'])
@@ -759,6 +779,24 @@ def store_returns():
                 flash('تم حذف المرتجع بنجاح', 'success')
             else:
                 flash('غير مصرح لك بالحذف', 'danger')
+            return redirect(url_for('store_returns'))
+
+        if request.form.get('edit_id'):
+            record_id = int(request.form.get('edit_id'))
+            record = StoreReturn.query.get_or_404(record_id)
+            if can_edit(current_user.role, record.date, record.created_by, current_user.id):
+                record.date = datetime.strptime(request.form.get('date'), '%Y-%m-%d').date()
+                record.return_type = request.form.get('return_type')
+                record.party_name = request.form.get('party_name')
+                record.product_type = request.form.get('product_type')
+                record.product_size = request.form.get('product_size')
+                record.product_spec = request.form.get('product_spec')
+                record.quantity = float(request.form.get('quantity', 0))
+                record.reason = request.form.get('reason')
+                db.session.commit()
+                flash('تم تحديث المرتجع بنجاح', 'success')
+            else:
+                flash('غير مصرح لك بالتعديل أو انتهت صلاحية التعديل', 'danger')
             return redirect(url_for('store_returns'))
 
         record_date = datetime.strptime(request.form.get('date'), '%Y-%m-%d').date()
@@ -797,7 +835,7 @@ def store_returns():
         flash('تم تسجيل المرتجع بنجاح', 'success')
         return redirect(url_for('store_returns'))
 
-    returns = StoreReturn.query.order_by(StoreReturn.date.desc()).all()
+    returns = StoreReturn.query.order_by(StoreReturn.date.asc(), StoreReturn.id.asc()).all()
     return render_template('store/returns.html', returns=returns)
 
 @app.route('/store/diary', methods=['GET', 'POST'])
@@ -853,466 +891,5 @@ def store_diary():
         flash('تم تسجيل اليومية بنجاح', 'success')
         return redirect(url_for('store_diary'))
 
-    diary = StoreDiary.query.order_by(StoreDiary.date.desc()).all()
+    diary = StoreDiary.query.order_by(StoreDiary.date.asc(), StoreDiary.id.asc()).all()
     return render_template('store/diary.html', diary=diary)
-
-# ==================== Routes الخزينة ====================
-@app.route('/treasury')
-@custom_login_required
-@role_required('meg', 'admin', 'mariam', 'ahmed', 'eid', 'abdo')
-def treasury_index():
-    # إنشاء حسابات افتراضية
-    if current_user.role in ['meg', 'admin', 'mariam']:
-        for person in ['الحاج أحمد', 'عيد', 'عبدالله']:
-            for acc_type in ['كاش', 'فودافون كاش', 'انستا باي']:
-                get_or_create_treasury_account(person, acc_type)
-    else:
-        person_name = current_user.full_name
-        for acc_type in ['كاش', 'فودافون كاش', 'انستا باي']:
-            get_or_create_treasury_account(person_name, acc_type)
-
-    accounts = get_visible_accounts_for_current_user()
-    if current_user.role in ['meg', 'admin', 'mariam']:
-        transactions = TreasuryTransaction.query.order_by(TreasuryTransaction.date.desc()).limit(20).all()
-    else:
-        transactions = TreasuryTransaction.query.filter_by(created_by=current_user.id).order_by(TreasuryTransaction.date.desc()).limit(20).all()
-
-    return render_template('treasury/index.html', accounts=accounts, transactions=transactions)
-
-@app.route('/treasury/transactions', methods=['GET', 'POST'])
-@custom_login_required
-@role_required('meg', 'admin', 'mariam', 'ahmed', 'eid', 'abdo')
-def treasury_transactions():
-    # إنشاء حسابات افتراضية
-    if current_user.role in ['meg', 'admin', 'mariam']:
-        for person in ['الحاج أحمد', 'عيد', 'عبدالله']:
-            for acc_type in ['كاش', 'فودافون كاش', 'انستا باي']:
-                get_or_create_treasury_account(person, acc_type)
-    else:
-        person_name = current_user.full_name
-        for acc_type in ['كاش', 'فودافون كاش', 'انستا باي']:
-            get_or_create_treasury_account(person_name, acc_type)
-
-    if request.method == 'POST':
-        if request.form.get('delete_id'):
-            record_id = int(request.form.get('delete_id'))
-            record = TreasuryTransaction.query.get_or_404(record_id)
-            if current_user.role in ['meg', 'admin']:
-                account = TreasuryAccount.query.get(record.account_id)
-                if account:
-                    if record.transaction_type == 'deposit':
-                        account.balance -= record.amount
-                    else:
-                        account.balance += record.amount
-                    db.session.commit()
-                db.session.delete(record)
-                db.session.commit()
-                flash('تم حذف الحركة بنجاح', 'success')
-            else:
-                flash('غير مصرح لك بالحذف', 'danger')
-            return redirect(url_for('treasury_transactions'))
-
-        if request.form.get('edit_id'):
-            record_id = int(request.form.get('edit_id'))
-            record = TreasuryTransaction.query.get_or_404(record_id)
-            if can_edit(current_user.role, record.date, record.created_by, current_user.id):
-                old_account = TreasuryAccount.query.get(record.account_id)
-                if old_account:
-                    if record.transaction_type == 'deposit':
-                        old_account.balance -= record.amount
-                    else:
-                        old_account.balance += record.amount
-                    db.session.commit()
-
-                record.date = datetime.strptime(request.form.get('date'), '%Y-%m-%d').date()
-                new_account_id = int(request.form.get('account_id'))
-                record.transaction_type = request.form.get('transaction_type')
-                record.amount = float(request.form.get('amount', 0))
-                record.source = request.form.get('source')
-                record.payment_method = request.form.get('payment_method')
-                record.notes = request.form.get('notes')
-                record.account_id = new_account_id
-
-                new_account = TreasuryAccount.query.get(new_account_id)
-                if new_account:
-                    if record.transaction_type == 'deposit':
-                        new_account.balance += record.amount
-                    else:
-                        new_account.balance -= record.amount
-                    db.session.commit()
-                db.session.commit()
-                flash('تم تحديث الحركة بنجاح', 'success')
-            else:
-                flash('غير مصرح لك بالتعديل أو انتهت صلاحية التعديل', 'danger')
-            return redirect(url_for('treasury_transactions'))
-
-        record_date = datetime.strptime(request.form.get('date'), '%Y-%m-%d').date()
-        account_id = int(request.form.get('account_id'))
-        transaction_type = request.form.get('transaction_type')
-        amount = float(request.form.get('amount', 0))
-        source = request.form.get('source')
-        payment_method = request.form.get('payment_method')
-        notes = request.form.get('notes')
-
-        account = TreasuryAccount.query.get(account_id)
-        if account:
-            if transaction_type == 'deposit':
-                account.balance += amount
-            elif transaction_type == 'withdrawal':
-                account.balance -= amount
-            db.session.commit()
-
-        new_transaction = TreasuryTransaction(
-            account_id=account_id,
-            transaction_type=transaction_type,
-            amount=amount,
-            source=source,
-            payment_method=payment_method,
-            date=record_date,
-            notes=notes,
-            created_by=current_user.id,
-            created_at=datetime.utcnow()
-        )
-        db.session.add(new_transaction)
-        db.session.commit()
-
-        account_name = account.person_name if account else ''
-        row_data = [record_date.strftime('%Y-%m-%d'), account_name, transaction_type,
-                    amount, payment_method, source, notes, current_user.full_name]
-        excel_path = add_row_to_excel('حركات الخزينة.xlsx',
-                                      ['التاريخ', 'الشخص', 'النوع', 'المبلغ', 'طريقة الدفع', 'الجهة', 'ملاحظات', 'المسؤول'],
-                                      row_data)
-        if excel_path:
-            drive_service.upload_file(excel_path, 'حركات الخزينة.xlsx')
-
-        flash('تم تسجيل الحركة بنجاح', 'success')
-        return redirect(url_for('treasury_transactions'))
-
-    accounts = get_visible_accounts_for_current_user()
-    if current_user.role in ['meg', 'admin', 'mariam']:
-        transactions = TreasuryTransaction.query.order_by(TreasuryTransaction.date.desc()).all()
-    else:
-        transactions = TreasuryTransaction.query.filter_by(created_by=current_user.id).order_by(TreasuryTransaction.date.desc()).all()
-
-    return render_template('treasury/transactions.html', accounts=accounts, transactions=transactions)
-
-@app.route('/treasury/transfers', methods=['GET', 'POST'])
-@custom_login_required
-@role_required('meg', 'admin', 'mariam')
-def treasury_transfers():
-    if request.method == 'POST':
-        if request.form.get('delete_id'):
-            record_id = int(request.form.get('delete_id'))
-            record = TreasuryTransfer.query.get_or_404(record_id)
-            if current_user.role in ['meg', 'admin']:
-                db.session.delete(record)
-                db.session.commit()
-                flash('تم حذف التحويل بنجاح', 'success')
-            else:
-                flash('غير مصرح لك بالحذف', 'danger')
-            return redirect(url_for('treasury_transfers'))
-
-        record_date = datetime.strptime(request.form.get('date'), '%Y-%m-%d').date()
-        from_person = request.form.get('from_person')
-        to_person = request.form.get('to_person')
-        amount = float(request.form.get('amount', 0))
-        payment_method = request.form.get('payment_method')
-        notes = request.form.get('notes')
-
-        new_transfer = TreasuryTransfer(
-            from_person=from_person,
-            to_person=to_person,
-            amount=amount,
-            payment_method=payment_method,
-            date=record_date,
-            notes=notes,
-            created_by=current_user.id,
-            created_at=datetime.utcnow()
-        )
-        db.session.add(new_transfer)
-        db.session.commit()
-
-        flash('تم تسجيل التحويل بنجاح', 'success')
-        return redirect(url_for('treasury_transfers'))
-
-    transfers = TreasuryTransfer.query.order_by(TreasuryTransfer.date.desc()).all()
-    return render_template('treasury/transfers.html', transfers=transfers)
-
-# ==================== Routes التقارير ====================
-@app.route('/reports/daily')
-@custom_login_required
-@role_required('meg', 'admin', 'mariam', 'rehab', 'mohamed', 'ahmed')
-def reports_daily():
-    today = date.today()
-    return render_template('reports/daily.html', today=today)
-
-@app.route('/reports/weekly')
-@custom_login_required
-@role_required('meg', 'admin', 'mariam', 'rehab')
-def reports_weekly():
-    week_start = date.today() - timedelta(days=7)
-    return render_template('reports/weekly.html', week_start=week_start)
-
-@app.route('/reports/monthly')
-@custom_login_required
-@role_required('meg', 'admin', 'mariam', 'rehab')
-def reports_monthly():
-    month_start = date.today().replace(day=1)
-    return render_template('reports/monthly.html', month_start=month_start)
-
-@app.route('/reports/customers')
-@custom_login_required
-@role_required('meg', 'admin', 'mariam', 'rehab')
-def reports_customers():
-    customers = Customer.query.all()
-    return render_template('reports/customers.html', customers=customers)
-
-@app.route('/reports/customers/<int:customer_id>')
-@custom_login_required
-@role_required('meg', 'admin', 'mariam', 'rehab')
-def report_single_customer(customer_id):
-    customer = Customer.query.get_or_404(customer_id)
-    sales = StoreSale.query.filter_by(customer_name=customer.name).all()
-    total_purchases = sum(s.total for s in sales)
-    return render_template('reports/customer_detail.html',
-                           customer=customer, sales=sales,
-                           total_purchases=total_purchases)
-
-@app.route('/reports/suppliers')
-@custom_login_required
-@role_required('meg', 'admin', 'mariam', 'rehab')
-def reports_suppliers():
-    suppliers = Supplier.query.all()
-    return render_template('reports/suppliers.html', suppliers=suppliers)
-
-@app.route('/reports/suppliers/<int:supplier_id>')
-@custom_login_required
-@role_required('meg', 'admin', 'mariam', 'rehab')
-def report_single_supplier(supplier_id):
-    supplier = Supplier.query.get_or_404(supplier_id)
-    purchases = StorePurchase.query.filter_by(supplier_name=supplier.name).all()
-    total_purchases = sum(p.total for p in purchases)
-    return render_template('reports/supplier_detail.html',
-                           supplier=supplier, purchases=purchases,
-                           total_purchases=total_purchases)
-
-@app.route('/reports/generate-word/<report_type>/<period>')
-@custom_login_required
-@role_required('meg', 'admin', 'mariam', 'rehab')
-def generate_word_report_route(report_type, period):
-    try:
-        today = date.today()
-        company_name = "شركة الفتح"
-        if report_type == 'factory':
-            report_title = "تقرير يوميات المصنع"
-            headers = ['التاريخ', 'الوصف', 'المقاس', 'السماكة', 'الكمية', 'المسؤول']
-            data = []
-            records = FactoryDiary.query.order_by(FactoryDiary.date.desc()).limit(100).all()
-            for r in records:
-                data.append([r.date.strftime('%Y-%m-%d'), r.description, '', '', r.amount, ''])
-        elif report_type == 'store':
-            report_title = "تقرير يوميات المحل"
-            headers = ['التاريخ', 'النوع', 'الطرف', 'الصنف', 'الكمية', 'الإجمالي']
-            data = []
-            sales = StoreSale.query.order_by(StoreSale.date.desc()).limit(50).all()
-            for s in sales:
-                data.append([s.date.strftime('%Y-%m-%d'), 'بيع', s.customer_name, s.product_type, s.quantity, s.total])
-        elif report_type == 'treasury':
-            report_title = "تقرير الخزينة"
-            headers = ['التاريخ', 'الشخص', 'النوع', 'المبلغ', 'طريقة الدفع']
-            data = []
-            transactions = TreasuryTransaction.query.order_by(TreasuryTransaction.date.desc()).limit(100).all()
-            for t in transactions:
-                account = TreasuryAccount.query.get(t.account_id)
-                data.append([t.date.strftime('%Y-%m-%d'), account.person_name if account else '', t.transaction_type, t.amount, t.payment_method])
-        else:
-            flash('نوع التقرير غير معروف', 'danger')
-            return redirect(url_for('dashboard'))
-
-        period_names = {'daily': 'يومي', 'weekly': 'أسبوعي', 'monthly': 'شهري', 'custom': 'مخصص'}
-        period_name = period_names.get(period, period)
-
-        output_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'word_reports')
-        os.makedirs(output_dir, exist_ok=True)
-        output_file = os.path.join(output_dir, f"{report_type}_{period}_{today.strftime('%Y%m%d')}.docx")
-
-        generate_word_report(
-            company_name=company_name,
-            report_title=report_title,
-            report_date=today.strftime('%Y-%m-%d'),
-            period=period_name,
-            table_headers=headers,
-            table_data=data,
-            output_path=output_file
-        )
-
-        return send_file(output_file, as_attachment=True)
-    except Exception as e:
-        flash(f'خطأ في توليد التقرير: {str(e)}', 'danger')
-        return redirect(url_for('dashboard'))
-
-@app.route('/reports/download-excel/<file_name>')
-@custom_login_required
-@role_required('meg', 'admin', 'mariam', 'rehab')
-def download_excel(file_name):
-    file_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'excel_files', file_name)
-    if os.path.exists(file_path):
-        return send_file(file_path, as_attachment=True)
-    flash('الملف غير موجود', 'danger')
-    return redirect(url_for('dashboard'))
-
-# ==================== Routes الإدارة ====================
-@app.route('/admin/users')
-@custom_login_required
-@role_required('meg', 'admin')
-def admin_users():
-    users = User.query.filter_by(is_hidden=False).all() if current_user.role != 'meg' else User.query.all()
-    return render_template('admin/users.html', users=users)
-
-@app.route('/admin/users/add', methods=['GET', 'POST'])
-@custom_login_required
-@role_required('meg', 'admin')
-def admin_add_user():
-    if request.method == 'POST':
-        username = request.form.get('username')
-        password = request.form.get('password')
-        full_name = request.form.get('full_name')
-        role = request.form.get('role')
-        phone = request.form.get('phone')
-
-        existing = User.query.filter_by(username=username).first()
-        if existing:
-            flash('اسم المستخدم موجود بالفعل', 'danger')
-            return redirect(url_for('admin_add_user'))
-
-        new_user = User(
-            username=username,
-            full_name=full_name,
-            role=role,
-            phone=phone,
-            is_hidden=False,
-            created_by=current_user.id,
-            created_at=datetime.utcnow()
-        )
-        new_user.set_password(password)
-        db.session.add(new_user)
-        db.session.commit()
-
-        flash('تم إضافة المستخدم بنجاح', 'success')
-        return redirect(url_for('admin_users'))
-
-    return render_template('admin/add_user.html')
-
-@app.route('/admin/users/<int:user_id>/edit', methods=['GET', 'POST'])
-@custom_login_required
-@role_required('meg', 'admin')
-def admin_edit_user(user_id):
-    user = User.query.get_or_404(user_id)
-    if user.role == 'meg' and current_user.role != 'meg':
-        flash('غير مصرح لك بتعديل هذا المستخدم', 'danger')
-        return redirect(url_for('admin_users'))
-
-    if request.method == 'POST':
-        user.full_name = request.form.get('full_name')
-        user.role = request.form.get('role')
-        user.phone = request.form.get('phone')
-        new_password = request.form.get('password')
-        if new_password:
-            user.set_password(new_password)
-        db.session.commit()
-        flash('تم تحديث بيانات المستخدم بنجاح', 'success')
-        return redirect(url_for('admin_users'))
-
-    return render_template('admin/edit_user.html', user=user)
-
-@app.route('/admin/users/<int:user_id>/delete', methods=['POST'])
-@custom_login_required
-@role_required('meg', 'admin')
-def admin_delete_user(user_id):
-    user = User.query.get_or_404(user_id)
-    if user.role == 'meg':
-        flash('لا يمكن حذف حساب MEG', 'danger')
-        return redirect(url_for('admin_users'))
-    db.session.delete(user)
-    db.session.commit()
-    flash('تم حذف المستخدم بنجاح', 'success')
-    return redirect(url_for('admin_users'))
-
-@app.route('/admin/categories')
-@custom_login_required
-@role_required('meg', 'admin', 'mariam')
-def admin_categories():
-    categories = Category.query.all()
-    sizes = Size.query.all()
-    thicknesses = Thickness.query.all()
-    suppliers = Supplier.query.all()
-    customers = Customer.query.all()
-    return render_template('admin/categories.html',
-                           categories=categories,
-                           sizes=sizes,
-                           thicknesses=thicknesses,
-                           suppliers=suppliers,
-                           customers=customers)
-
-@app.route('/admin/categories/add', methods=['POST'])
-@custom_login_required
-@role_required('meg', 'admin', 'mariam')
-def admin_add_category():
-    category_type = request.form.get('category_type')
-    name = request.form.get('name')
-    if category_type == 'category':
-        if not Category.query.filter_by(name=name).first():
-            db.session.add(Category(name=name))
-    elif category_type == 'size':
-        if not Size.query.filter_by(value=name).first():
-            db.session.add(Size(value=name))
-    elif category_type == 'thickness':
-        if not Thickness.query.filter_by(value=name).first():
-            db.session.add(Thickness(value=name))
-    elif category_type == 'supplier':
-        if not Supplier.query.filter_by(name=name).first():
-            db.session.add(Supplier(name=name))
-    elif category_type == 'customer':
-        if not Customer.query.filter_by(name=name).first():
-            db.session.add(Customer(name=name))
-    db.session.commit()
-    flash('تمت الإضافة بنجاح', 'success')
-    return redirect(url_for('admin_categories'))
-
-# ==================== Routes الإعدادات ====================
-@app.route('/settings/profile', methods=['GET', 'POST'])
-@custom_login_required
-def settings_profile():
-    if request.method == 'POST':
-        current_user.full_name = request.form.get('full_name')
-        current_user.phone = request.form.get('phone')
-        db.session.commit()
-        flash('تم تحديث الملف الشخصي بنجاح', 'success')
-        return redirect(url_for('settings_profile'))
-    return render_template('settings/profile.html')
-
-@app.route('/settings/password', methods=['GET', 'POST'])
-@custom_login_required
-def settings_password():
-    if request.method == 'POST':
-        current_password = request.form.get('current_password')
-        new_password = request.form.get('new_password')
-        confirm_password = request.form.get('confirm_password')
-        if not current_user.check_password(current_password):
-            flash('كلمة المرور الحالية غير صحيحة', 'danger')
-            return redirect(url_for('settings_password'))
-        if new_password != confirm_password:
-            flash('كلمة المرور الجديدة غير متطابقة', 'danger')
-            return redirect(url_for('settings_password'))
-        if len(new_password) < 6:
-            flash('كلمة المرور يجب ألا تقل عن 6 أحرف', 'danger')
-            return redirect(url_for('settings_password'))
-        current_user.set_password(new_password)
-        db.session.commit()
-        flash('تم تغيير كلمة المرور بنجاح', 'success')
-        return redirect(url_for('dashboard'))
-    return render_template('settings/password.html')
-
-# ==================== تشغيل التطبيق ====================
-if __name__ == '__main__':
-    app.run(host='0.0.0.0', port=5000, debug=True)
