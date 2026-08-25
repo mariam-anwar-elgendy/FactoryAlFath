@@ -63,7 +63,7 @@
     </table>
 </div>
 
-<!-- Modal إضافة -->
+<!-- Modal إضافة شراء -->
 <div class="modal fade" id="addPurchaseModal" tabindex="-1">
     <div class="modal-dialog modal-lg">
         <div class="modal-content">
@@ -88,8 +88,15 @@
                     </div>
                     <div class="row">
                         <div class="col-md-6 mb-3">
-                            <label class="form-label fw-bold">اسم المورد</label>
-                            <input type="text" name="supplier_name" class="form-control" required>
+                            <label class="form-label fw-bold">المورد</label>
+                            <select name="supplier_select" id="supplier_select" class="form-select" onchange="toggleNewSupplier()">
+                                <option value="">اختر المورد...</option>
+                                {% for supplier in suppliers %}
+                                <option value="{{ supplier.name }}">{{ supplier.name }}</option>
+                                {% endfor %}
+                                <option value="new">➕ إضافة مورد جديد...</option>
+                            </select>
+                            <input type="text" name="supplier_name" id="new_supplier_name" class="form-control mt-2" style="display:none;" placeholder="اسم المورد الجديد">
                         </div>
                         <div class="col-md-6 mb-3">
                             <label class="form-label fw-bold">هاتف المورد</label>
@@ -134,8 +141,8 @@
     </div>
 </div>
 
+<!-- Modal تعديل (لكل عملية) -->
 {% for p in purchases %}
-<!-- Modal تعديل -->
 <div class="modal fade" id="editPurchaseModal{{ p.id }}" tabindex="-1">
     <div class="modal-dialog modal-lg">
         <div class="modal-content">
@@ -161,8 +168,17 @@
                     </div>
                     <div class="row">
                         <div class="col-md-6 mb-3">
-                            <label class="form-label fw-bold">اسم المورد</label>
-                            <input type="text" name="supplier_name" class="form-control" value="{{ p.supplier_name }}" required>
+                            <label class="form-label fw-bold">المورد</label>
+                            <select name="supplier_select" class="form-select" onchange="toggleEditSupplier(this)">
+                                <option value="{{ p.supplier_name }}" selected>{{ p.supplier_name }}</option>
+                                {% for supplier in suppliers %}
+                                    {% if supplier.name != p.supplier_name %}
+                                    <option value="{{ supplier.name }}">{{ supplier.name }}</option>
+                                    {% endif %}
+                                {% endfor %}
+                                <option value="new">➕ إضافة مورد جديد...</option>
+                            </select>
+                            <input type="text" name="supplier_name" class="form-control mt-2" value="{{ p.supplier_name }}" style="display:none;">
                         </div>
                         <div class="col-md-6 mb-3">
                             <label class="form-label fw-bold">هاتف المورد</label>
@@ -207,4 +223,33 @@
     </div>
 </div>
 {% endfor %}
+
+<script>
+function toggleNewSupplier() {
+    var select = document.getElementById('supplier_select');
+    var input = document.getElementById('new_supplier_name');
+    if (select.value === 'new') {
+        input.style.display = 'block';
+        input.required = true;
+        input.focus();
+    } else {
+        input.style.display = 'none';
+        input.required = false;
+    }
+}
+
+function toggleEditSupplier(selectElement) {
+    var input = selectElement.parentElement.querySelector('input[name="supplier_name"]');
+    if (selectElement.value === 'new') {
+        input.style.display = 'block';
+        input.value = '';
+        input.required = true;
+        input.focus();
+    } else {
+        input.style.display = 'none';
+        input.value = selectElement.value;
+        input.required = false;
+    }
+}
+</script>
 {% endblock %}
