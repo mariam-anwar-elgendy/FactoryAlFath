@@ -1,0 +1,45 @@
+{% extends "base.html" %}
+
+{% block title %}إضافة مستخدم{% endblock %}
+
+{% block content %}
+<div class="card border-0 shadow-sm" style="max-width: 600px; margin: auto;">
+    <div class="card-header bg-purple text-white fw-bold">
+        ➕ إضافة مستخدم جديد
+    </div>
+    <div class="card-body">
+        <form method="POST" action="{{ url_for('admin_add_user') }}">
+            <div class="mb-3">
+                <label class="form-label fw-bold">الاسم الكامل</label>
+                <input type="text" name="full_name" class="form-control" required>
+            </div>
+            <div class="mb-3">
+                <label class="form-label fw-bold">اسم المستخدم</label>
+                <input type="text" name="username" class="form-control" required>
+            </div>
+            <div class="mb-3">
+                <label class="form-label fw-bold">كلمة المرور</label>
+                <input type="password" name="password" class="form-control" required>
+            </div>
+            <div class="mb-3">
+                <label class="form-label fw-bold">الدور</label>
+                <select name="role" class="form-select" required>
+                    <option value="admin">Admin</option>
+                    <option value="mariam">Mariam</option>
+                    <option value="rehab">Rehab</option>
+                    <option value="mohamed">Mohamed</option>
+                    <option value="ahmed">Ahmed</option>
+                    <option value="eid">Eid</option>
+                    <option value="abdo">Abdo</option>
+                </select>
+                <small class="text-muted">لا يمكن إضافة دور MEG من هنا</small>
+            </div>
+            <div class="mb-3">
+                <label class="form-label fw-bold">الهاتف (اختياري)</label>
+                <input type="text" name="phone" class="form-control">
+            </div>
+            <button type="submit" class="btn btn-purple w-100">حفظ</button>
+        </form>
+    </div>
+</div>
+{% endblock %}
