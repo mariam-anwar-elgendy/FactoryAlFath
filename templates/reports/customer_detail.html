@@ -6,13 +6,17 @@
     <h4>تقرير العميل: {{ customer.name }}</h4>
     <button onclick="window.print()" class="btn btn-purple no-print">🖨️ طباعة</button>
 </div>
-<div class="card mb-4"><div class="card-body">
-    <p><strong>الهاتف:</strong> {{ customer.phone or '-' }}</p>
-    <p><strong>إجمالي المشتريات:</strong> {{ total_purchases }}</p>
-</div></div>
+<div class="card mb-4">
+    <div class="card-body">
+        <p><strong>الهاتف:</strong> {{ customer.phone or '-' }}</p>
+        <p><strong>إجمالي المشتريات:</strong> {{ total_purchases }}</p>
+    </div>
+</div>
 <h5>الفواتير</h5>
 <table class="table table-bordered">
-    <thead><tr><th>التاريخ</th><th>الصنف</th><th>الكمية</th><th>الإجمالي</th></tr></thead>
+    <thead>
+        <tr><th>التاريخ</th><th>الصنف</th><th>الكمية</th><th>الإجمالي</th></tr>
+    </thead>
     <tbody>
         {% for sale in sales %}
         <tr>
