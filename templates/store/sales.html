@@ -63,7 +63,7 @@
     </table>
 </div>
 
-<!-- Modal إضافة -->
+<!-- Modal إضافة بيع -->
 <div class="modal fade" id="addSaleModal" tabindex="-1">
     <div class="modal-dialog modal-lg">
         <div class="modal-content">
@@ -88,8 +88,15 @@
                     </div>
                     <div class="row">
                         <div class="col-md-6 mb-3">
-                            <label class="form-label fw-bold">اسم العميل</label>
-                            <input type="text" name="customer_name" class="form-control" required>
+                            <label class="form-label fw-bold">العميل</label>
+                            <select name="customer_select" id="customer_select" class="form-select" onchange="toggleNewCustomer()">
+                                <option value="">اختر العميل...</option>
+                                {% for customer in customers %}
+                                <option value="{{ customer.name }}">{{ customer.name }}</option>
+                                {% endfor %}
+                                <option value="new">➕ إضافة عميل جديد...</option>
+                            </select>
+                            <input type="text" name="customer_name" id="new_customer_name" class="form-control mt-2" style="display:none;" placeholder="اسم العميل الجديد">
                         </div>
                         <div class="col-md-6 mb-3">
                             <label class="form-label fw-bold">هاتف العميل</label>
@@ -134,8 +141,8 @@
     </div>
 </div>
 
+<!-- Modal تعديل (لكل عملية) -->
 {% for s in sales %}
-<!-- Modal تعديل -->
 <div class="modal fade" id="editSaleModal{{ s.id }}" tabindex="-1">
     <div class="modal-dialog modal-lg">
         <div class="modal-content">
@@ -161,8 +168,17 @@
                     </div>
                     <div class="row">
                         <div class="col-md-6 mb-3">
-                            <label class="form-label fw-bold">اسم العميل</label>
-                            <input type="text" name="customer_name" class="form-control" value="{{ s.customer_name }}" required>
+                            <label class="form-label fw-bold">العميل</label>
+                            <select name="customer_select" class="form-select" onchange="toggleEditCustomer(this)">
+                                <option value="{{ s.customer_name }}" selected>{{ s.customer_name }}</option>
+                                {% for customer in customers %}
+                                    {% if customer.name != s.customer_name %}
+                                    <option value="{{ customer.name }}">{{ customer.name }}</option>
+                                    {% endif %}
+                                {% endfor %}
+                                <option value="new">➕ إضافة عميل جديد...</option>
+                            </select>
+                            <input type="text" name="customer_name" class="form-control mt-2" value="{{ s.customer_name }}" style="display:none;">
                         </div>
                         <div class="col-md-6 mb-3">
                             <label class="form-label fw-bold">هاتف العميل</label>
@@ -207,4 +223,33 @@
     </div>
 </div>
 {% endfor %}
+
+<script>
+function toggleNewCustomer() {
+    var select = document.getElementById('customer_select');
+    var input = document.getElementById('new_customer_name');
+    if (select.value === 'new') {
+        input.style.display = 'block';
+        input.required = true;
+        input.focus();
+    } else {
+        input.style.display = 'none';
+        input.required = false;
+    }
+}
+
+function toggleEditCustomer(selectElement) {
+    var input = selectElement.parentElement.querySelector('input[name="customer_name"]');
+    if (selectElement.value === 'new') {
+        input.style.display = 'block';
+        input.value = '';
+        input.required = true;
+        input.focus();
+    } else {
+        input.style.display = 'none';
+        input.value = selectElement.value;
+        input.required = false;
+    }
+}
+</script>
 {% endblock %}
