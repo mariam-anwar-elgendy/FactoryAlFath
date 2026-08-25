@@ -1,0 +1,25 @@
+{% extends "base.html" %}
+{% block title %}تقرير العملاء{% endblock %}
+{% block content %}
+<div class="text-center mb-4">
+    <h2 class="fw-bold text-purple-dark">🏭 شركة الفتح</h2>
+    <h4>تقرير العملاء</h4>
+    <button onclick="window.print()" class="btn btn-purple no-print">🖨️ طباعة</button>
+</div>
+<div class="table-responsive">
+    <table class="table table-striped table-hover">
+        <thead class="bg-purple text-white">
+            <tr><th>اسم العميل</th><th>الهاتف</th><th>تفاصيل</th></tr>
+        </thead>
+        <tbody>
+            {% for customer in customers %}
+            <tr>
+                <td>{{ customer.name }}</td>
+                <td>{{ customer.phone or '-' }}</td>
+                <td><a href="{{ url_for('report_single_customer', customer_id=customer.id) }}" class="btn btn-sm btn-purple">عرض</a></td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% endblock %}
