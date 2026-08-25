@@ -1,1 +1,32 @@
+{% extends "base.html" %}
 
+{% block title %}الملف الشخصي{% endblock %}
+
+{% block content %}
+<div class="card border-0 shadow-sm" style="max-width: 600px; margin: auto;">
+    <div class="card-header bg-purple text-white fw-bold">
+        👤 الملف الشخصي
+    </div>
+    <div class="card-body">
+        <form method="POST" action="{{ url_for('settings_profile') }}">
+            <div class="mb-3">
+                <label class="form-label fw-bold">الاسم الكامل</label>
+                <input type="text" name="full_name" class="form-control" value="{{ current_user.full_name }}">
+            </div>
+            <div class="mb-3">
+                <label class="form-label fw-bold">اسم المستخدم</label>
+                <input type="text" class="form-control" value="{{ current_user.username }}" disabled>
+            </div>
+            <div class="mb-3">
+                <label class="form-label fw-bold">الهاتف</label>
+                <input type="text" name="phone" class="form-control" value="{{ current_user.phone or '' }}">
+            </div>
+            <div class="mb-3">
+                <label class="form-label fw-bold">الدور</label>
+                <input type="text" class="form-control" value="{{ current_user.role }}" disabled>
+            </div>
+            <button type="submit" class="btn btn-purple w-100">حفظ التعديلات</button>
+        </form>
+    </div>
+</div>
+{% endblock %}
