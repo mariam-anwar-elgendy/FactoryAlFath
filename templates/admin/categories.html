@@ -14,8 +14,37 @@
                 <ul class="list-group mb-3">
                     {% for category in categories %}
                     <li class="list-group-item d-flex justify-content-between align-items-center">
-                        {{ category.name }}
+                        <span>{{ category.name }}</span>
+                        <span>
+                            {% if current_user.role in ['meg', 'admin', 'mariam'] %}
+                            <button class="btn btn-sm btn-warning" data-bs-toggle="modal" data-bs-target="#editCategory{{ category.id }}">✏️</button>
+                            {% endif %}
+                            {% if current_user.role in ['meg', 'admin'] %}
+                            <form action="{{ url_for('admin_delete_category', category_type='category', item_id=category.id) }}" method="POST" class="d-inline">
+                                <button type="submit" class="btn btn-sm btn-danger" onclick="return confirm('حذف هذا الصنف؟')">🗑️</button>
+                            </form>
+                            {% endif %}
+                        </span>
                     </li>
+                    <!-- Modal تعديل -->
+                    <div class="modal fade" id="editCategory{{ category.id }}" tabindex="-1">
+                        <div class="modal-dialog modal-sm">
+                            <div class="modal-content">
+                                <form method="POST" action="{{ url_for('admin_edit_category', category_type='category', item_id=category.id) }}">
+                                    <div class="modal-header">
+                                        <h5 class="modal-title">تعديل الصنف</h5>
+                                        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                                    </div>
+                                    <div class="modal-body">
+                                        <input type="text" name="name" class="form-control" value="{{ category.name }}">
+                                    </div>
+                                    <div class="modal-footer">
+                                        <button type="submit" class="btn btn-warning">حفظ</button>
+                                    </div>
+                                </form>
+                            </div>
+                        </div>
+                    </div>
                     {% else %}
                     <li class="list-group-item text-muted">لا يوجد أصناف</li>
                     {% endfor %}
@@ -38,7 +67,38 @@
             <div class="card-body">
                 <ul class="list-group mb-3">
                     {% for size in sizes %}
-                    <li class="list-group-item">{{ size.value }}</li>
+                    <li class="list-group-item d-flex justify-content-between align-items-center">
+                        <span>{{ size.value }}</span>
+                        <span>
+                            {% if current_user.role in ['meg', 'admin', 'mariam'] %}
+                            <button class="btn btn-sm btn-warning" data-bs-toggle="modal" data-bs-target="#editSize{{ size.id }}">✏️</button>
+                            {% endif %}
+                            {% if current_user.role in ['meg', 'admin'] %}
+                            <form action="{{ url_for('admin_delete_category', category_type='size', item_id=size.id) }}" method="POST" class="d-inline">
+                                <button type="submit" class="btn btn-sm btn-danger" onclick="return confirm('حذف هذا المقاس؟')">🗑️</button>
+                            </form>
+                            {% endif %}
+                        </span>
+                    </li>
+                    <!-- Modal تعديل -->
+                    <div class="modal fade" id="editSize{{ size.id }}" tabindex="-1">
+                        <div class="modal-dialog modal-sm">
+                            <div class="modal-content">
+                                <form method="POST" action="{{ url_for('admin_edit_category', category_type='size', item_id=size.id) }}">
+                                    <div class="modal-header">
+                                        <h5 class="modal-title">تعديل المقاس</h5>
+                                        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                                    </div>
+                                    <div class="modal-body">
+                                        <input type="text" name="name" class="form-control" value="{{ size.value }}">
+                                    </div>
+                                    <div class="modal-footer">
+                                        <button type="submit" class="btn btn-warning">حفظ</button>
+                                    </div>
+                                </form>
+                            </div>
+                        </div>
+                    </div>
                     {% else %}
                     <li class="list-group-item text-muted">لا يوجد مقاسات</li>
                     {% endfor %}
@@ -61,7 +121,38 @@
             <div class="card-body">
                 <ul class="list-group mb-3">
                     {% for thickness in thicknesses %}
-                    <li class="list-group-item">{{ thickness.value }}</li>
+                    <li class="list-group-item d-flex justify-content-between align-items-center">
+                        <span>{{ thickness.value }}</span>
+                        <span>
+                            {% if current_user.role in ['meg', 'admin', 'mariam'] %}
+                            <button class="btn btn-sm btn-warning" data-bs-toggle="modal" data-bs-target="#editThickness{{ thickness.id }}">✏️</button>
+                            {% endif %}
+                            {% if current_user.role in ['meg', 'admin'] %}
+                            <form action="{{ url_for('admin_delete_category', category_type='thickness', item_id=thickness.id) }}" method="POST" class="d-inline">
+                                <button type="submit" class="btn btn-sm btn-danger" onclick="return confirm('حذف هذه السماكة؟')">🗑️</button>
+                            </form>
+                            {% endif %}
+                        </span>
+                    </li>
+                    <!-- Modal تعديل -->
+                    <div class="modal fade" id="editThickness{{ thickness.id }}" tabindex="-1">
+                        <div class="modal-dialog modal-sm">
+                            <div class="modal-content">
+                                <form method="POST" action="{{ url_for('admin_edit_category', category_type='thickness', item_id=thickness.id) }}">
+                                    <div class="modal-header">
+                                        <h5 class="modal-title">تعديل السماكة</h5>
+                                        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                                    </div>
+                                    <div class="modal-body">
+                                        <input type="text" name="name" class="form-control" value="{{ thickness.value }}">
+                                    </div>
+                                    <div class="modal-footer">
+                                        <button type="submit" class="btn btn-warning">حفظ</button>
+                                    </div>
+                                </form>
+                            </div>
+                        </div>
+                    </div>
                     {% else %}
                     <li class="list-group-item text-muted">لا يوجد سماكات</li>
                     {% endfor %}
@@ -87,9 +178,38 @@
                 <ul class="list-group mb-3">
                     {% for supplier in suppliers %}
                     <li class="list-group-item d-flex justify-content-between align-items-center">
-                        {{ supplier.name }}
-                        <small class="text-muted">{{ supplier.phone or '' }}</small>
+                        <span>{{ supplier.name }} <small class="text-muted">{{ supplier.phone or '' }}</small></span>
+                        <span>
+                            {% if current_user.role in ['meg', 'admin', 'mariam'] %}
+                            <button class="btn btn-sm btn-warning" data-bs-toggle="modal" data-bs-target="#editSupplier{{ supplier.id }}">✏️</button>
+                            {% endif %}
+                            {% if current_user.role in ['meg', 'admin'] %}
+                            <form action="{{ url_for('admin_delete_category', category_type='supplier', item_id=supplier.id) }}" method="POST" class="d-inline">
+                                <button type="submit" class="btn btn-sm btn-danger" onclick="return confirm('حذف هذا المورد؟')">🗑️</button>
+                            </form>
+                            {% endif %}
+                        </span>
                     </li>
+                    <!-- Modal تعديل -->
+                    <div class="modal fade" id="editSupplier{{ supplier.id }}" tabindex="-1">
+                        <div class="modal-dialog modal-sm">
+                            <div class="modal-content">
+                                <form method="POST" action="{{ url_for('admin_edit_category', category_type='supplier', item_id=supplier.id) }}">
+                                    <div class="modal-header">
+                                        <h5 class="modal-title">تعديل المورد</h5>
+                                        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                                    </div>
+                                    <div class="modal-body">
+                                        <input type="text" name="name" class="form-control mb-2" value="{{ supplier.name }}">
+                                        <input type="text" name="phone" class="form-control" value="{{ supplier.phone or '' }}" placeholder="الهاتف">
+                                    </div>
+                                    <div class="modal-footer">
+                                        <button type="submit" class="btn btn-warning">حفظ</button>
+                                    </div>
+                                </form>
+                            </div>
+                        </div>
+                    </div>
                     {% else %}
                     <li class="list-group-item text-muted">لا يوجد موردين</li>
                     {% endfor %}
@@ -113,9 +233,38 @@
                 <ul class="list-group mb-3">
                     {% for customer in customers %}
                     <li class="list-group-item d-flex justify-content-between align-items-center">
-                        {{ customer.name }}
-                        <small class="text-muted">{{ customer.phone or '' }}</small>
+                        <span>{{ customer.name }} <small class="text-muted">{{ customer.phone or '' }}</small></span>
+                        <span>
+                            {% if current_user.role in ['meg', 'admin', 'mariam'] %}
+                            <button class="btn btn-sm btn-warning" data-bs-toggle="modal" data-bs-target="#editCustomer{{ customer.id }}">✏️</button>
+                            {% endif %}
+                            {% if current_user.role in ['meg', 'admin'] %}
+                            <form action="{{ url_for('admin_delete_category', category_type='customer', item_id=customer.id) }}" method="POST" class="d-inline">
+                                <button type="submit" class="btn btn-sm btn-danger" onclick="return confirm('حذف هذا العميل؟')">🗑️</button>
+                            </form>
+                            {% endif %}
+                        </span>
                     </li>
+                    <!-- Modal تعديل -->
+                    <div class="modal fade" id="editCustomer{{ customer.id }}" tabindex="-1">
+                        <div class="modal-dialog modal-sm">
+                            <div class="modal-content">
+                                <form method="POST" action="{{ url_for('admin_edit_category', category_type='customer', item_id=customer.id) }}">
+                                    <div class="modal-header">
+                                        <h5 class="modal-title">تعديل العميل</h5>
+                                        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                                    </div>
+                                    <div class="modal-body">
+                                        <input type="text" name="name" class="form-control mb-2" value="{{ customer.name }}">
+                                        <input type="text" name="phone" class="form-control" value="{{ customer.phone or '' }}" placeholder="الهاتف">
+                                    </div>
+                                    <div class="modal-footer">
+                                        <button type="submit" class="btn btn-warning">حفظ</button>
+                                    </div>
+                                </form>
+                            </div>
+                        </div>
+                    </div>
                     {% else %}
                     <li class="list-group-item text-muted">لا يوجد عملاء</li>
                     {% endfor %}
