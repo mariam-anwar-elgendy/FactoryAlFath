@@ -1,30 +1,129 @@
 {% extends "base.html" %}
+
 {% block title %}تقرير عميل{% endblock %}
+
 {% block content %}
 <div class="text-center mb-4">
     <h2 class="fw-bold text-purple-dark">🏭 شركة الفتح</h2>
     <h4>تقرير العميل: {{ customer.name }}</h4>
     <button onclick="window.print()" class="btn btn-purple no-print">🖨️ طباعة</button>
 </div>
+
 <div class="card mb-4">
     <div class="card-body">
         <p><strong>الهاتف:</strong> {{ customer.phone or '-' }}</p>
         <p><strong>إجمالي المشتريات:</strong> {{ total_purchases }}</p>
+        <p><strong>إجمالي المدفوع:</strong> {{ total_paid }}</p>
+        <p><strong>المتبقي:</strong> {{ total_remaining }}</p>
     </div>
 </div>
+
 <h5>الفواتير</h5>
-<table class="table table-bordered">
-    <thead>
-        <tr><th>التاريخ</th><th>الصنف</th><th>الكمية</th><th>الإجمالي</th></tr>
-    </thead>
+<div class="table-responsive">
+    <table class="table table-bordered">
+        <thead class="bg-purple text-white">
+            <tr>
+                <th>التاريخ</th><th>الإجمالي</th><th>المدفوع</th><th>المتبقي</th><th>الحالة</th><th>إجراءات</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for sale in sales %}
+            <tr>
+                <td>{{ sale.date.strftime('%Y-%m-%d') }}</td>
+                <td>{{ sale.total }}</td>
+                <td>{{ sale.paid_amount }}</td>
+                <td>{{ sale.remaining }}</td>
+                <td>
+                    {% if sale.remaining <= 0 %}
+                        <span class="badge bg-success">مسدد</span>
+                    {% else %}
+                        <span class="badge bg-warning text-dark">متبقي</span>
+                    {% endif %}
+                </td>
+                <td>
+                    {% if sale.remaining > 0 %}
+                    <button class="btn btn-sm btn-primary" data-bs-toggle="modal" data-bs-target="#paymentModal{{ sale.id }}">➕ دفعة</button>
+                    {% endif %}
+                    <button class="btn btn-sm btn-info" data-bs-toggle="modal" data-bs-target="#itemsModal{{ sale.id }}">📋</button>
+                </td>
+            </tr>
+            <!-- Modal دفعة -->
+            <div class="modal fade" id="paymentModal{{ sale.id }}" tabindex="-1">
+                <div class="modal-dialog">
+                    <div class="modal-content">
+                        <form method="POST" action="{{ url_for('add_payment') }}">
+                            <input type="hidden" name="sale_id" value="{{ sale.id }}">
+                            <div class="modal-header bg-primary text-white">
+                                <h5 class="modal-title">تسجيل دفعة</h5>
+                                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                            </div>
+                            <div class="modal-body">
+                                <div class="mb-3">
+                                    <label class="form-label fw-bold">التاريخ</label>
+                                    <input type="date" name="date" class="form-control" value="{{ now.strftime('%Y-%m-%d') }}" required>
+                                </div>
+                                <div class="mb-3">
+                                    <label class="form-label fw-bold">المبلغ</label>
+                                    <input type="number" step="0.01" name="amount" class="form-control" max="{{ sale.remaining }}" required>
+                                </div>
+                                <div class="mb-3">
+                                    <label class="form-label fw-bold">ملاحظات</label>
+                                    <input type="text" name="notes" class="form-control">
+                                </div>
+                            </div>
+                            <div class="modal-footer">
+                                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">إلغاء</button>
+                                <button type="submit" class="btn btn-primary">حفظ</button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            </div>
+            <!-- Modal البنود -->
+            <div class="modal fade" id="itemsModal{{ sale.id }}" tabindex="-1">
+                <div class="modal-dialog modal-lg">
+                    <div class="modal-content">
+                        <div class="modal-header bg-info text-white">
+                            <h5 class="modal-title">بنود الفاتورة</h5>
+                            <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                        </div>
+                        <div class="modal-body">
+                            <table class="table table-sm">
+                                <thead><tr><th>الصنف</th><th>المقاس</th><th>المواصفات</th><th>الكمية</th><th>السعر</th><th>الإجمالي</th></tr></thead>
+                                <tbody>
+                                    {% for item in sale.items %}
+                                    <tr>
+                                        <td>{{ item.product_type }}</td>
+                                        <td>{{ item.product_size or '-' }}</td>
+                                        <td>{{ item.product_spec or '-' }}</td>
+                                        <td>{{ item.quantity }}</td>
+                                        <td>{{ item.unit_price }}</td>
+                                        <td>{{ item.total }}</td>
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+
+<h5>الدفعات المسجلة</h5>
+<table class="table table-sm">
+    <thead><tr><th>التاريخ</th><th>المبلغ</th><th>ملاحظات</th></tr></thead>
     <tbody>
         {% for sale in sales %}
+        {% for payment in sale.payments %}
         <tr>
-            <td>{{ sale.date.strftime('%Y-%m-%d') }}</td>
-            <td>{{ sale.product_type }} {{ sale.product_size }} {{ sale.product_spec }}</td>
-            <td>{{ sale.quantity }}</td>
-            <td>{{ sale.total }}</td>
+            <td>{{ payment.date.strftime('%Y-%m-%d') }}</td>
+            <td>{{ payment.amount }}</td>
+            <td>{{ payment.notes or '-' }}</td>
         </tr>
+        {% endfor %}
         {% endfor %}
     </tbody>
 </table>
