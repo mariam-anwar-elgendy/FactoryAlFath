@@ -94,6 +94,14 @@
                         </li>
                         {% endif %}
 
+                        {% if current_user.role in ['meg', 'admin'] %}
+                        <li class="nav-item">
+                            <a class="nav-link text-white" href="{{ url_for('admin_activity') }}">
+                                <i class="fas fa-history ms-2"></i> سجل النشاط
+                            </a>
+                        </li>
+                        {% endif %}
+
                         {% if current_user.role in ['meg', 'admin', 'mariam'] %}
                         <li class="nav-item">
                             <a class="nav-link text-white" href="{{ url_for('admin_categories') }}">
