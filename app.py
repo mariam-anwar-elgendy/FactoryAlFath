@@ -14,6 +14,7 @@ load_dotenv()
 from models import db, User, Category, Size, Thickness, Supplier, Customer
 from models import FactoryRawMaterial, FactoryProduction, FactoryDiary
 from models import StoreSale, StorePurchase, StoreInventory, StoreReceiving, StoreReturn, StoreDiary
+from models import StoreSaleItem, StorePurchaseItem, Payment
 from models import TreasuryAccount, TreasuryTransaction, TreasuryTransfer
 from models import EditLog, Notification, ActivityLog
 from utils import (
@@ -65,6 +66,7 @@ drive_service = GoogleDriveService(
 def init_db():
     with app.app_context():
         db.create_all()
+        # إضافة أعمدة جديدة بأمان
         try:
             db.session.execute(db.text('ALTER TABLE users ADD COLUMN IF NOT EXISTS phone VARCHAR(20)'))
             db.session.execute(db.text('ALTER TABLE users ADD COLUMN IF NOT EXISTS last_activity TIMESTAMP'))
@@ -130,6 +132,13 @@ def init_db():
 
         db.session.commit()
         print("✅ تم تهيئة قاعدة البيانات وإنشاء المستخدمين")
+
+        # إنشاء حسابات الخزينة للأشخاص المحددين
+        treasury_persons = ['الحاج أحمد', 'عيد', 'عبدالله', 'الحاج فتحي']
+        account_types = ['كاش', 'فودافون كاش', 'انستا باي']
+        for person in treasury_persons:
+            for acc_type in account_types:
+                get_or_create_treasury_account(person, acc_type)
 
 init_db()
 
@@ -230,8 +239,8 @@ def dashboard():
         'customers_count': Customer.query.count() if current_user.role in ['meg','admin','mariam','rehab','ahmed'] else 0,
         'suppliers_count': Supplier.query.count() if current_user.role in ['meg','admin','mariam','rehab','ahmed'] else 0,
         'treasury_balance': 0,
-        'today_sales': db.session.query(db.func.sum(StoreSale.total)).filter(StoreSale.date == date.today()).scalar() or 0,
-        'today_purchases': db.session.query(db.func.sum(StorePurchase.total)).filter(StorePurchase.date == date.today()).scalar() or 0,
+        'today_sales': db.session.query(db.func.sum(StoreSaleItem.total)).join(StoreSale).filter(StoreSale.date == date.today()).scalar() or 0,
+        'today_purchases': db.session.query(db.func.sum(StorePurchaseItem.total)).join(StorePurchase).filter(StorePurchase.date == date.today()).scalar() or 0,
         'low_inventory_count': StoreInventory.query.filter(StoreInventory.current_quantity <= StoreInventory.min_quantity).count() if current_user.role in ['meg','admin','mariam','rehab','ahmed'] else 0,
     }
 
@@ -448,19 +457,25 @@ def store_transactions():
             if current_user.role in ['meg', 'admin']:
                 if transaction_type == 'sale':
                     record = StoreSale.query.get_or_404(record_id)
-                    inventory_item = StoreInventory.query.filter_by(product_type=record.product_type, product_size=record.product_size, product_spec=record.product_spec).first()
-                    if inventory_item:
-                        inventory_item.current_quantity += record.quantity
-                        db.session.commit()
+                    for item in record.items:
+                        inv = StoreInventory.query.filter_by(product_type=item.product_type,
+                                                             product_size=item.product_size,
+                                                             product_spec=item.product_spec).first()
+                        if inv:
+                            inv.current_quantity += item.quantity
+                            db.session.commit()
                     db.session.delete(record)
                     db.session.commit()
                     log_activity(current_user.id, 'delete', f"حذف بيع {record.customer_name}")
                 elif transaction_type == 'purchase':
                     record = StorePurchase.query.get_or_404(record_id)
-                    inventory_item = StoreInventory.query.filter_by(product_type=record.product_type, product_size=record.product_size, product_spec=record.product_spec).first()
-                    if inventory_item:
-                        inventory_item.current_quantity -= record.quantity
-                        db.session.commit()
+                    for item in record.items:
+                        inv = StoreInventory.query.filter_by(product_type=item.product_type,
+                                                             product_size=item.product_size,
+                                                             product_spec=item.product_spec).first()
+                        if inv:
+                            inv.current_quantity -= item.quantity
+                            db.session.commit()
                     db.session.delete(record)
                     db.session.commit()
                     log_activity(current_user.id, 'delete', f"حذف شراء {record.supplier_name}")
@@ -469,179 +484,141 @@ def store_transactions():
                 flash('غير مصرح لك بالحذف', 'danger')
             return redirect(url_for('store_transactions'))
 
-        # تعديل
+        # تعديل (سنكتفي بتعديل التاريخ والطرف)
         if request.form.get('edit_id'):
             record_id = int(request.form.get('edit_id'))
             transaction_type = request.form.get('transaction_type')
             if transaction_type == 'sale':
                 record = StoreSale.query.get_or_404(record_id)
                 if can_edit(current_user.role, record.date, record.created_by, current_user.id):
-                    old_qty = record.quantity
-                    inventory_item = StoreInventory.query.filter_by(product_type=record.product_type, product_size=record.product_size, product_spec=record.product_spec).first()
-                    if inventory_item:
-                        inventory_item.current_quantity += old_qty
-                        db.session.commit()
-
                     record.date = datetime.strptime(request.form.get('date'), '%Y-%m-%d').date()
-                    customer_select = request.form.get('party_select')
-                    if customer_select == 'new':
-                        new_name = request.form.get('new_party_name')
-                        if new_name:
-                            existing = Customer.query.filter_by(name=new_name).first()
-                            if not existing:
-                                new_customer = Customer(name=new_name, phone=request.form.get('party_phone', ''))
-                                db.session.add(new_customer)
-                                db.session.commit()
-                            record.customer_name = new_name
-                    else:
-                        record.customer_name = customer_select
-
+                    record.customer_name = request.form.get('party_name')
                     record.customer_phone = request.form.get('party_phone')
-                    record.product_type = request.form.get('product_type')
-                    record.product_size = request.form.get('product_size')
-                    record.product_spec = request.form.get('product_spec')
-                    record.quantity = float(request.form.get('quantity', 0))
-                    record.unit_price = float(request.form.get('unit_price', 0) or 0)
-                    record.payment_type = request.form.get('payment_type', 'آجل')
-                    record.total = record.quantity * record.unit_price
-
-                    if inventory_item:
-                        inventory_item.current_quantity -= record.quantity
-                        db.session.commit()
-                    else:
-                        new_inv = StoreInventory(product_type=record.product_type, product_size=record.product_size, product_spec=record.product_spec, current_quantity=-record.quantity)
-                        db.session.add(new_inv)
-                        db.session.commit()
                     db.session.commit()
                     log_activity(current_user.id, 'edit', f"تعديل بيع {record.customer_name}")
-                    flash('تم تحديث البيع بنجاح', 'success')
+                    flash('تم تعديل البيع بنجاح', 'success')
                 else:
-                    flash('غير مصرح لك بالتعديل أو انتهت صلاحية التعديل', 'danger')
-            elif transaction_type == 'purchase':
+                    flash('غير مصرح لك بالتعديل', 'danger')
+            else:
                 record = StorePurchase.query.get_or_404(record_id)
                 if can_edit(current_user.role, record.date, record.created_by, current_user.id):
-                    old_qty = record.quantity
-                    inventory_item = StoreInventory.query.filter_by(product_type=record.product_type, product_size=record.product_size, product_spec=record.product_spec).first()
-                    if inventory_item:
-                        inventory_item.current_quantity -= old_qty
-                        db.session.commit()
-
                     record.date = datetime.strptime(request.form.get('date'), '%Y-%m-%d').date()
-                    supplier_select = request.form.get('party_select')
-                    if supplier_select == 'new':
-                        new_name = request.form.get('new_party_name')
-                        if new_name:
-                            existing = Supplier.query.filter_by(name=new_name).first()
-                            if not existing:
-                                new_supplier = Supplier(name=new_name, phone=request.form.get('party_phone', ''))
-                                db.session.add(new_supplier)
-                                db.session.commit()
-                            record.supplier_name = new_name
-                    else:
-                        record.supplier_name = supplier_select
-
+                    record.supplier_name = request.form.get('party_name')
                     record.supplier_phone = request.form.get('party_phone')
-                    record.product_type = request.form.get('product_type')
-                    record.product_size = request.form.get('product_size')
-                    record.product_spec = request.form.get('product_spec')
-                    record.quantity = float(request.form.get('quantity', 0))
-                    record.unit_price = float(request.form.get('unit_price', 0) or 0)
-                    record.payment_type = request.form.get('payment_type', 'آجل')
-                    record.total = record.quantity * record.unit_price
-
-                    if inventory_item:
-                        inventory_item.current_quantity += record.quantity
-                        db.session.commit()
-                    else:
-                        new_inv = StoreInventory(product_type=record.product_type, product_size=record.product_size, product_spec=record.product_spec, current_quantity=record.quantity)
-                        db.session.add(new_inv)
-                        db.session.commit()
                     db.session.commit()
                     log_activity(current_user.id, 'edit', f"تعديل شراء {record.supplier_name}")
-                    flash('تم تحديث الشراء بنجاح', 'success')
+                    flash('تم تعديل الشراء بنجاح', 'success')
                 else:
-                    flash('غير مصرح لك بالتعديل أو انتهت صلاحية التعديل', 'danger')
+                    flash('غير مصرح لك بالتعديل', 'danger')
             return redirect(url_for('store_transactions'))
 
         # إضافة جديدة
         transaction_type = request.form.get('transaction_type')
         record_date = datetime.strptime(request.form.get('date'), '%Y-%m-%d').date()
-        party_name = ''
-        if transaction_type == 'sale':
-            customer_select = request.form.get('party_select')
-            if customer_select == 'new':
-                party_name = request.form.get('new_party_name')
-                if party_name:
-                    existing = Customer.query.filter_by(name=party_name).first()
-                    if not existing:
-                        new_customer = Customer(name=party_name, phone=request.form.get('party_phone', ''))
-                        db.session.add(new_customer)
-                        db.session.commit()
-            else:
-                party_name = customer_select
-        else:
-            supplier_select = request.form.get('party_select')
-            if supplier_select == 'new':
-                party_name = request.form.get('new_party_name')
-                if party_name:
-                    existing = Supplier.query.filter_by(name=party_name).first()
-                    if not existing:
-                        new_supplier = Supplier(name=party_name, phone=request.form.get('party_phone', ''))
-                        db.session.add(new_supplier)
-                        db.session.commit()
-            else:
-                party_name = supplier_select
-
+        party_name = request.form.get('party_name')
         party_phone = request.form.get('party_phone')
-        product_type = request.form.get('product_type')
-        product_size = request.form.get('product_size')
-        product_spec = request.form.get('product_spec')
-        quantity = float(request.form.get('quantity', 0))
-        unit_price = float(request.form.get('unit_price', 0) or 0)
         payment_type = request.form.get('payment_type', 'آجل')
-        total = quantity * unit_price
+
+        # استقبال البنود
+        product_types = request.form.getlist('product_type[]')
+        product_sizes = request.form.getlist('product_size[]')
+        product_specs = request.form.getlist('product_spec[]')
+        quantities = request.form.getlist('quantity[]')
+        unit_prices = request.form.getlist('unit_price[]')
 
         if transaction_type == 'sale':
-            new_record = StoreSale(invoice_number=f"INV-{datetime.now().strftime('%Y%m%d%H%M%S')}",
-                                   customer_name=party_name, customer_phone=party_phone,
-                                   product_type=product_type, product_size=product_size, product_spec=product_spec,
-                                   quantity=quantity, unit_price=unit_price, total=total,
-                                   payment_type=payment_type, date=record_date,
-                                   created_by=current_user.id, created_at=datetime.utcnow())
-            db.session.add(new_record)
+            new_sale = StoreSale(
+                invoice_number=f"INV-{datetime.now().strftime('%Y%m%d%H%M%S')}",
+                customer_name=party_name,
+                customer_phone=party_phone,
+                payment_type=payment_type,
+                date=record_date,
+                created_by=current_user.id,
+                created_at=datetime.utcnow()
+            )
+            db.session.add(new_sale)
             db.session.commit()
-            inventory_item = StoreInventory.query.filter_by(product_type=product_type, product_size=product_size, product_spec=product_spec).first()
-            if inventory_item:
-                inventory_item.current_quantity -= quantity
-            else:
-                inventory_item = StoreInventory(product_type=product_type, product_size=product_size, product_spec=product_spec, current_quantity=-quantity)
-                db.session.add(inventory_item)
-            db.session.commit()
-            db.session.add(StoreDiary(date=record_date, description=f"بيع {quantity} {product_type} {product_size} {product_spec} إلى {party_name}", amount=total, created_by=current_user.id, created_at=datetime.utcnow()))
-        else:
-            new_record = StorePurchase(invoice_number=f"PUR-{datetime.now().strftime('%Y%m%d%H%M%S')}",
-                                       supplier_name=party_name, supplier_phone=party_phone,
-                                       product_type=product_type, product_size=product_size, product_spec=product_spec,
-                                       quantity=quantity, unit_price=unit_price, total=total,
-                                       payment_type=payment_type, date=record_date,
-                                       created_by=current_user.id, created_at=datetime.utcnow())
-            db.session.add(new_record)
-            db.session.commit()
-            inventory_item = StoreInventory.query.filter_by(product_type=product_type, product_size=product_size, product_spec=product_spec).first()
-            if inventory_item:
-                inventory_item.current_quantity += quantity
-            else:
-                inventory_item = StoreInventory(product_type=product_type, product_size=product_size, product_spec=product_spec, current_quantity=quantity)
-                db.session.add(inventory_item)
-            db.session.commit()
-            db.session.add(StoreDiary(date=record_date, description=f"شراء {quantity} {product_type} {product_size} {product_spec} من {party_name}", amount=total, created_by=current_user.id, created_at=datetime.utcnow()))
 
-        db.session.commit()
-        log_activity(current_user.id, 'create', f"تسجيل معاملة {transaction_type} لـ {party_name}")
-        row_data = [record_date.strftime('%Y-%m-%d'), 'بيع' if transaction_type == 'sale' else 'شراء', party_name, product_type, product_size, product_spec, quantity, unit_price, total, payment_type, current_user.full_name]
-        excel_path = add_row_to_excel('يوميات المحل.xlsx', ['التاريخ', 'النوع', 'الطرف', 'الصنف', 'المقاس', 'المواصفات', 'الكمية', 'السعر', 'الإجمالي', 'الدفع', 'المسؤول'], row_data)
-        if excel_path: drive_service.upload_file(excel_path, 'يوميات المحل.xlsx')
-        flash('تم تسجيل المعاملة بنجاح', 'success')
+            for i in range(len(product_types)):
+                if product_types[i].strip():
+                    item = StoreSaleItem(
+                        sale_id=new_sale.id,
+                        product_type=product_types[i],
+                        product_size=product_sizes[i] if i < len(product_sizes) else '',
+                        product_spec=product_specs[i] if i < len(product_specs) else '',
+                        quantity=float(quantities[i] if i < len(quantities) else 0),
+                        unit_price=float(unit_prices[i] if i < len(unit_prices) else 0) if unit_prices[i] else 0,
+                    )
+                    item.total = item.quantity * item.unit_price
+                    db.session.add(item)
+                    inv = StoreInventory.query.filter_by(product_type=item.product_type,
+                                                         product_size=item.product_size,
+                                                         product_spec=item.product_spec).first()
+                    if inv:
+                        inv.current_quantity -= item.quantity
+                    else:
+                        inv = StoreInventory(product_type=item.product_type,
+                                             product_size=item.product_size,
+                                             product_spec=item.product_spec,
+                                             current_quantity=-item.quantity)
+                        db.session.add(inv)
+            db.session.commit()
+            total = sum(item.total for item in new_sale.items)
+            db.session.add(StoreDiary(date=record_date,
+                                      description=f"بيع إلى {party_name} بقيمة {total}",
+                                      amount=total,
+                                      created_by=current_user.id,
+                                      created_at=datetime.utcnow()))
+            db.session.commit()
+            log_activity(current_user.id, 'create', f"إضافة بيع لـ {party_name}")
+            flash('تم تسجيل البيع بنجاح', 'success')
+        else:  # purchase
+            new_purchase = StorePurchase(
+                invoice_number=f"PUR-{datetime.now().strftime('%Y%m%d%H%M%S')}",
+                supplier_name=party_name,
+                supplier_phone=party_phone,
+                payment_type=payment_type,
+                date=record_date,
+                created_by=current_user.id,
+                created_at=datetime.utcnow()
+            )
+            db.session.add(new_purchase)
+            db.session.commit()
+
+            for i in range(len(product_types)):
+                if product_types[i].strip():
+                    item = StorePurchaseItem(
+                        purchase_id=new_purchase.id,
+                        product_type=product_types[i],
+                        product_size=product_sizes[i] if i < len(product_sizes) else '',
+                        product_spec=product_specs[i] if i < len(product_specs) else '',
+                        quantity=float(quantities[i] if i < len(quantities) else 0),
+                        unit_price=float(unit_prices[i] if i < len(unit_prices) else 0) if unit_prices[i] else 0,
+                    )
+                    item.total = item.quantity * item.unit_price
+                    db.session.add(item)
+                    inv = StoreInventory.query.filter_by(product_type=item.product_type,
+                                                         product_size=item.product_size,
+                                                         product_spec=item.product_spec).first()
+                    if inv:
+                        inv.current_quantity += item.quantity
+                    else:
+                        inv = StoreInventory(product_type=item.product_type,
+                                             product_size=item.product_size,
+                                             product_spec=item.product_spec,
+                                             current_quantity=item.quantity)
+                        db.session.add(inv)
+            db.session.commit()
+            total = sum(item.total for item in new_purchase.items)
+            db.session.add(StoreDiary(date=record_date,
+                                      description=f"شراء من {party_name} بقيمة {total}",
+                                      amount=total,
+                                      created_by=current_user.id,
+                                      created_at=datetime.utcnow()))
+            db.session.commit()
+            log_activity(current_user.id, 'create', f"إضافة شراء من {party_name}")
+            flash('تم تسجيل الشراء بنجاح', 'success')
+
         return redirect(url_for('store_transactions'))
 
     sales = StoreSale.query.order_by(StoreSale.date.asc(), StoreSale.id.asc()).all()
@@ -659,6 +636,39 @@ def store_transactions():
                            categories=categories,
                            sizes=sizes,
                            thicknesses=thicknesses)
+
+# ==================== دفعات جزئية ====================
+@app.route('/payment/add', methods=['POST'])
+@custom_login_required
+@role_required('meg', 'admin', 'mariam', 'ahmed')
+def add_payment():
+    sale_id = request.form.get('sale_id')
+    purchase_id = request.form.get('purchase_id')
+    amount = float(request.form.get('amount', 0))
+    payment_date = datetime.strptime(request.form.get('date'), '%Y-%m-%d').date()
+    notes = request.form.get('notes', '')
+
+    if sale_id:
+        sale = StoreSale.query.get_or_404(int(sale_id))
+        if amount > sale.remaining:
+            flash('المبلغ أكبر من المتبقي', 'danger')
+            return redirect(request.referrer)
+        payment = Payment(sale_id=sale.id, amount=amount, date=payment_date, notes=notes, created_by=current_user.id)
+    elif purchase_id:
+        purchase = StorePurchase.query.get_or_404(int(purchase_id))
+        if amount > purchase.remaining:
+            flash('المبلغ أكبر من المتبقي', 'danger')
+            return redirect(request.referrer)
+        payment = Payment(purchase_id=purchase.id, amount=amount, date=payment_date, notes=notes, created_by=current_user.id)
+    else:
+        flash('يجب تحديد الفاتورة', 'danger')
+        return redirect(request.referrer)
+
+    db.session.add(payment)
+    db.session.commit()
+    log_activity(current_user.id, 'create', f"إضافة دفعة بقيمة {amount}")
+    flash('تم تسجيل الدفعة بنجاح', 'success')
+    return redirect(request.referrer)
 
 # ==================== المخزون ====================
 @app.route('/store/inventory', methods=['GET', 'POST'])
@@ -683,7 +693,6 @@ def store_inventory():
             log_activity(current_user.id, 'edit', f"تعديل مخزون {item.product_type}")
             flash('تم تحديث المخزون', 'success')
         return redirect(url_for('store_inventory'))
-
     inventory = StoreInventory.query.order_by(StoreInventory.product_type.asc(), StoreInventory.product_size.asc()).all()
     return render_template('store/inventory.html', inventory=inventory)
 
@@ -795,7 +804,8 @@ def store_diary():
 @role_required('meg', 'admin', 'mariam', 'ahmed', 'eid', 'abdo')
 def treasury_index():
     if current_user.role in ['meg', 'admin', 'mariam']:
-        for person in ['الحاج أحمد', 'عيد', 'عبدالله']:
+        persons = ['الحاج أحمد', 'عيد', 'عبدالله', 'الحاج فتحي']
+        for person in persons:
             for acc_type in ['كاش', 'فودافون كاش', 'انستا باي']:
                 get_or_create_treasury_account(person, acc_type)
     else:
@@ -816,7 +826,8 @@ def treasury_index():
 @role_required('meg', 'admin', 'mariam', 'ahmed', 'eid', 'abdo')
 def treasury_transactions():
     if current_user.role in ['meg', 'admin', 'mariam']:
-        for person in ['الحاج أحمد', 'عيد', 'عبدالله']:
+        persons = ['الحاج أحمد', 'عيد', 'عبدالله', 'الحاج فتحي']
+        for person in persons:
             for acc_type in ['كاش', 'فودافون كاش', 'انستا باي']:
                 get_or_create_treasury_account(person, acc_type)
     else:
@@ -879,6 +890,7 @@ def treasury_transactions():
                 flash('غير مصرح لك بالتعديل أو انتهت صلاحية التعديل', 'danger')
             return redirect(url_for('treasury_transactions'))
 
+        # إضافة عادية
         record_date = datetime.strptime(request.form.get('date'), '%Y-%m-%d').date()
         account_id = int(request.form.get('account_id'))
         transaction_type = request.form.get('transaction_type')
@@ -909,14 +921,6 @@ def treasury_transactions():
         db.session.add(new_transaction)
         db.session.commit()
         log_activity(current_user.id, 'create', f"إضافة حركة خزينة {transaction_type} {amount}")
-        account_name = account.person_name if account else ''
-        row_data = [record_date.strftime('%Y-%m-%d'), account_name, transaction_type,
-                    amount, payment_method, source, notes, current_user.full_name]
-        excel_path = add_row_to_excel('حركات الخزينة.xlsx',
-                                      ['التاريخ', 'الشخص', 'النوع', 'المبلغ', 'طريقة الدفع', 'الجهة', 'ملاحظات', 'المسؤول'],
-                                      row_data)
-        if excel_path:
-            drive_service.upload_file(excel_path, 'حركات الخزينة.xlsx')
         flash('تم تسجيل الحركة بنجاح', 'success')
         return redirect(url_for('treasury_transactions'))
 
@@ -926,7 +930,13 @@ def treasury_transactions():
     else:
         transactions = TreasuryTransaction.query.filter_by(created_by=current_user.id).order_by(TreasuryTransaction.date.asc(), TreasuryTransaction.id.asc()).all()
 
-    return render_template('treasury/transactions.html', accounts=accounts, transactions=transactions)
+    customers = Customer.query.order_by(Customer.name.asc()).all()
+    suppliers = Supplier.query.order_by(Supplier.name.asc()).all()
+    return render_template('treasury/transactions.html',
+                           accounts=accounts,
+                           transactions=transactions,
+                           customers=customers,
+                           suppliers=suppliers)
 
 @app.route('/treasury/transfers', methods=['GET', 'POST'])
 @custom_login_required
@@ -961,27 +971,32 @@ def treasury_transfers():
                 flash('غير مصرح لك بالتعديل', 'danger')
             return redirect(url_for('treasury_transfers'))
 
-        record_date = datetime.strptime(request.form.get('date'), '%Y-%m-%d').date()
+        # إضافة تحويل متعدد المستلمين
+        date_str = request.form.get('date')
         from_person = request.form.get('from_person')
-        to_person = request.form.get('to_person')
-        amount = float(request.form.get('amount', 0))
         payment_method = request.form.get('payment_method')
         notes = request.form.get('notes')
 
-        new_transfer = TreasuryTransfer(
-            from_person=from_person,
-            to_person=to_person,
-            amount=amount,
-            payment_method=payment_method,
-            date=record_date,
-            notes=notes,
-            created_by=current_user.id,
-            created_at=datetime.utcnow()
-        )
-        db.session.add(new_transfer)
+        to_persons = request.form.getlist('to_person[]')
+        amounts = request.form.getlist('amount[]')
+
+        for i in range(len(to_persons)):
+            if to_persons[i].strip() and amounts[i].strip():
+                transfer = TreasuryTransfer(
+                    date=datetime.strptime(date_str, '%Y-%m-%d').date(),
+                    from_person=from_person,
+                    to_person=to_persons[i],
+                    amount=float(amounts[i]),
+                    payment_method=payment_method,
+                    notes=notes,
+                    created_by=current_user.id,
+                    created_at=datetime.utcnow()
+                )
+                db.session.add(transfer)
+
         db.session.commit()
-        log_activity(current_user.id, 'create', f"إضافة تحويل من {from_person} إلى {to_person} مبلغ {amount}")
-        flash('تم تسجيل التحويل بنجاح', 'success')
+        log_activity(current_user.id, 'create', f"إضافة تحويلات من {from_person}")
+        flash('تم تسجيل التحويلات بنجاح', 'success')
         return redirect(url_for('treasury_transfers'))
 
     transfers = TreasuryTransfer.query.order_by(TreasuryTransfer.date.asc(), TreasuryTransfer.id.asc()).all()
@@ -1034,7 +1049,13 @@ def treasury_accounts():
 def financial_transactions():
     transactions = TreasuryTransaction.query.order_by(TreasuryTransaction.date.asc(), TreasuryTransaction.id.asc()).all()
     accounts = TreasuryAccount.query.all()
-    return render_template('reports/financial.html', transactions=transactions, accounts=accounts)
+    customers = Customer.query.order_by(Customer.name.asc()).all()
+    suppliers = Supplier.query.order_by(Supplier.name.asc()).all()
+    return render_template('reports/financial.html',
+                           transactions=transactions,
+                           accounts=accounts,
+                           customers=customers,
+                           suppliers=suppliers)
 
 # ==================== سجل النشاط ====================
 @app.route('/admin/activity')
@@ -1092,7 +1113,14 @@ def report_single_customer(customer_id):
     customer = Customer.query.get_or_404(customer_id)
     sales = StoreSale.query.filter_by(customer_name=customer.name).order_by(StoreSale.date.asc(), StoreSale.id.asc()).all()
     total_purchases = sum(s.total for s in sales)
-    return render_template('reports/customer_detail.html', customer=customer, sales=sales, total_purchases=total_purchases)
+    total_paid = sum(s.paid_amount for s in sales)
+    total_remaining = total_purchases - total_paid
+    return render_template('reports/customer_detail.html',
+                           customer=customer,
+                           sales=sales,
+                           total_purchases=total_purchases,
+                           total_paid=total_paid,
+                           total_remaining=total_remaining)
 
 @app.route('/reports/suppliers')
 @custom_login_required
@@ -1108,7 +1136,14 @@ def report_single_supplier(supplier_id):
     supplier = Supplier.query.get_or_404(supplier_id)
     purchases = StorePurchase.query.filter_by(supplier_name=supplier.name).order_by(StorePurchase.date.asc(), StorePurchase.id.asc()).all()
     total_purchases = sum(p.total for p in purchases)
-    return render_template('reports/supplier_detail.html', supplier=supplier, purchases=purchases, total_purchases=total_purchases)
+    total_paid = sum(p.paid_amount for p in purchases)
+    total_remaining = total_purchases - total_paid
+    return render_template('reports/supplier_detail.html',
+                           supplier=supplier,
+                           purchases=purchases,
+                           total_purchases=total_purchases,
+                           total_paid=total_paid,
+                           total_remaining=total_remaining)
 
 @app.route('/reports/generate-word/<report_type>/<period>')
 @custom_login_required
