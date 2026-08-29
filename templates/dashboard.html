@@ -5,6 +5,13 @@
 {% block content %}
 <h2 class="fw-bold mb-4 text-purple-dark">📊 لوحة التحكم</h2>
 
+{% if current_user.role == 'admin' and inactive_users_count > 0 %}
+<div class="alert alert-warning">
+    ⚠️ يوجد {{ inactive_users_count }} مستخدم لم يسجل أي نشاط خلال آخر 3 أيام.
+    <a href="{{ url_for('admin_activity') }}" class="alert-link">عرض التفاصيل</a>
+</div>
+{% endif %}
+
 {% if current_user.role in ['meg', 'admin', 'mariam', 'rehab', 'mohamed', 'ahmed'] %}
     <!-- محتوى المديرين والمشرفين -->
     <div class="row g-3 mb-4">
