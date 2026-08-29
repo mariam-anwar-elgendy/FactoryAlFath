@@ -63,10 +63,44 @@ drive_service = GoogleDriveService(
     folder_id=os.environ.get('GOOGLE_DRIVE_FOLDER_ID', '')
 )
 
+# ==================== دوال مساعدة للخزينة ====================
+def get_or_create_treasury_account(person_name, account_type):
+    account = TreasuryAccount.query.filter_by(person_name=person_name, account_type=account_type).first()
+    if not account:
+        account = TreasuryAccount(person_name=person_name, account_type=account_type, balance=0)
+        db.session.add(account)
+        db.session.commit()
+    return account
+
+def get_visible_accounts_for_current_user():
+    if current_user.role in ['meg', 'admin', 'mariam']:
+        return TreasuryAccount.query.all()
+    elif current_user.role == 'ahmed':
+        return TreasuryAccount.query.filter_by(person_name='الحاج أحمد').all()
+    elif current_user.role == 'eid':
+        return TreasuryAccount.query.filter_by(person_name='عيد').all()
+    elif current_user.role == 'abdo':
+        return TreasuryAccount.query.filter_by(person_name='عبدالله').all()
+    else:
+        return []
+
+# ==================== تسجيل النشاط ====================
+def log_activity(user_id, action, details=''):
+    try:
+        activity = ActivityLog(user_id=user_id, action=action, details=details, timestamp=datetime.utcnow())
+        db.session.add(activity)
+        user = User.query.get(user_id)
+        if user:
+            user.last_activity = datetime.utcnow()
+            db.session.add(user)
+        db.session.commit()
+    except Exception as e:
+        print(f"Error logging activity: {e}")
+
+# ==================== تهيئة قاعدة البيانات ====================
 def init_db():
     with app.app_context():
         db.create_all()
-        # إضافة أعمدة جديدة بأمان
         try:
             db.session.execute(db.text('ALTER TABLE users ADD COLUMN IF NOT EXISTS phone VARCHAR(20)'))
             db.session.execute(db.text('ALTER TABLE users ADD COLUMN IF NOT EXISTS last_activity TIMESTAMP'))
@@ -142,45 +176,12 @@ def init_db():
 
 init_db()
 
-# ==================== تسجيل النشاط ====================
-def log_activity(user_id, action, details=''):
-    try:
-        activity = ActivityLog(user_id=user_id, action=action, details=details, timestamp=datetime.utcnow())
-        db.session.add(activity)
-        user = User.query.get(user_id)
-        if user:
-            user.last_activity = datetime.utcnow()
-            db.session.add(user)
-        db.session.commit()
-    except Exception as e:
-        print(f"Error logging activity: {e}")
-
 @app.context_processor
 def inject_globals():
     unread_notifications = 0
     if current_user.is_authenticated:
         unread_notifications = Notification.query.filter_by(user_id=current_user.id, is_read=False).count()
     return {'now': datetime.now(), 'unread_notifications': unread_notifications}
-
-def get_or_create_treasury_account(person_name, account_type):
-    account = TreasuryAccount.query.filter_by(person_name=person_name, account_type=account_type).first()
-    if not account:
-        account = TreasuryAccount(person_name=person_name, account_type=account_type, balance=0)
-        db.session.add(account)
-        db.session.commit()
-    return account
-
-def get_visible_accounts_for_current_user():
-    if current_user.role in ['meg', 'admin', 'mariam']:
-        return TreasuryAccount.query.all()
-    elif current_user.role == 'ahmed':
-        return TreasuryAccount.query.filter_by(person_name='الحاج أحمد').all()
-    elif current_user.role == 'eid':
-        return TreasuryAccount.query.filter_by(person_name='عيد').all()
-    elif current_user.role == 'abdo':
-        return TreasuryAccount.query.filter_by(person_name='عبدالله').all()
-    else:
-        return []
 
 @app.route('/health')
 def health():
@@ -484,7 +485,7 @@ def store_transactions():
                 flash('غير مصرح لك بالحذف', 'danger')
             return redirect(url_for('store_transactions'))
 
-        # تعديل (سنكتفي بتعديل التاريخ والطرف)
+        # تعديل
         if request.form.get('edit_id'):
             record_id = int(request.form.get('edit_id'))
             transaction_type = request.form.get('transaction_type')
@@ -519,7 +520,6 @@ def store_transactions():
         party_phone = request.form.get('party_phone')
         payment_type = request.form.get('payment_type', 'آجل')
 
-        # استقبال البنود
         product_types = request.form.getlist('product_type[]')
         product_sizes = request.form.getlist('product_size[]')
         product_specs = request.form.getlist('product_spec[]')
@@ -572,7 +572,7 @@ def store_transactions():
             db.session.commit()
             log_activity(current_user.id, 'create', f"إضافة بيع لـ {party_name}")
             flash('تم تسجيل البيع بنجاح', 'success')
-        else:  # purchase
+        else:
             new_purchase = StorePurchase(
                 invoice_number=f"PUR-{datetime.now().strftime('%Y%m%d%H%M%S')}",
                 supplier_name=party_name,
@@ -890,7 +890,6 @@ def treasury_transactions():
                 flash('غير مصرح لك بالتعديل أو انتهت صلاحية التعديل', 'danger')
             return redirect(url_for('treasury_transactions'))
 
-        # إضافة عادية
         record_date = datetime.strptime(request.form.get('date'), '%Y-%m-%d').date()
         account_id = int(request.form.get('account_id'))
         transaction_type = request.form.get('transaction_type')
@@ -971,7 +970,6 @@ def treasury_transfers():
                 flash('غير مصرح لك بالتعديل', 'danger')
             return redirect(url_for('treasury_transfers'))
 
-        # إضافة تحويل متعدد المستلمين
         date_str = request.form.get('date')
         from_person = request.form.get('from_person')
         payment_method = request.form.get('payment_method')
@@ -1104,7 +1102,18 @@ def reports_monthly():
 @role_required('meg', 'admin', 'mariam', 'rehab')
 def reports_customers():
     customers = Customer.query.order_by(Customer.name.asc()).all()
-    return render_template('reports/customers.html', customers=customers)
+    customers_data = []
+    for c in customers:
+        sales = StoreSale.query.filter_by(customer_name=c.name).all()
+        total_purchases = sum(s.total for s in sales)
+        total_paid = sum(s.paid_amount for s in sales)
+        customers_data.append({
+            'customer': c,
+            'total_purchases': total_purchases,
+            'total_paid': total_paid,
+            'remaining': total_purchases - total_paid
+        })
+    return render_template('reports/customers.html', customers_data=customers_data)
 
 @app.route('/reports/customers/<int:customer_id>')
 @custom_login_required
@@ -1127,7 +1136,18 @@ def report_single_customer(customer_id):
 @role_required('meg', 'admin', 'mariam', 'rehab')
 def reports_suppliers():
     suppliers = Supplier.query.order_by(Supplier.name.asc()).all()
-    return render_template('reports/suppliers.html', suppliers=suppliers)
+    suppliers_data = []
+    for s in suppliers:
+        purchases = StorePurchase.query.filter_by(supplier_name=s.name).all()
+        total_purchases = sum(p.total for p in purchases)
+        total_paid = sum(p.paid_amount for p in purchases)
+        suppliers_data.append({
+            'supplier': s,
+            'total_purchases': total_purchases,
+            'total_paid': total_paid,
+            'remaining': total_purchases - total_paid
+        })
+    return render_template('reports/suppliers.html', suppliers_data=suppliers_data)
 
 @app.route('/reports/suppliers/<int:supplier_id>')
 @custom_login_required
