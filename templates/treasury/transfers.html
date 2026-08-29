@@ -5,9 +5,7 @@
 {% block content %}
 <div class="d-flex justify-content-between align-items-center mb-4">
     <h2 class="fw-bold text-purple-dark">🔄 التحويلات</h2>
-    <button class="btn btn-purple" data-bs-toggle="modal" data-bs-target="#addTransferModal">
-        ➕ تسجيل تحويل
-    </button>
+    <button class="btn btn-purple" data-bs-toggle="modal" data-bs-target="#addTransferModal">➕ تسجيل تحويل</button>
 </div>
 
 <div class="table-responsive">
@@ -35,14 +33,65 @@
                 <td>{{ t.notes or '-' }}</td>
                 <td>{{ t.created_by }}</td>
                 <td>
+                    {% if current_user.role in ['meg','admin','mariam'] %}
+                    <button class="btn btn-sm btn-warning" data-bs-toggle="modal" data-bs-target="#editTransferModal{{ t.id }}">✏️ تعديل</button>
+                    {% endif %}
                     {% if current_user.role in ['meg','admin'] %}
-                    <form action="{{ url_for('treasury_transfers') }}" method="POST" class="d-inline" onsubmit="return confirm('هل أنت متأكد من الحذف؟');">
+                    <form action="{{ url_for('treasury_transfers') }}" method="POST" class="d-inline" onsubmit="return confirm('حذف هذا التحويل؟');">
                         <input type="hidden" name="delete_id" value="{{ t.id }}">
-                        <button type="submit" class="btn btn-sm btn-danger">🗑️</button>
+                        <button type="submit" class="btn btn-sm btn-danger">🗑️ حذف</button>
                     </form>
                     {% endif %}
                 </td>
             </tr>
+            <!-- Modal تعديل -->
+            <div class="modal fade" id="editTransferModal{{ t.id }}" tabindex="-1">
+                <div class="modal-dialog">
+                    <div class="modal-content">
+                        <form method="POST" action="{{ url_for('treasury_transfers') }}">
+                            <input type="hidden" name="edit_id" value="{{ t.id }}">
+                            <div class="modal-header bg-warning text-dark">
+                                <h5 class="modal-title">✏️ تعديل تحويل</h5>
+                                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                            </div>
+                            <div class="modal-body">
+                                <div class="mb-3">
+                                    <label class="form-label fw-bold">التاريخ</label>
+                                    <input type="date" name="date" class="form-control" value="{{ t.date.strftime('%Y-%m-%d') }}" required>
+                                </div>
+                                <div class="mb-3">
+                                    <label class="form-label fw-bold">من</label>
+                                    <input type="text" name="from_person" class="form-control" value="{{ t.from_person }}" required>
+                                </div>
+                                <div class="mb-3">
+                                    <label class="form-label fw-bold">إلى</label>
+                                    <input type="text" name="to_person" class="form-control" value="{{ t.to_person }}" required>
+                                </div>
+                                <div class="mb-3">
+                                    <label class="form-label fw-bold">المبلغ</label>
+                                    <input type="number" step="0.01" name="amount" class="form-control" value="{{ t.amount }}" required>
+                                </div>
+                                <div class="mb-3">
+                                    <label class="form-label fw-bold">طريقة الدفع</label>
+                                    <select name="payment_method" class="form-select">
+                                        <option value="كاش" {% if t.payment_method == 'كاش' %}selected{% endif %}>كاش</option>
+                                        <option value="فودافون كاش" {% if t.payment_method == 'فودافون كاش' %}selected{% endif %}>فودافون كاش</option>
+                                        <option value="انستا باي" {% if t.payment_method == 'انستا باي' %}selected{% endif %}>انستا باي</option>
+                                    </select>
+                                </div>
+                                <div class="mb-3">
+                                    <label class="form-label fw-bold">ملاحظات</label>
+                                    <textarea name="notes" class="form-control">{{ t.notes or '' }}</textarea>
+                                </div>
+                            </div>
+                            <div class="modal-footer">
+                                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">إلغاء</button>
+                                <button type="submit" class="btn btn-warning">حفظ التعديل</button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            </div>
             {% else %}
             <tr><td colspan="8" class="text-center text-muted">لا توجد تحويلات</td></tr>
             {% endfor %}
@@ -79,7 +128,7 @@
                     <div class="mb-3">
                         <label class="form-label fw-bold">طريقة الدفع</label>
                         <select name="payment_method" class="form-select">
-                            <option value="نقدي">نقدي</option>
+                            <option value="كاش">كاش</option>
                             <option value="فودافون كاش">فودافون كاش</option>
                             <option value="انستا باي">انستا باي</option>
                         </select>
