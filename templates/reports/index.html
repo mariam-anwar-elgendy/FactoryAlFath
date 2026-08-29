@@ -1,7 +1,10 @@
 {% extends "base.html" %}
+
 {% block title %}التقارير{% endblock %}
+
 {% block content %}
 <h2 class="fw-bold mb-4 text-purple-dark">📊 التقارير</h2>
+
 <div class="row g-3">
     <div class="col-md-3">
         <a href="{{ url_for('reports_daily') }}" class="btn btn-purple w-100">📅 التقرير اليومي</a>
@@ -20,6 +23,9 @@
     </div>
     <div class="col-md-3">
         <a href="{{ url_for('financial_transactions') }}" class="btn btn-purple w-100">💰 معاملات مالية</a>
+    </div>
+    <div class="col-md-3">
+        <a href="{{ url_for('treasury_accounts') }}" class="btn btn-purple w-100">💼 حسابات الخزينة</a>
     </div>
 </div>
 {% endblock %}
