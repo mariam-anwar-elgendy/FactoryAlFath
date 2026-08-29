@@ -6,7 +6,7 @@
 <h2 class="fw-bold mb-4 text-purple-dark">📊 لوحة التحكم</h2>
 
 {% if current_user.role in ['meg', 'admin', 'mariam', 'rehab', 'mohamed', 'ahmed'] %}
-    <!-- ========== محتوى المديرين والمشرفين ========== -->
+    <!-- محتوى المديرين والمشرفين -->
     <div class="row g-3 mb-4">
         <div class="col-6 col-md-4 col-lg-2">
             <div class="card stat-card border-0 shadow-sm">
@@ -131,7 +131,7 @@
     </div>
 
 {% elif current_user.role in ['eid', 'abdo'] %}
-    <!-- ========== محتوى عيد وعبدالله (خزينة فقط) ========== -->
+    <!-- محتوى عيد وعبدالله -->
     <div class="row g-3 mb-4">
         <div class="col-md-6">
             <div class="card border-0 shadow-sm bg-light-purple">
@@ -173,7 +173,6 @@
             </table>
         </div>
     </div>
-
 {% else %}
     <p>غير مصرح لك بعرض هذه الصفحة.</p>
 {% endif %}
