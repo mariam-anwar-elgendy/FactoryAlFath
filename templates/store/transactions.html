@@ -108,7 +108,7 @@
     </div>
 </div>
 
-<!-- Modal معاملة جديدة -->
+<!-- Modal إضافة معاملة -->
 <div class="modal fade" id="addTransactionModal" tabindex="-1">
     <div class="modal-dialog modal-lg">
         <div class="modal-content">
@@ -162,15 +162,36 @@
                     <div class="row">
                         <div class="col-md-4 mb-3">
                             <label class="form-label fw-bold">الصنف</label>
-                            <input type="text" name="product_type" class="form-control" placeholder="كوع، ماسورة...">
+                            <select name="product_type" class="form-select" onchange="toggleNewProductType(this)">
+                                <option value="">اختر الصنف...</option>
+                                {% for c in categories %}
+                                <option value="{{ c.name }}">{{ c.name }}</option>
+                                {% endfor %}
+                                <option value="new">➕ صنف جديد...</option>
+                            </select>
+                            <input type="text" name="new_product_type" class="form-control mt-2" style="display:none;" placeholder="اسم الصنف الجديد">
                         </div>
                         <div class="col-md-4 mb-3">
                             <label class="form-label fw-bold">المقاس</label>
-                            <input type="text" name="product_size" class="form-control" placeholder="6&quot;">
+                            <select name="product_size" class="form-select" onchange="toggleNewSize(this)">
+                                <option value="">اختر المقاس...</option>
+                                {% for s in sizes %}
+                                <option value="{{ s.value }}">{{ s.value }}</option>
+                                {% endfor %}
+                                <option value="new">➕ مقاس جديد...</option>
+                            </select>
+                            <input type="text" name="new_product_size" class="form-control mt-2" style="display:none;" placeholder="المقاس الجديد">
                         </div>
                         <div class="col-md-4 mb-3">
-                            <label class="form-label fw-bold">المواصفات</label>
-                            <input type="text" name="product_spec" class="form-control" placeholder="جدول 40">
+                            <label class="form-label fw-bold">المواصفات/السماكة</label>
+                            <select name="product_spec" class="form-select" onchange="toggleNewThickness(this)">
+                                <option value="">اختر السماكة...</option>
+                                {% for t in thicknesses %}
+                                <option value="{{ t.value }}">{{ t.value }}</option>
+                                {% endfor %}
+                                <option value="new">➕ سماكة جديدة...</option>
+                            </select>
+                            <input type="text" name="new_product_spec" class="form-control mt-2" style="display:none;" placeholder="السماكة الجديدة">
                         </div>
                     </div>
                     <div class="row">
@@ -200,7 +221,7 @@
     </div>
 </div>
 
-<!-- نماذج التعديل لكل عملية -->
+<!-- نماذج التعديل للمبيعات -->
 {% for s in sales %}
 <div class="modal fade" id="editSaleModal{{ s.id }}" tabindex="-1">
     <div class="modal-dialog modal-lg">
@@ -213,7 +234,6 @@
                     <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
                 </div>
                 <div class="modal-body">
-                    <!-- نفس الحقول مع تعبئة البيانات -->
                     <div class="row">
                         <div class="col-md-6 mb-3">
                             <label class="form-label fw-bold">التاريخ</label>
@@ -246,19 +266,45 @@
                             <input type="text" name="party_phone" class="form-control" value="{{ s.customer_phone or '' }}">
                         </div>
                     </div>
-                    <!-- باقي الحقول -->
                     <div class="row">
                         <div class="col-md-4 mb-3">
                             <label class="form-label fw-bold">الصنف</label>
-                            <input type="text" name="product_type" class="form-control" value="{{ s.product_type or '' }}">
+                            <select name="product_type" class="form-select" onchange="toggleEditProductType(this)">
+                                <option value="{{ s.product_type }}" selected>{{ s.product_type }}</option>
+                                {% for c in categories %}
+                                    {% if c.name != s.product_type %}
+                                    <option value="{{ c.name }}">{{ c.name }}</option>
+                                    {% endif %}
+                                {% endfor %}
+                                <option value="new">➕ صنف جديد...</option>
+                            </select>
+                            <input type="text" name="new_product_type" class="form-control mt-2" style="display:none;" placeholder="اسم الصنف الجديد">
                         </div>
                         <div class="col-md-4 mb-3">
                             <label class="form-label fw-bold">المقاس</label>
-                            <input type="text" name="product_size" class="form-control" value="{{ s.product_size or '' }}">
+                            <select name="product_size" class="form-select" onchange="toggleEditSize(this)">
+                                <option value="{{ s.product_size }}" selected>{{ s.product_size }}</option>
+                                {% for sz in sizes %}
+                                    {% if sz.value != s.product_size %}
+                                    <option value="{{ sz.value }}">{{ sz.value }}</option>
+                                    {% endif %}
+                                {% endfor %}
+                                <option value="new">➕ مقاس جديد...</option>
+                            </select>
+                            <input type="text" name="new_product_size" class="form-control mt-2" style="display:none;" placeholder="المقاس الجديد">
                         </div>
                         <div class="col-md-4 mb-3">
                             <label class="form-label fw-bold">المواصفات</label>
-                            <input type="text" name="product_spec" class="form-control" value="{{ s.product_spec or '' }}">
+                            <select name="product_spec" class="form-select" onchange="toggleEditThickness(this)">
+                                <option value="{{ s.product_spec }}" selected>{{ s.product_spec }}</option>
+                                {% for t in thicknesses %}
+                                    {% if t.value != s.product_spec %}
+                                    <option value="{{ t.value }}">{{ t.value }}</option>
+                                    {% endif %}
+                                {% endfor %}
+                                <option value="new">➕ سماكة جديدة...</option>
+                            </select>
+                            <input type="text" name="new_product_spec" class="form-control mt-2" style="display:none;" placeholder="السماكة الجديدة">
                         </div>
                     </div>
                     <div class="row">
@@ -286,6 +332,7 @@
 </div>
 {% endfor %}
 
+<!-- نماذج التعديل للمشتريات -->
 {% for p in purchases %}
 <div class="modal fade" id="editPurchaseModal{{ p.id }}" tabindex="-1">
     <div class="modal-dialog modal-lg">
@@ -298,7 +345,6 @@
                     <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
                 </div>
                 <div class="modal-body">
-                    <!-- حقول مشابهة -->
                     <div class="row">
                         <div class="col-md-6 mb-3">
                             <label class="form-label fw-bold">التاريخ</label>
@@ -331,19 +377,45 @@
                             <input type="text" name="party_phone" class="form-control" value="{{ p.supplier_phone or '' }}">
                         </div>
                     </div>
-                    <!-- باقي الحقول -->
                     <div class="row">
                         <div class="col-md-4 mb-3">
                             <label class="form-label fw-bold">الصنف</label>
-                            <input type="text" name="product_type" class="form-control" value="{{ p.product_type or '' }}">
+                            <select name="product_type" class="form-select" onchange="toggleEditProductType(this)">
+                                <option value="{{ p.product_type }}" selected>{{ p.product_type }}</option>
+                                {% for c in categories %}
+                                    {% if c.name != p.product_type %}
+                                    <option value="{{ c.name }}">{{ c.name }}</option>
+                                    {% endif %}
+                                {% endfor %}
+                                <option value="new">➕ صنف جديد...</option>
+                            </select>
+                            <input type="text" name="new_product_type" class="form-control mt-2" style="display:none;" placeholder="اسم الصنف الجديد">
                         </div>
                         <div class="col-md-4 mb-3">
                             <label class="form-label fw-bold">المقاس</label>
-                            <input type="text" name="product_size" class="form-control" value="{{ p.product_size or '' }}">
+                            <select name="product_size" class="form-select" onchange="toggleEditSize(this)">
+                                <option value="{{ p.product_size }}" selected>{{ p.product_size }}</option>
+                                {% for sz in sizes %}
+                                    {% if sz.value != p.product_size %}
+                                    <option value="{{ sz.value }}">{{ sz.value }}</option>
+                                    {% endif %}
+                                {% endfor %}
+                                <option value="new">➕ مقاس جديد...</option>
+                            </select>
+                            <input type="text" name="new_product_size" class="form-control mt-2" style="display:none;" placeholder="المقاس الجديد">
                         </div>
                         <div class="col-md-4 mb-3">
                             <label class="form-label fw-bold">المواصفات</label>
-                            <input type="text" name="product_spec" class="form-control" value="{{ p.product_spec or '' }}">
+                            <select name="product_spec" class="form-select" onchange="toggleEditThickness(this)">
+                                <option value="{{ p.product_spec }}" selected>{{ p.product_spec }}</option>
+                                {% for t in thicknesses %}
+                                    {% if t.value != p.product_spec %}
+                                    <option value="{{ t.value }}">{{ t.value }}</option>
+                                    {% endif %}
+                                {% endfor %}
+                                <option value="new">➕ سماكة جديدة...</option>
+                            </select>
+                            <input type="text" name="new_product_spec" class="form-control mt-2" style="display:none;" placeholder="السماكة الجديدة">
                         </div>
                     </div>
                     <div class="row">
@@ -385,26 +457,50 @@ function updatePartyLabel() {
 function toggleNewParty() {
     var select = document.getElementById('party_select');
     var input = document.getElementById('new_party_name');
-    if (select.value === 'new') {
-        input.style.display = 'block';
-        input.required = true;
-        input.focus();
-    } else {
-        input.style.display = 'none';
-        input.required = false;
-    }
+    input.style.display = select.value === 'new' ? 'block' : 'none';
+    input.required = select.value === 'new';
 }
 
 function toggleEditParty(selectElement) {
     var input = selectElement.parentElement.querySelector('input[name="new_party_name"]');
-    if (selectElement.value === 'new') {
-        input.style.display = 'block';
-        input.required = true;
-        input.focus();
-    } else {
-        input.style.display = 'none';
-        input.required = false;
-    }
+    input.style.display = selectElement.value === 'new' ? 'block' : 'none';
+    input.required = selectElement.value === 'new';
+}
+
+function toggleNewProductType(select) {
+    var input = select.parentElement.querySelector('input[name="new_product_type"]');
+    input.style.display = select.value === 'new' ? 'block' : 'none';
+    input.required = select.value === 'new';
+}
+
+function toggleNewSize(select) {
+    var input = select.parentElement.querySelector('input[name="new_product_size"]');
+    input.style.display = select.value === 'new' ? 'block' : 'none';
+    input.required = select.value === 'new';
+}
+
+function toggleNewThickness(select) {
+    var input = select.parentElement.querySelector('input[name="new_product_spec"]');
+    input.style.display = select.value === 'new' ? 'block' : 'none';
+    input.required = select.value === 'new';
+}
+
+function toggleEditProductType(select) {
+    var input = select.parentElement.querySelector('input[name="new_product_type"]');
+    input.style.display = select.value === 'new' ? 'block' : 'none';
+    input.required = select.value === 'new';
+}
+
+function toggleEditSize(select) {
+    var input = select.parentElement.querySelector('input[name="new_product_size"]');
+    input.style.display = select.value === 'new' ? 'block' : 'none';
+    input.required = select.value === 'new';
+}
+
+function toggleEditThickness(select) {
+    var input = select.parentElement.querySelector('input[name="new_product_spec"]');
+    input.style.display = select.value === 'new' ? 'block' : 'none';
+    input.required = select.value === 'new';
 }
 </script>
 {% endblock %}
