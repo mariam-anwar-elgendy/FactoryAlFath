@@ -1,5 +1,7 @@
 {% extends "base.html" %}
+
 {% block title %}حركات الخزينة{% endblock %}
+
 {% block content %}
 <div class="d-flex justify-content-between align-items-center mb-4">
     <h2 class="fw-bold text-purple-dark">💰 حركات الخزينة</h2>
@@ -43,7 +45,7 @@
     </table>
 </div>
 
-<!-- Modal تسجيل حركة -->
+<!-- Modal إضافة حركة -->
 <div class="modal fade" id="addTransactionModal" tabindex="-1">
     <div class="modal-dialog">
         <div class="modal-content">
@@ -58,10 +60,20 @@
                         <input type="date" name="date" class="form-control" value="{{ now.strftime('%Y-%m-%d') }}" required>
                     </div>
                     <div class="mb-3">
-                        <label class="form-label fw-bold">الحساب (الشخص + الطريقة)</label>
-                        <select name="account_id" class="form-select" required>
+                        <label class="form-label fw-bold">طريقة الدفع</label>
+                        <select name="payment_method" id="payment_method" class="form-select" required onchange="filterAccounts()">
+                            <option value="">اختر الطريقة...</option>
+                            <option value="كاش">كاش</option>
+                            <option value="فودافون كاش">فودافون كاش</option>
+                            <option value="انستا باي">انستا باي</option>
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label fw-bold">الحساب</label>
+                        <select name="account_id" id="account_select" class="form-select" required>
+                            <option value="">اختر الحساب...</option>
                             {% for account in accounts %}
-                            <option value="{{ account.id }}">{{ account.person_name }} - {{ account.account_type }}</option>
+                            <option value="{{ account.id }}" data-type="{{ account.account_type }}">{{ account.person_name }} - {{ account.account_type }}</option>
                             {% endfor %}
                         </select>
                     </div>
@@ -77,15 +89,19 @@
                         <input type="number" step="0.01" name="amount" class="form-control" required>
                     </div>
                     <div class="mb-3">
-                        <label class="form-label fw-bold">الطرف (عميل/مورد/إلخ)</label>
-                        <input type="text" name="source" class="form-control" placeholder="مثال: عميل أحمد / مورد الصفوة">
-                    </div>
-                    <div class="mb-3">
-                        <label class="form-label fw-bold">طريقة الدفع</label>
-                        <select name="payment_method" class="form-select">
-                            <option value="كاش">كاش</option>
-                            <option value="فودافون كاش">فودافون كاش</option>
-                            <option value="انستا باي">انستا باي</option>
+                        <label class="form-label fw-bold">الطرف (عميل/مورد)</label>
+                        <select name="source" class="form-select">
+                            <option value="">اختر...</option>
+                            <optgroup label="العملاء">
+                                {% for c in customers %}
+                                <option value="{{ c.name }}">{{ c.name }}</option>
+                                {% endfor %}
+                            </optgroup>
+                            <optgroup label="الموردين">
+                                {% for s in suppliers %}
+                                <option value="{{ s.name }}">{{ s.name }}</option>
+                                {% endfor %}
+                            </optgroup>
                         </select>
                     </div>
                     <div class="mb-3">
@@ -102,65 +118,21 @@
     </div>
 </div>
 
-{% for t in transactions %}
-<!-- Modal تعديل -->
-<div class="modal fade" id="editTransactionModal{{ t.id }}" tabindex="-1">
-    <div class="modal-dialog">
-        <div class="modal-content">
-            <form method="POST" action="{{ url_for('treasury_transactions') }}">
-                <input type="hidden" name="edit_id" value="{{ t.id }}">
-                <div class="modal-header bg-warning text-dark">
-                    <h5 class="modal-title">✏️ تعديل حركة</h5>
-                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-                </div>
-                <div class="modal-body">
-                    <div class="mb-3">
-                        <label class="form-label fw-bold">التاريخ</label>
-                        <input type="date" name="date" class="form-control" value="{{ t.date.strftime('%Y-%m-%d') }}" required>
-                    </div>
-                    <div class="mb-3">
-                        <label class="form-label fw-bold">الحساب</label>
-                        <select name="account_id" class="form-select" required>
-                            {% for account in accounts %}
-                            <option value="{{ account.id }}" {% if account.id == t.account_id %}selected{% endif %}>{{ account.person_name }} - {{ account.account_type }}</option>
-                            {% endfor %}
-                        </select>
-                    </div>
-                    <div class="mb-3">
-                        <label class="form-label fw-bold">النوع</label>
-                        <select name="transaction_type" class="form-select">
-                            <option value="deposit" {% if t.transaction_type == 'deposit' %}selected{% endif %}>إيداع</option>
-                            <option value="withdrawal" {% if t.transaction_type == 'withdrawal' %}selected{% endif %}>سحب</option>
-                        </select>
-                    </div>
-                    <div class="mb-3">
-                        <label class="form-label fw-bold">المبلغ</label>
-                        <input type="number" step="0.01" name="amount" class="form-control" value="{{ t.amount }}" required>
-                    </div>
-                    <div class="mb-3">
-                        <label class="form-label fw-bold">الطرف</label>
-                        <input type="text" name="source" class="form-control" value="{{ t.source or '' }}">
-                    </div>
-                    <div class="mb-3">
-                        <label class="form-label fw-bold">طريقة الدفع</label>
-                        <select name="payment_method" class="form-select">
-                            <option value="كاش" {% if t.payment_method == 'كاش' %}selected{% endif %}>كاش</option>
-                            <option value="فودافون كاش" {% if t.payment_method == 'فودافون كاش' %}selected{% endif %}>فودافون كاش</option>
-                            <option value="انستا باي" {% if t.payment_method == 'انستا باي' %}selected{% endif %}>انستا باي</option>
-                        </select>
-                    </div>
-                    <div class="mb-3">
-                        <label class="form-label fw-bold">ملاحظات</label>
-                        <textarea name="notes" class="form-control">{{ t.notes or '' }}</textarea>
-                    </div>
-                </div>
-                <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">إلغاء</button>
-                    <button type="submit" class="btn btn-warning">تعديل</button>
-                </div>
-            </form>
-        </div>
-    </div>
-</div>
-{% endfor %}
+<script>
+function filterAccounts() {
+    var method = document.getElementById('payment_method').value;
+    var select = document.getElementById('account_select');
+    var options = select.querySelectorAll('option');
+    options.forEach(function(opt) {
+        if (opt.value === '') return;
+        var type = opt.getAttribute('data-type');
+        if (method === '' || type === method) {
+            opt.style.display = 'block';
+        } else {
+            opt.style.display = 'none';
+        }
+    });
+    select.value = '';
+}
+</script>
 {% endblock %}
