@@ -16,7 +16,7 @@ from models import db, User, Category, Size, Thickness, Supplier, Customer
 from models import FactoryRawMaterial, FactoryProduction, FactoryDiary
 from models import StoreSale, StorePurchase, StoreInventory, StoreReceiving, StoreReturn, StoreDiary
 from models import TreasuryAccount, TreasuryTransaction, TreasuryTransfer
-from models import EditLog, Notification
+from models import EditLog, Notification, ActivityLog
 from utils import (
     login_required as custom_login_required,
     role_required,
@@ -68,6 +68,7 @@ def init_db():
         db.create_all()
         try:
             db.session.execute(db.text('ALTER TABLE users ADD COLUMN IF NOT EXISTS phone VARCHAR(20)'))
+            db.session.execute(db.text('ALTER TABLE users ADD COLUMN IF NOT EXISTS last_activity TIMESTAMP'))
             db.session.commit()
         except:
             pass
@@ -133,6 +134,19 @@ def init_db():
 
 init_db()
 
+# ==================== تسجيل النشاط ====================
+def log_activity(user_id, action, details=''):
+    try:
+        activity = ActivityLog(user_id=user_id, action=action, details=details, timestamp=datetime.utcnow())
+        db.session.add(activity)
+        user = User.query.get(user_id)
+        if user:
+            user.last_activity = datetime.utcnow()
+            db.session.add(user)
+        db.session.commit()
+    except Exception as e:
+        print(f"Error logging activity: {e}")
+
 @app.context_processor
 def inject_globals():
     unread_notifications = 0
@@ -184,6 +198,7 @@ def login():
             session['role'] = user.role
             session['user_id'] = user.id
             session['full_name'] = user.full_name
+            log_activity(user.id, 'login', f"تسجيل دخول {user.full_name}")
             if user.role != 'admin':
                 admin_user = User.query.filter_by(role='admin').first()
                 if admin_user:
@@ -199,6 +214,7 @@ def login():
 @app.route('/logout')
 @login_required
 def logout():
+    log_activity(current_user.id, 'logout', f"تسجيل خروج {current_user.full_name}")
     logout_user()
     session.clear()
     flash('تم تسجيل الخروج بنجاح', 'info')
@@ -239,10 +255,17 @@ def dashboard():
         recent_production = []
         recent_transactions = TreasuryTransaction.query.filter_by(created_by=current_user.id).order_by(TreasuryTransaction.date.desc()).limit(5).all()
 
+    # حساب المستخدمين غير النشطين (للأدمن)
+    inactive_users_count = 0
+    if current_user.role == 'admin':
+        threshold = datetime.utcnow() - timedelta(days=3)
+        inactive_users_count = User.query.filter(User.is_hidden == False, User.last_activity < threshold).count()
+
     return render_template('dashboard.html', stats=stats,
                            recent_sales=recent_sales,
                            recent_production=recent_production,
-                           recent_transactions=recent_transactions)
+                           recent_transactions=recent_transactions,
+                           inactive_users_count=inactive_users_count)
 
 # ==================== المصنع ====================
 @app.route('/factory')
@@ -266,6 +289,7 @@ def factory_raw_materials():
             if current_user.role in ['meg', 'admin']:
                 db.session.delete(record)
                 db.session.commit()
+                log_activity(current_user.id, 'delete', f"حذف وارد ماسورة {record.pipe_size} {record.pipe_thickness}")
                 flash('تم حذف السجل بنجاح', 'success')
             else:
                 flash('غير مصرح لك بالحذف', 'danger')
@@ -281,6 +305,7 @@ def factory_raw_materials():
                 record.supplier = request.form.get('supplier')
                 record.notes = request.form.get('notes')
                 db.session.commit()
+                log_activity(current_user.id, 'edit', f"تعديل وارد ماسورة {record.pipe_size}")
                 flash('تم تحديث السجل بنجاح', 'success')
             else:
                 flash('غير مصرح لك بالتعديل أو انتهت صلاحية التعديل', 'danger')
@@ -296,6 +321,7 @@ def factory_raw_materials():
                                         created_by=current_user.id, created_at=datetime.utcnow())
         db.session.add(new_record)
         db.session.commit()
+        log_activity(current_user.id, 'create', f"إضافة وارد ماسورة {pipe_size} {pipe_thickness} كمية {quantity}")
         row_data = [record_date.strftime('%Y-%m-%d'), 'وارد', pipe_size, pipe_thickness, quantity, supplier, notes, current_user.full_name]
         excel_path = add_row_to_excel('يوميات المصنع.xlsx', ['التاريخ', 'الوصف', 'المقاس', 'السماكة', 'الكمية', 'المورد', 'ملاحظات', 'المسؤول'], row_data)
         if excel_path: drive_service.upload_file(excel_path, 'يوميات المصنع.xlsx')
@@ -315,6 +341,7 @@ def factory_production():
             if current_user.role in ['meg', 'admin']:
                 db.session.delete(record)
                 db.session.commit()
+                log_activity(current_user.id, 'delete', f"حذف إنتاج {record.elbow_size}")
                 flash('تم حذف السجل بنجاح', 'success')
             else:
                 flash('غير مصرح لك بالحذف', 'danger')
@@ -330,6 +357,7 @@ def factory_production():
                 record.raw_material_used = float(request.form.get('raw_material_used', 0))
                 record.notes = request.form.get('notes')
                 db.session.commit()
+                log_activity(current_user.id, 'edit', f"تعديل إنتاج {record.elbow_size}")
                 flash('تم تحديث السجل بنجاح', 'success')
             else:
                 flash('غير مصرح لك بالتعديل أو انتهت صلاحية التعديل', 'danger')
@@ -345,6 +373,7 @@ def factory_production():
                                        created_by=current_user.id, created_at=datetime.utcnow())
         db.session.add(new_record)
         db.session.commit()
+        log_activity(current_user.id, 'create', f"إضافة إنتاج {elbow_size} كمية {quantity}")
         row_data = [record_date.strftime('%Y-%m-%d'), 'إنتاج', elbow_size, elbow_thickness, quantity, raw_material_used, notes, current_user.full_name]
         excel_path = add_row_to_excel('يوميات المصنع.xlsx', ['التاريخ', 'الوصف', 'المقاس', 'السماكة', 'الكمية', 'خام مستخدم', 'ملاحظات', 'المسؤول'], row_data)
         if excel_path: drive_service.upload_file(excel_path, 'يوميات المصنع.xlsx')
@@ -364,6 +393,7 @@ def factory_diary():
             if current_user.role in ['meg', 'admin']:
                 db.session.delete(record)
                 db.session.commit()
+                log_activity(current_user.id, 'delete', f"حذف يومية مصنع")
                 flash('تم حذف السجل بنجاح', 'success')
             else:
                 flash('غير مصرح لك بالحذف', 'danger')
@@ -376,6 +406,7 @@ def factory_diary():
                 record.description = request.form.get('description')
                 record.amount = float(request.form.get('amount', 0))
                 db.session.commit()
+                log_activity(current_user.id, 'edit', f"تعديل يومية مصنع")
                 flash('تم تحديث السجل بنجاح', 'success')
             else:
                 flash('غير مصرح لك بالتعديل أو انتهت صلاحية التعديل', 'danger')
@@ -387,6 +418,7 @@ def factory_diary():
                                   created_by=current_user.id, created_at=datetime.utcnow())
         db.session.add(new_record)
         db.session.commit()
+        log_activity(current_user.id, 'create', f"إضافة يومية مصنع: {description[:50]}")
         row_data = [record_date.strftime('%Y-%m-%d'), description, amount, current_user.full_name]
         excel_path = add_row_to_excel('يوميات المصنع.xlsx', ['التاريخ', 'الوصف', 'المبلغ', 'المسؤول'], row_data)
         if excel_path: drive_service.upload_file(excel_path, 'يوميات المصنع.xlsx')
@@ -423,6 +455,8 @@ def store_transactions():
                         inventory_item.current_quantity += record.quantity
                         db.session.commit()
                     db.session.delete(record)
+                    db.session.commit()
+                    log_activity(current_user.id, 'delete', f"حذف بيع {record.customer_name}")
                 elif transaction_type == 'purchase':
                     record = StorePurchase.query.get_or_404(record_id)
                     inventory_item = StoreInventory.query.filter_by(product_type=record.product_type, product_size=record.product_size, product_spec=record.product_spec).first()
@@ -430,7 +464,8 @@ def store_transactions():
                         inventory_item.current_quantity -= record.quantity
                         db.session.commit()
                     db.session.delete(record)
-                db.session.commit()
+                    db.session.commit()
+                    log_activity(current_user.id, 'delete', f"حذف شراء {record.supplier_name}")
                 flash('تم الحذف بنجاح', 'success')
             else:
                 flash('غير مصرح لك بالحذف', 'danger')
@@ -480,6 +515,7 @@ def store_transactions():
                         db.session.add(new_inv)
                         db.session.commit()
                     db.session.commit()
+                    log_activity(current_user.id, 'edit', f"تعديل بيع {record.customer_name}")
                     flash('تم تحديث البيع بنجاح', 'success')
                 else:
                     flash('غير مصرح لك بالتعديل أو انتهت صلاحية التعديل', 'danger')
@@ -523,6 +559,7 @@ def store_transactions():
                         db.session.add(new_inv)
                         db.session.commit()
                     db.session.commit()
+                    log_activity(current_user.id, 'edit', f"تعديل شراء {record.supplier_name}")
                     flash('تم تحديث الشراء بنجاح', 'success')
                 else:
                     flash('غير مصرح لك بالتعديل أو انتهت صلاحية التعديل', 'danger')
@@ -602,6 +639,7 @@ def store_transactions():
             db.session.add(StoreDiary(date=record_date, description=f"شراء {quantity} {product_type} {product_size} {product_spec} من {party_name}", amount=total, created_by=current_user.id, created_at=datetime.utcnow()))
 
         db.session.commit()
+        log_activity(current_user.id, 'create', f"تسجيل معاملة {transaction_type} لـ {party_name}")
         row_data = [record_date.strftime('%Y-%m-%d'), 'بيع' if transaction_type == 'sale' else 'شراء', party_name, product_type, product_size, product_spec, quantity, unit_price, total, payment_type, current_user.full_name]
         excel_path = add_row_to_excel('يوميات المحل.xlsx', ['التاريخ', 'النوع', 'الطرف', 'الصنف', 'المقاس', 'المواصفات', 'الكمية', 'السعر', 'الإجمالي', 'الدفع', 'المسؤول'], row_data)
         if excel_path: drive_service.upload_file(excel_path, 'يوميات المحل.xlsx')
@@ -626,6 +664,7 @@ def store_inventory():
             if current_user.role in ['meg', 'admin']:
                 db.session.delete(item)
                 db.session.commit()
+                log_activity(current_user.id, 'delete', f"حذف مخزون {item.product_type}")
                 flash('تم حذف عنصر المخزون', 'success')
             else:
                 flash('غير مصرح لك بالحذف', 'danger')
@@ -633,8 +672,10 @@ def store_inventory():
             item.current_quantity = float(request.form.get('current_quantity', item.current_quantity))
             item.min_quantity = float(request.form.get('min_quantity', item.min_quantity))
             db.session.commit()
+            log_activity(current_user.id, 'edit', f"تعديل مخزون {item.product_type}")
             flash('تم تحديث المخزون', 'success')
         return redirect(url_for('store_inventory'))
+
     inventory = StoreInventory.query.order_by(StoreInventory.product_type.asc(), StoreInventory.product_size.asc()).all()
     return render_template('store/inventory.html', inventory=inventory)
 
@@ -650,6 +691,7 @@ def store_returns():
             if current_user.role in ['meg', 'admin']:
                 db.session.delete(record)
                 db.session.commit()
+                log_activity(current_user.id, 'delete', f"حذف مرتجع {record.party_name}")
                 flash('تم حذف المرتجع بنجاح', 'success')
             else:
                 flash('غير مصرح لك بالحذف', 'danger')
@@ -667,6 +709,7 @@ def store_returns():
                 record.quantity = float(request.form.get('quantity', 0))
                 record.reason = request.form.get('reason')
                 db.session.commit()
+                log_activity(current_user.id, 'edit', f"تعديل مرتجع {record.party_name}")
                 flash('تم تحديث المرتجع بنجاح', 'success')
             else:
                 flash('غير مصرح لك بالتعديل أو انتهت صلاحية التعديل', 'danger')
@@ -684,6 +727,7 @@ def store_returns():
                                  quantity=quantity, reason=reason, created_by=current_user.id, created_at=datetime.utcnow())
         db.session.add(new_return)
         db.session.commit()
+        log_activity(current_user.id, 'create', f"إضافة مرتجع {party_name}")
         row_data = [record_date.strftime('%Y-%m-%d'), return_type, party_name, product_type, product_size, product_spec, quantity, reason, current_user.full_name]
         excel_path = add_row_to_excel('يوميات المحل.xlsx', ['التاريخ', 'النوع', 'الطرف', 'الصنف', 'المقاس', 'المواصفات', 'الكمية', 'السبب', 'المسؤول'], row_data)
         if excel_path: drive_service.upload_file(excel_path, 'يوميات المحل.xlsx')
@@ -703,6 +747,7 @@ def store_diary():
             if current_user.role in ['meg', 'admin']:
                 db.session.delete(record)
                 db.session.commit()
+                log_activity(current_user.id, 'delete', f"حذف يومية محل")
                 flash('تم حذف اليومية بنجاح', 'success')
             else:
                 flash('غير مصرح لك بالحذف', 'danger')
@@ -715,6 +760,7 @@ def store_diary():
                 record.description = request.form.get('description')
                 record.amount = float(request.form.get('amount', 0))
                 db.session.commit()
+                log_activity(current_user.id, 'edit', f"تعديل يومية محل")
                 flash('تم تحديث اليومية بنجاح', 'success')
             else:
                 flash('غير مصرح لك بالتعديل أو انتهت صلاحية التعديل', 'danger')
@@ -726,6 +772,7 @@ def store_diary():
                                 created_by=current_user.id, created_at=datetime.utcnow())
         db.session.add(new_record)
         db.session.commit()
+        log_activity(current_user.id, 'create', f"إضافة يومية محل: {description[:50]}")
         row_data = [record_date.strftime('%Y-%m-%d'), description, amount, current_user.full_name]
         excel_path = add_row_to_excel('يوميات المحل.xlsx', ['التاريخ', 'الوصف', 'المبلغ', 'المسؤول'], row_data)
         if excel_path: drive_service.upload_file(excel_path, 'يوميات المحل.xlsx')
@@ -783,6 +830,7 @@ def treasury_transactions():
                     db.session.commit()
                 db.session.delete(record)
                 db.session.commit()
+                log_activity(current_user.id, 'delete', f"حذف حركة خزينة {record.amount}")
                 flash('تم حذف الحركة بنجاح', 'success')
             else:
                 flash('غير مصرح لك بالحذف', 'danger')
@@ -817,6 +865,7 @@ def treasury_transactions():
                         new_account.balance -= record.amount
                     db.session.commit()
                 db.session.commit()
+                log_activity(current_user.id, 'edit', f"تعديل حركة خزينة {record.amount}")
                 flash('تم تحديث الحركة بنجاح', 'success')
             else:
                 flash('غير مصرح لك بالتعديل أو انتهت صلاحية التعديل', 'danger')
@@ -851,7 +900,7 @@ def treasury_transactions():
         )
         db.session.add(new_transaction)
         db.session.commit()
-
+        log_activity(current_user.id, 'create', f"إضافة حركة خزينة {transaction_type} {amount}")
         account_name = account.person_name if account else ''
         row_data = [record_date.strftime('%Y-%m-%d'), account_name, transaction_type,
                     amount, payment_method, source, notes, current_user.full_name]
@@ -860,7 +909,6 @@ def treasury_transactions():
                                       row_data)
         if excel_path:
             drive_service.upload_file(excel_path, 'حركات الخزينة.xlsx')
-
         flash('تم تسجيل الحركة بنجاح', 'success')
         return redirect(url_for('treasury_transactions'))
 
@@ -883,6 +931,7 @@ def treasury_transfers():
             if current_user.role in ['meg', 'admin']:
                 db.session.delete(record)
                 db.session.commit()
+                log_activity(current_user.id, 'delete', f"حذف تحويل {record.amount}")
                 flash('تم حذف التحويل بنجاح', 'success')
             else:
                 flash('غير مصرح لك بالحذف', 'danger')
@@ -898,6 +947,7 @@ def treasury_transfers():
                 record.payment_method = request.form.get('payment_method')
                 record.notes = request.form.get('notes')
                 db.session.commit()
+                log_activity(current_user.id, 'edit', f"تعديل تحويل {record.amount}")
                 flash('تم تحديث التحويل بنجاح', 'success')
             else:
                 flash('غير مصرح لك بالتعديل', 'danger')
@@ -922,6 +972,7 @@ def treasury_transfers():
         )
         db.session.add(new_transfer)
         db.session.commit()
+        log_activity(current_user.id, 'create', f"إضافة تحويل من {from_person} إلى {to_person} مبلغ {amount}")
         flash('تم تسجيل التحويل بنجاح', 'success')
         return redirect(url_for('treasury_transfers'))
 
@@ -942,6 +993,7 @@ def treasury_accounts():
             else:
                 db.session.delete(account)
                 db.session.commit()
+                log_activity(current_user.id, 'delete', f"حذف حساب خزينة {account.person_name}")
                 flash('تم حذف الحساب', 'success')
             return redirect(url_for('treasury_accounts'))
         if request.form.get('edit_id'):
@@ -951,15 +1003,16 @@ def treasury_accounts():
             account.account_type = request.form.get('account_type')
             account.balance = float(request.form.get('balance', 0))
             db.session.commit()
+            log_activity(current_user.id, 'edit', f"تعديل حساب خزينة {account.person_name}")
             flash('تم تحديث الحساب', 'success')
             return redirect(url_for('treasury_accounts'))
-        # إضافة حساب جديد
         person_name = request.form.get('person_name')
         account_type = request.form.get('account_type')
         balance = float(request.form.get('balance', 0))
         new_account = TreasuryAccount(person_name=person_name, account_type=account_type, balance=balance)
         db.session.add(new_account)
         db.session.commit()
+        log_activity(current_user.id, 'create', f"إضافة حساب خزينة {person_name} {account_type}")
         flash('تم إضافة الحساب', 'success')
         return redirect(url_for('treasury_accounts'))
 
@@ -974,6 +1027,20 @@ def financial_transactions():
     transactions = TreasuryTransaction.query.order_by(TreasuryTransaction.date.asc(), TreasuryTransaction.id.asc()).all()
     accounts = TreasuryAccount.query.all()
     return render_template('reports/financial.html', transactions=transactions, accounts=accounts)
+
+# ==================== سجل النشاط ====================
+@app.route('/admin/activity')
+@custom_login_required
+@role_required('meg', 'admin')
+def admin_activity():
+    activities = ActivityLog.query.order_by(ActivityLog.timestamp.desc()).limit(200).all()
+    inactive_users = []
+    threshold = datetime.utcnow() - timedelta(days=3)
+    all_users = User.query.filter_by(is_hidden=False).all()
+    for user in all_users:
+        if user.last_activity and user.last_activity < threshold:
+            inactive_users.append(user)
+    return render_template('admin/activity.html', activities=activities, inactive_users=inactive_users)
 
 # ==================== التقارير ====================
 @app.route('/reports')
@@ -1127,6 +1194,7 @@ def admin_add_user():
         new_user.set_password(password)
         db.session.add(new_user)
         db.session.commit()
+        log_activity(current_user.id, 'create', f"إضافة مستخدم {username}")
         flash('تم إضافة المستخدم بنجاح', 'success')
         return redirect(url_for('admin_users'))
     return render_template('admin/add_user.html')
@@ -1147,6 +1215,7 @@ def admin_edit_user(user_id):
         if new_password:
             user.set_password(new_password)
         db.session.commit()
+        log_activity(current_user.id, 'edit', f"تعديل مستخدم {user.username}")
         flash('تم تحديث بيانات المستخدم بنجاح', 'success')
         return redirect(url_for('admin_users'))
     return render_template('admin/edit_user.html', user=user)
@@ -1161,6 +1230,7 @@ def admin_delete_user(user_id):
         return redirect(url_for('admin_users'))
     db.session.delete(user)
     db.session.commit()
+    log_activity(current_user.id, 'delete', f"حذف مستخدم {user.username}")
     flash('تم حذف المستخدم بنجاح', 'success')
     return redirect(url_for('admin_users'))
 
@@ -1202,6 +1272,7 @@ def admin_add_category():
         if not Customer.query.filter_by(name=name).first():
             db.session.add(Customer(name=name))
     db.session.commit()
+    log_activity(current_user.id, 'create', f"إضافة {category_type} {name}")
     flash('تمت الإضافة بنجاح', 'success')
     return redirect(url_for('admin_categories'))
 
@@ -1231,6 +1302,7 @@ def admin_edit_category(category_type, item_id):
         flash('نوع غير معروف', 'danger')
         return redirect(url_for('admin_categories'))
     db.session.commit()
+    log_activity(current_user.id, 'edit', f"تعديل {category_type} {new_name}")
     flash('تم التعديل بنجاح', 'success')
     return redirect(url_for('admin_categories'))
 
@@ -1257,6 +1329,7 @@ def admin_delete_category(category_type, item_id):
         flash('نوع غير معروف', 'danger')
         return redirect(url_for('admin_categories'))
     db.session.commit()
+    log_activity(current_user.id, 'delete', f"حذف {category_type} {item_id}")
     flash('تم الحذف بنجاح', 'success')
     return redirect(url_for('admin_categories'))
 
@@ -1268,6 +1341,7 @@ def settings_profile():
         current_user.full_name = request.form.get('full_name')
         current_user.phone = request.form.get('phone')
         db.session.commit()
+        log_activity(current_user.id, 'edit', f"تعديل الملف الشخصي")
         flash('تم تحديث الملف الشخصي بنجاح', 'success')
         return redirect(url_for('settings_profile'))
     return render_template('settings/profile.html')
@@ -1290,6 +1364,7 @@ def settings_password():
             return redirect(url_for('settings_password'))
         current_user.set_password(new_password)
         db.session.commit()
+        log_activity(current_user.id, 'edit', f"تغيير كلمة المرور")
         flash('تم تغيير كلمة المرور بنجاح', 'success')
         return redirect(url_for('dashboard'))
     return render_template('settings/password.html')
