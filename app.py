@@ -9,7 +9,6 @@ from flask_login import LoginManager, login_user, logout_user, login_required, c
 from werkzeug.security import generate_password_hash, check_password_hash
 from dotenv import load_dotenv
 
-# تحميل متغيرات البيئة
 load_dotenv()
 
 from models import db, User, Category, Size, Thickness, Supplier, Customer
@@ -255,7 +254,6 @@ def dashboard():
         recent_production = []
         recent_transactions = TreasuryTransaction.query.filter_by(created_by=current_user.id).order_by(TreasuryTransaction.date.desc()).limit(5).all()
 
-    # حساب المستخدمين غير النشطين (للأدمن)
     inactive_users_count = 0
     if current_user.role == 'admin':
         threshold = datetime.utcnow() - timedelta(days=3)
@@ -503,7 +501,7 @@ def store_transactions():
                     record.product_size = request.form.get('product_size')
                     record.product_spec = request.form.get('product_spec')
                     record.quantity = float(request.form.get('quantity', 0))
-                    record.unit_price = float(request.form.get('unit_price', 0))
+                    record.unit_price = float(request.form.get('unit_price', 0) or 0)
                     record.payment_type = request.form.get('payment_type', 'آجل')
                     record.total = record.quantity * record.unit_price
 
@@ -547,7 +545,7 @@ def store_transactions():
                     record.product_size = request.form.get('product_size')
                     record.product_spec = request.form.get('product_spec')
                     record.quantity = float(request.form.get('quantity', 0))
-                    record.unit_price = float(request.form.get('unit_price', 0))
+                    record.unit_price = float(request.form.get('unit_price', 0) or 0)
                     record.payment_type = request.form.get('payment_type', 'آجل')
                     record.total = record.quantity * record.unit_price
 
@@ -599,7 +597,7 @@ def store_transactions():
         product_size = request.form.get('product_size')
         product_spec = request.form.get('product_spec')
         quantity = float(request.form.get('quantity', 0))
-        unit_price = float(request.form.get('unit_price', 0))
+        unit_price = float(request.form.get('unit_price', 0) or 0)
         payment_type = request.form.get('payment_type', 'آجل')
         total = quantity * unit_price
 
@@ -650,7 +648,17 @@ def store_transactions():
     purchases = StorePurchase.query.order_by(StorePurchase.date.asc(), StorePurchase.id.asc()).all()
     customers = Customer.query.order_by(Customer.name.asc()).all()
     suppliers = Supplier.query.order_by(Supplier.name.asc()).all()
-    return render_template('store/transactions.html', sales=sales, purchases=purchases, customers=customers, suppliers=suppliers)
+    categories = Category.query.order_by(Category.name.asc()).all()
+    sizes = Size.query.order_by(Size.value.asc()).all()
+    thicknesses = Thickness.query.order_by(Thickness.value.asc()).all()
+    return render_template('store/transactions.html',
+                           sales=sales,
+                           purchases=purchases,
+                           customers=customers,
+                           suppliers=suppliers,
+                           categories=categories,
+                           sizes=sizes,
+                           thicknesses=thicknesses)
 
 # ==================== المخزون ====================
 @app.route('/store/inventory', methods=['GET', 'POST'])
