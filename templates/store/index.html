@@ -10,17 +10,8 @@
         <div class="card border-0 shadow-sm">
             <div class="card-body text-center">
                 <i class="fas fa-shopping-cart fa-3x text-purple mb-3"></i>
-                <h5 class="fw-bold">المبيعات</h5>
-                <a href="{{ url_for('store_sales') }}" class="btn btn-purple w-100">إدارة المبيعات</a>
-            </div>
-        </div>
-    </div>
-    <div class="col-md-3">
-        <div class="card border-0 shadow-sm">
-            <div class="card-body text-center">
-                <i class="fas fa-truck fa-3x text-purple mb-3"></i>
-                <h5 class="fw-bold">المشتريات</h5>
-                <a href="{{ url_for('store_purchases') }}" class="btn btn-purple w-100">إدارة المشتريات</a>
+                <h5 class="fw-bold">المعاملات</h5>
+                <a href="{{ url_for('store_transactions') }}" class="btn btn-purple w-100">إدارة المعاملات</a>
             </div>
         </div>
     </div>
@@ -42,10 +33,7 @@
             </div>
         </div>
     </div>
-</div>
-
-<div class="row g-3 mb-4">
-    <div class="col-md-4">
+    <div class="col-md-3">
         <div class="card border-0 shadow-sm">
             <div class="card-body text-center">
                 <i class="fas fa-book fa-3x text-purple mb-3"></i>
