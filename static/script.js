@@ -37,7 +37,6 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     }
 
-    // ربط الحقول في نفس الصف/النموذج
     quantityInputs.forEach(function(qtyInput) {
         const form = qtyInput.closest('form');
         if (!form) return;
