@@ -28,16 +28,14 @@ from utils import (
 
 app = Flask(__name__)
 
-# ==================== إعدادات الجلسة والأمان ====================
+# ==================== إعدادات الجلسة ====================
 app.config['SECRET_KEY'] = os.environ.get('SECRET_KEY', 'dev-secret-key-change-me')
-
-# إعدادات الجلسة - من خبرة Adam Cargo
 app.config['SESSION_TYPE'] = 'filesystem'
 app.config['SESSION_FILE_DIR'] = '/tmp/flask_session'
 app.config['SESSION_PERMANENT'] = True
 app.config['SESSION_USE_SIGNER'] = True
 app.config['SESSION_COOKIE_SAMESITE'] = 'Lax'
-app.config['SESSION_COOKIE_SECURE'] = False   # False عشان يشتغل على HTTP في Render
+app.config['SESSION_COOKIE_SECURE'] = False
 app.config['PERMANENT_SESSION_LIFETIME'] = timedelta(days=30)
 
 # ==================== قاعدة البيانات ====================
@@ -71,7 +69,7 @@ drive_service = GoogleDriveService(
     folder_id=os.environ.get('GOOGLE_DRIVE_FOLDER_ID', '')
 )
 
-# ==================== دوال مساعدة ====================
+# ==================== دوال مساعدة للخزينة ====================
 def get_or_create_treasury_account(person_name, account_type):
     account = TreasuryAccount.query.filter_by(person_name=person_name, account_type=account_type).first()
     if not account:
@@ -92,6 +90,7 @@ def get_visible_accounts_for_current_user():
     else:
         return []
 
+# ==================== صلاحية الحذف ====================
 def can_delete_record(user_role, record_date=None):
     if user_role in ['meg', 'admin', 'mariam']:
         return True
@@ -101,6 +100,7 @@ def can_delete_record(user_role, record_date=None):
         return False
     return False
 
+# ==================== تسجيل النشاط ====================
 def log_activity(user_id, action, details=''):
     try:
         activity = ActivityLog(user_id=user_id, action=action, details=details, timestamp=datetime.utcnow())
@@ -190,7 +190,7 @@ def init_db():
             for acc_type in account_types:
                 get_or_create_treasury_account(person, acc_type)
 
-        # ============ تنظيف الحسابات القديمة بالإنجليزية ============
+        # تنظيف الحسابات القديمة بالإنجليزية
         name_mapping = {
             'Ahmed': 'الحاج أحمد',
             'ahmed': 'الحاج أحمد',
@@ -203,12 +203,9 @@ def init_db():
         for old_name, new_name in name_mapping.items():
             old_accounts = TreasuryAccount.query.filter_by(person_name=old_name).all()
             for old_acc in old_accounts:
-                # البحث عن حساب عربي بنفس النوع
                 arabic_acc = TreasuryAccount.query.filter_by(person_name=new_name, account_type=old_acc.account_type).first()
                 if arabic_acc:
-                    # دمج الرصيد
                     arabic_acc.balance += old_acc.balance
-                    # نقل المعاملات
                     for txn in old_acc.transactions:
                         txn.account_id = arabic_acc.id
                     db.session.delete(old_acc)
@@ -1297,26 +1294,38 @@ def admin_activity():
 def reports_index():
     return render_template('reports/index.html')
 
-@app.route('/reports/daily')
-@custom_login_required
-@role_required('meg', 'admin', 'mariam', 'rehab', 'mohamed', 'ahmed')
-def reports_daily():
-    today = date.today()
-    return render_template('reports/daily.html', today=today)
-
-@app.route('/reports/weekly')
+@app.route('/reports/custom')
 @custom_login_required
 @role_required('meg', 'admin', 'mariam', 'rehab')
-def reports_weekly():
-    week_start = date.today() - timedelta(days=7)
-    return render_template('reports/weekly.html', week_start=week_start)
+def reports_custom():
+    from_date_str = request.args.get('from_date')
+    to_date_str = request.args.get('to_date')
+    report_type = request.args.get('report_type', 'all')
 
-@app.route('/reports/monthly')
-@custom_login_required
-@role_required('meg', 'admin', 'mariam', 'rehab')
-def reports_monthly():
-    month_start = date.today().replace(day=1)
-    return render_template('reports/monthly.html', month_start=month_start)
+    if not from_date_str or not to_date_str:
+        flash('يرجى تحديد التاريخين', 'warning')
+        return redirect(url_for('reports_index'))
+
+    from_date = datetime.strptime(from_date_str, '%Y-%m-%d').date()
+    to_date = datetime.strptime(to_date_str, '%Y-%m-%d').date()
+
+    raw_materials = FactoryRawMaterial.query.filter(FactoryRawMaterial.date >= from_date, FactoryRawMaterial.date <= to_date).order_by(FactoryRawMaterial.date.asc()).all()
+    production = FactoryProduction.query.filter(FactoryProduction.date >= from_date, FactoryProduction.date <= to_date).order_by(FactoryProduction.date.asc()).all()
+    factory_diary = FactoryDiary.query.filter(FactoryDiary.date >= from_date, FactoryDiary.date <= to_date).order_by(FactoryDiary.date.asc()).all()
+    sales = StoreSale.query.filter(StoreSale.date >= from_date, StoreSale.date <= to_date).order_by(StoreSale.date.asc()).all()
+    purchases = StorePurchase.query.filter(StorePurchase.date >= from_date, StorePurchase.date <= to_date).order_by(StorePurchase.date.asc()).all()
+    transactions = TreasuryTransaction.query.filter(TreasuryTransaction.date >= from_date, TreasuryTransaction.date <= to_date).order_by(TreasuryTransaction.date.asc()).all()
+
+    return render_template('reports/custom.html',
+                           from_date=from_date_str,
+                           to_date=to_date_str,
+                           report_type=report_type,
+                           raw_materials=raw_materials,
+                           production=production,
+                           factory_diary=factory_diary,
+                           sales=sales,
+                           purchases=purchases,
+                           transactions=transactions)
 
 @app.route('/reports/customers')
 @custom_login_required
@@ -1385,61 +1394,6 @@ def report_single_supplier(supplier_id):
                            total_purchases=total_purchases,
                            total_paid=total_paid,
                            total_remaining=total_remaining)
-
-@app.route('/reports/generate-word/<report_type>/<period>')
-@custom_login_required
-@role_required('meg', 'admin', 'mariam', 'rehab')
-def generate_word_report_route(report_type, period):
-    try:
-        today = date.today()
-        company_name = "شركة الفتح"
-        if report_type == 'factory':
-            report_title = "تقرير يوميات المصنع"
-            headers = ['التاريخ', 'الوصف', 'المقاس', 'السماكة', 'الكمية', 'المسؤول']
-            data = []
-            records = FactoryDiary.query.order_by(FactoryDiary.date.asc()).limit(100).all()
-            for r in records:
-                data.append([r.date.strftime('%Y-%m-%d'), r.description, '', '', r.amount, ''])
-        elif report_type == 'store':
-            report_title = "تقرير يوميات المحل"
-            headers = ['التاريخ', 'النوع', 'الطرف', 'الصنف', 'الكمية', 'الإجمالي']
-            data = []
-            sales = StoreSale.query.order_by(StoreSale.date.asc()).limit(50).all()
-            for s in sales:
-                data.append([s.date.strftime('%Y-%m-%d'), 'بيع', s.customer_name, s.product_type, s.quantity, s.total])
-        elif report_type == 'treasury':
-            report_title = "تقرير الخزينة"
-            headers = ['التاريخ', 'الشخص', 'النوع', 'المبلغ', 'طريقة الدفع']
-            data = []
-            transactions = TreasuryTransaction.query.order_by(TreasuryTransaction.date.asc()).limit(100).all()
-            for t in transactions:
-                account = TreasuryAccount.query.get(t.account_id)
-                data.append([t.date.strftime('%Y-%m-%d'), account.person_name if account else '', t.transaction_type, t.amount, t.payment_method])
-        else:
-            flash('نوع التقرير غير معروف', 'danger')
-            return redirect(url_for('dashboard'))
-
-        period_names = {'daily': 'يومي', 'weekly': 'أسبوعي', 'monthly': 'شهري', 'custom': 'مخصص'}
-        period_name = period_names.get(period, period)
-
-        output_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'word_reports')
-        os.makedirs(output_dir, exist_ok=True)
-        output_file = os.path.join(output_dir, f"{report_type}_{period}_{today.strftime('%Y%m%d')}.docx")
-
-        generate_word_report(
-            company_name=company_name,
-            report_title=report_title,
-            report_date=today.strftime('%Y-%m-%d'),
-            period=period_name,
-            table_headers=headers,
-            table_data=data,
-            output_path=output_file
-        )
-
-        return send_file(output_file, as_attachment=True)
-    except Exception as e:
-        flash(f'خطأ في توليد التقرير: {str(e)}', 'danger')
-        return redirect(url_for('dashboard'))
 
 @app.route('/reports/download-excel/<file_name>')
 @custom_login_required
