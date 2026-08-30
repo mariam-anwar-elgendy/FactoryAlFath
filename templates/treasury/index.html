@@ -48,7 +48,13 @@
                 <tr>
                     <td>{{ t.date.strftime('%Y-%m-%d') }}</td>
                     <td>{{ t.account.person_name if t.account else '' }}</td>
-                    <td><span class="badge bg-{{ 'success' if t.transaction_type == 'deposit' else 'danger' }}">{{ 'إيداع' if t.transaction_type == 'deposit' else 'سحب' }}</span></td>
+                    <td>
+                        {% if t.transaction_type == 'deposit' %}
+                            <span class="badge bg-success">إيداع</span>
+                        {% else %}
+                            <span class="badge bg-danger">سحب</span>
+                        {% endif %}
+                    </td>
                     <td>{{ t.amount }}</td>
                     <td>{{ t.payment_method }}</td>
                 </tr>
