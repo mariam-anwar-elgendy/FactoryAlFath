@@ -105,7 +105,7 @@ class StoreSale(db.Model):
     created_by = db.Column(db.Integer, db.ForeignKey('users.id'))
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
 
-    # حقول قديمة للتوافق مع المعاملات السابقة
+    # حقول قديمة للتوافق
     product_type = db.Column(db.String(100))
     product_size = db.Column(db.String(50))
     product_spec = db.Column(db.String(50))
@@ -117,7 +117,11 @@ class StoreSale(db.Model):
 
     @property
     def total(self):
-        return sum(item.total for item in self.items)
+        if self.items:
+            return sum(item.total for item in self.items)
+        if self.quantity is not None and self.unit_price is not None:
+            return self.quantity * self.unit_price
+        return 0
 
     @property
     def paid_amount(self):
@@ -150,7 +154,11 @@ class StorePurchase(db.Model):
 
     @property
     def total(self):
-        return sum(item.total for item in self.items)
+        if self.items:
+            return sum(item.total for item in self.items)
+        if self.quantity is not None and self.unit_price is not None:
+            return self.quantity * self.unit_price
+        return 0
 
     @property
     def paid_amount(self):
