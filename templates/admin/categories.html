@@ -1,7 +1,5 @@
 {% extends "base.html" %}
-
 {% block title %}الفئات والإعدادات{% endblock %}
-
 {% block content %}
 <h2 class="fw-bold mb-4 text-purple-dark">🏷️ الفئات والإعدادات</h2>
 
@@ -16,10 +14,10 @@
                     <li class="list-group-item d-flex justify-content-between align-items-center">
                         <span>{{ category.name }}</span>
                         <span>
-                            {% if current_user.role in ['meg', 'admin', 'mariam'] %}
+                            {% if current_user.role in ['meg','admin','mariam'] %}
                             <button class="btn btn-sm btn-warning" data-bs-toggle="modal" data-bs-target="#editCategory{{ category.id }}">✏️</button>
                             {% endif %}
-                            {% if current_user.role in ['meg', 'admin'] %}
+                            {% if current_user.role in ['meg','admin','mariam'] %}
                             <form action="{{ url_for('admin_delete_category', category_type='category', item_id=category.id) }}" method="POST" class="d-inline">
                                 <button type="submit" class="btn btn-sm btn-danger" onclick="return confirm('حذف هذا الصنف؟')">🗑️</button>
                             </form>
@@ -70,10 +68,10 @@
                     <li class="list-group-item d-flex justify-content-between align-items-center">
                         <span>{{ size.value }}</span>
                         <span>
-                            {% if current_user.role in ['meg', 'admin', 'mariam'] %}
+                            {% if current_user.role in ['meg','admin','mariam'] %}
                             <button class="btn btn-sm btn-warning" data-bs-toggle="modal" data-bs-target="#editSize{{ size.id }}">✏️</button>
                             {% endif %}
-                            {% if current_user.role in ['meg', 'admin'] %}
+                            {% if current_user.role in ['meg','admin','mariam'] %}
                             <form action="{{ url_for('admin_delete_category', category_type='size', item_id=size.id) }}" method="POST" class="d-inline">
                                 <button type="submit" class="btn btn-sm btn-danger" onclick="return confirm('حذف هذا المقاس؟')">🗑️</button>
                             </form>
@@ -124,10 +122,10 @@
                     <li class="list-group-item d-flex justify-content-between align-items-center">
                         <span>{{ thickness.value }}</span>
                         <span>
-                            {% if current_user.role in ['meg', 'admin', 'mariam'] %}
+                            {% if current_user.role in ['meg','admin','mariam'] %}
                             <button class="btn btn-sm btn-warning" data-bs-toggle="modal" data-bs-target="#editThickness{{ thickness.id }}">✏️</button>
                             {% endif %}
-                            {% if current_user.role in ['meg', 'admin'] %}
+                            {% if current_user.role in ['meg','admin','mariam'] %}
                             <form action="{{ url_for('admin_delete_category', category_type='thickness', item_id=thickness.id) }}" method="POST" class="d-inline">
                                 <button type="submit" class="btn btn-sm btn-danger" onclick="return confirm('حذف هذه السماكة؟')">🗑️</button>
                             </form>
@@ -180,10 +178,10 @@
                     <li class="list-group-item d-flex justify-content-between align-items-center">
                         <span>{{ supplier.name }} <small class="text-muted">{{ supplier.phone or '' }}</small></span>
                         <span>
-                            {% if current_user.role in ['meg', 'admin', 'mariam'] %}
+                            {% if current_user.role in ['meg','admin','mariam'] %}
                             <button class="btn btn-sm btn-warning" data-bs-toggle="modal" data-bs-target="#editSupplier{{ supplier.id }}">✏️</button>
                             {% endif %}
-                            {% if current_user.role in ['meg', 'admin'] %}
+                            {% if current_user.role in ['meg','admin','mariam'] %}
                             <form action="{{ url_for('admin_delete_category', category_type='supplier', item_id=supplier.id) }}" method="POST" class="d-inline">
                                 <button type="submit" class="btn btn-sm btn-danger" onclick="return confirm('حذف هذا المورد؟')">🗑️</button>
                             </form>
@@ -235,10 +233,10 @@
                     <li class="list-group-item d-flex justify-content-between align-items-center">
                         <span>{{ customer.name }} <small class="text-muted">{{ customer.phone or '' }}</small></span>
                         <span>
-                            {% if current_user.role in ['meg', 'admin', 'mariam'] %}
+                            {% if current_user.role in ['meg','admin','mariam'] %}
                             <button class="btn btn-sm btn-warning" data-bs-toggle="modal" data-bs-target="#editCustomer{{ customer.id }}">✏️</button>
                             {% endif %}
-                            {% if current_user.role in ['meg', 'admin'] %}
+                            {% if current_user.role in ['meg','admin','mariam'] %}
                             <form action="{{ url_for('admin_delete_category', category_type='customer', item_id=customer.id) }}" method="POST" class="d-inline">
                                 <button type="submit" class="btn btn-sm btn-danger" onclick="return confirm('حذف هذا العميل؟')">🗑️</button>
                             </form>
