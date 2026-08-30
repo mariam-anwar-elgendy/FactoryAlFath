@@ -1,7 +1,5 @@
 {% extends "base.html" %}
-
 {% block title %}حركات الخزينة{% endblock %}
-
 {% block content %}
 <div class="d-flex justify-content-between align-items-center mb-4">
     <h2 class="fw-bold text-purple-dark">💰 حركات الخزينة</h2>
@@ -30,7 +28,9 @@
                     {% if current_user.role in ['meg','admin','mariam'] or (current_user.role in ['ahmed','eid','abdo'] and t.created_by == current_user.id and (now.date() - t.date).days <= 1) %}
                     <button class="btn btn-sm btn-warning" data-bs-toggle="modal" data-bs-target="#editTransactionModal{{ t.id }}">✏️</button>
                     {% endif %}
-                    {% if current_user.role in ['meg','admin'] %}
+
+                    {# حذف متاح لـ meg, admin, mariam #}
+                    {% if current_user.role in ['meg','admin','mariam'] %}
                     <form action="{{ url_for('treasury_transactions') }}" method="POST" class="d-inline" onsubmit="return confirm('هل أنت متأكد من الحذف؟');">
                         <input type="hidden" name="delete_id" value="{{ t.id }}">
                         <button type="submit" class="btn btn-sm btn-danger">🗑️</button>
@@ -47,75 +47,75 @@
 
 <!-- Modal إضافة حركة -->
 <div class="modal fade" id="addTransactionModal" tabindex="-1">
-    <div class="modal-dialog">
-        <div class="modal-content">
-            <form method="POST" action="{{ url_for('treasury_transactions') }}">
-                <div class="modal-header bg-purple text-white">
-                    <h5 class="modal-title">➕ تسجيل حركة</h5>
-                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
-                </div>
-                <div class="modal-body">
-                    <div class="mb-3">
-                        <label class="form-label fw-bold">التاريخ</label>
-                        <input type="date" name="date" class="form-control" value="{{ now.strftime('%Y-%m-%d') }}" required>
-                    </div>
-                    <div class="mb-3">
-                        <label class="form-label fw-bold">طريقة الدفع</label>
-                        <select name="payment_method" id="payment_method" class="form-select" required onchange="filterAccounts()">
-                            <option value="">اختر الطريقة...</option>
-                            <option value="كاش">كاش</option>
-                            <option value="فودافون كاش">فودافون كاش</option>
-                            <option value="انستا باي">انستا باي</option>
-                        </select>
-                    </div>
-                    <div class="mb-3">
-                        <label class="form-label fw-bold">الحساب</label>
-                        <select name="account_id" id="account_select" class="form-select" required>
-                            <option value="">اختر الحساب...</option>
-                            {% for account in accounts %}
-                            <option value="{{ account.id }}" data-type="{{ account.account_type }}">{{ account.person_name }} - {{ account.account_type }}</option>
-                            {% endfor %}
-                        </select>
-                    </div>
-                    <div class="mb-3">
-                        <label class="form-label fw-bold">نوع الحركة</label>
-                        <select name="transaction_type" class="form-select">
-                            <option value="deposit">إيداع (استلام)</option>
-                            <option value="withdrawal">سحب (دفع)</option>
-                        </select>
-                    </div>
-                    <div class="mb-3">
-                        <label class="form-label fw-bold">المبلغ</label>
-                        <input type="number" step="0.01" name="amount" class="form-control" required>
-                    </div>
-                    <div class="mb-3">
-                        <label class="form-label fw-bold">الطرف (عميل/مورد)</label>
-                        <select name="source" class="form-select">
-                            <option value="">اختر...</option>
-                            <optgroup label="العملاء">
-                                {% for c in customers %}
-                                <option value="{{ c.name }}">{{ c.name }}</option>
-                                {% endfor %}
-                            </optgroup>
-                            <optgroup label="الموردين">
-                                {% for s in suppliers %}
-                                <option value="{{ s.name }}">{{ s.name }}</option>
-                                {% endfor %}
-                            </optgroup>
-                        </select>
-                    </div>
-                    <div class="mb-3">
-                        <label class="form-label fw-bold">ملاحظات</label>
-                        <textarea name="notes" class="form-control"></textarea>
-                    </div>
-                </div>
-                <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">إلغاء</button>
-                    <button type="submit" class="btn btn-purple">حفظ</button>
-                </div>
-            </form>
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <form method="POST" action="{{ url_for('treasury_transactions') }}">
+        <div class="modal-header bg-purple text-white">
+          <h5 class="modal-title">➕ تسجيل حركة</h5>
+          <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
         </div>
+        <div class="modal-body">
+          <div class="mb-3">
+            <label class="form-label fw-bold">التاريخ</label>
+            <input type="date" name="date" class="form-control" value="{{ now.strftime('%Y-%m-%d') }}" required>
+          </div>
+          <div class="mb-3">
+            <label class="form-label fw-bold">طريقة الدفع</label>
+            <select name="payment_method" id="payment_method" class="form-select" required onchange="filterAccounts()">
+              <option value="">اختر الطريقة...</option>
+              <option value="كاش">كاش</option>
+              <option value="فودافون كاش">فودافون كاش</option>
+              <option value="انستا باي">انستا باي</option>
+            </select>
+          </div>
+          <div class="mb-3">
+            <label class="form-label fw-bold">الحساب</label>
+            <select name="account_id" id="account_select" class="form-select" required>
+              <option value="">اختر الحساب...</option>
+              {% for account in accounts %}
+              <option value="{{ account.id }}" data-type="{{ account.account_type }}">{{ account.person_name }} - {{ account.account_type }}</option>
+              {% endfor %}
+            </select>
+          </div>
+          <div class="mb-3">
+            <label class="form-label fw-bold">نوع الحركة</label>
+            <select name="transaction_type" class="form-select">
+              <option value="deposit">إيداع (استلام)</option>
+              <option value="withdrawal">سحب (دفع)</option>
+            </select>
+          </div>
+          <div class="mb-3">
+            <label class="form-label fw-bold">المبلغ</label>
+            <input type="number" step="0.01" name="amount" class="form-control" required>
+          </div>
+          <div class="mb-3">
+            <label class="form-label fw-bold">الطرف (عميل/مورد)</label>
+            <select name="source" class="form-select">
+              <option value="">اختر...</option>
+              <optgroup label="العملاء">
+                {% for c in customers %}
+                <option value="{{ c.name }}">{{ c.name }}</option>
+                {% endfor %}
+              </optgroup>
+              <optgroup label="الموردين">
+                {% for s in suppliers %}
+                <option value="{{ s.name }}">{{ s.name }}</option>
+                {% endfor %}
+              </optgroup>
+            </select>
+          </div>
+          <div class="mb-3">
+            <label class="form-label fw-bold">ملاحظات</label>
+            <textarea name="notes" class="form-control"></textarea>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">إلغاء</button>
+          <button type="submit" class="btn btn-purple">حفظ</button>
+        </div>
+      </form>
     </div>
+  </div>
 </div>
 
 <script>
