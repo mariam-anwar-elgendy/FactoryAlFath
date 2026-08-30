@@ -27,14 +27,20 @@ from utils import (
 )
 
 app = Flask(__name__)
+
+# ==================== إعدادات الجلسة والأمان ====================
 app.config['SECRET_KEY'] = os.environ.get('SECRET_KEY', 'dev-secret-key-change-me')
+
+# إعدادات الجلسة - من خبرة Adam Cargo
 app.config['SESSION_TYPE'] = 'filesystem'
 app.config['SESSION_FILE_DIR'] = '/tmp/flask_session'
 app.config['SESSION_PERMANENT'] = True
 app.config['SESSION_USE_SIGNER'] = True
 app.config['SESSION_COOKIE_SAMESITE'] = 'Lax'
-app.config['SESSION_COOKIE_SECURE'] = False
+app.config['SESSION_COOKIE_SECURE'] = False   # False عشان يشتغل على HTTP في Render
+app.config['PERMANENT_SESSION_LIFETIME'] = timedelta(days=30)
 
+# ==================== قاعدة البيانات ====================
 database_url = os.environ.get('DATABASE_URL', 'sqlite:///instance/factory.db')
 if database_url.startswith('postgres://'):
     database_url = database_url.replace('postgres://', 'postgresql://', 1)
@@ -49,6 +55,7 @@ app.config['SQLALCHEMY_ENGINE_OPTIONS'] = {
 
 db.init_app(app)
 
+# ==================== Flask-Login ====================
 login_manager = LoginManager()
 login_manager.init_app(app)
 login_manager.login_view = 'login'
@@ -58,12 +65,13 @@ login_manager.login_message = 'يرجى تسجيل الدخول أولاً'
 def load_user(user_id):
     return User.query.get(int(user_id))
 
+# ==================== خدمة Google Drive ====================
 drive_service = GoogleDriveService(
     credentials_file=os.environ.get('GOOGLE_CREDENTIALS_FILE', 'client_secrets.json'),
     folder_id=os.environ.get('GOOGLE_DRIVE_FOLDER_ID', '')
 )
 
-# ==================== دوال مساعدة للخزينة ====================
+# ==================== دوال مساعدة ====================
 def get_or_create_treasury_account(person_name, account_type):
     account = TreasuryAccount.query.filter_by(person_name=person_name, account_type=account_type).first()
     if not account:
@@ -84,7 +92,6 @@ def get_visible_accounts_for_current_user():
     else:
         return []
 
-# ==================== صلاحية الحذف ====================
 def can_delete_record(user_role, record_date=None):
     if user_role in ['meg', 'admin', 'mariam']:
         return True
@@ -94,7 +101,6 @@ def can_delete_record(user_role, record_date=None):
         return False
     return False
 
-# ==================== تسجيل النشاط ====================
 def log_activity(user_id, action, details=''):
     try:
         activity = ActivityLog(user_id=user_id, action=action, details=details, timestamp=datetime.utcnow())
@@ -177,11 +183,38 @@ def init_db():
         db.session.commit()
         print("✅ تم تهيئة قاعدة البيانات وإنشاء المستخدمين")
 
+        # إنشاء حسابات الخزينة للأشخاص المحددين
         treasury_persons = ['الحاج أحمد', 'عيد', 'عبدالله', 'الحاج فتحي']
         account_types = ['كاش', 'فودافون كاش', 'انستا باي']
         for person in treasury_persons:
             for acc_type in account_types:
                 get_or_create_treasury_account(person, acc_type)
+
+        # ============ تنظيف الحسابات القديمة بالإنجليزية ============
+        name_mapping = {
+            'Ahmed': 'الحاج أحمد',
+            'ahmed': 'الحاج أحمد',
+            'Eid': 'عيد',
+            'eid': 'عيد',
+            'Abdo': 'عبدالله',
+            'abdo': 'عبدالله',
+        }
+
+        for old_name, new_name in name_mapping.items():
+            old_accounts = TreasuryAccount.query.filter_by(person_name=old_name).all()
+            for old_acc in old_accounts:
+                # البحث عن حساب عربي بنفس النوع
+                arabic_acc = TreasuryAccount.query.filter_by(person_name=new_name, account_type=old_acc.account_type).first()
+                if arabic_acc:
+                    # دمج الرصيد
+                    arabic_acc.balance += old_acc.balance
+                    # نقل المعاملات
+                    for txn in old_acc.transactions:
+                        txn.account_id = arabic_acc.id
+                    db.session.delete(old_acc)
+                else:
+                    old_acc.person_name = new_name
+            db.session.commit()
 
 init_db()
 
@@ -504,7 +537,6 @@ def store_transactions():
                     record.customer_phone = request.form.get('party_phone')
                     record.payment_type = request.form.get('payment_type', 'آجل')
 
-                    # حذف البنود القديمة وإعادة المخزون
                     for item in record.items:
                         inv = StoreInventory.query.filter_by(product_type=item.product_type,
                                                              product_size=item.product_size,
