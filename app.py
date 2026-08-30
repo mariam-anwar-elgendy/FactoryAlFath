@@ -28,7 +28,7 @@ from utils import (
 
 app = Flask(__name__)
 
-# ==================== إعدادات الجلسة والأمان ====================
+# ==================== إعدادات الجلسة ====================
 app.config['SECRET_KEY'] = os.environ.get('SECRET_KEY', 'dev-secret-key-change-me')
 app.config['SESSION_TYPE'] = 'filesystem'
 app.config['SESSION_FILE_DIR'] = '/tmp/flask_session'
@@ -1317,7 +1317,6 @@ def reports_custom():
     store_diary = StoreDiary.query.filter(StoreDiary.date >= from_date, StoreDiary.date <= to_date).order_by(StoreDiary.date.asc()).all()
     transactions = TreasuryTransaction.query.filter(TreasuryTransaction.date >= from_date, TreasuryTransaction.date <= to_date).order_by(TreasuryTransaction.date.asc()).all()
 
-    # دمج سجل اليوميات
     combined_diary = []
     for d in factory_diary:
         combined_diary.append({'date': d.date, 'type': 'مصنع', 'description': d.description, 'amount': d.amount, 'created_by': d.created_by})
