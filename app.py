@@ -28,7 +28,7 @@ from utils import (
 
 app = Flask(__name__)
 
-# ==================== إعدادات الجلسة ====================
+# ==================== إعدادات الجلسة والأمان ====================
 app.config['SECRET_KEY'] = os.environ.get('SECRET_KEY', 'dev-secret-key-change-me')
 app.config['SESSION_TYPE'] = 'filesystem'
 app.config['SESSION_FILE_DIR'] = '/tmp/flask_session'
@@ -1314,7 +1314,16 @@ def reports_custom():
     factory_diary = FactoryDiary.query.filter(FactoryDiary.date >= from_date, FactoryDiary.date <= to_date).order_by(FactoryDiary.date.asc()).all()
     sales = StoreSale.query.filter(StoreSale.date >= from_date, StoreSale.date <= to_date).order_by(StoreSale.date.asc()).all()
     purchases = StorePurchase.query.filter(StorePurchase.date >= from_date, StorePurchase.date <= to_date).order_by(StorePurchase.date.asc()).all()
+    store_diary = StoreDiary.query.filter(StoreDiary.date >= from_date, StoreDiary.date <= to_date).order_by(StoreDiary.date.asc()).all()
     transactions = TreasuryTransaction.query.filter(TreasuryTransaction.date >= from_date, TreasuryTransaction.date <= to_date).order_by(TreasuryTransaction.date.asc()).all()
+
+    # دمج سجل اليوميات
+    combined_diary = []
+    for d in factory_diary:
+        combined_diary.append({'date': d.date, 'type': 'مصنع', 'description': d.description, 'amount': d.amount, 'created_by': d.created_by})
+    for d in store_diary:
+        combined_diary.append({'date': d.date, 'type': 'محل', 'description': d.description, 'amount': d.amount, 'created_by': d.created_by})
+    combined_diary.sort(key=lambda x: x['date'])
 
     return render_template('reports/custom.html',
                            from_date=from_date_str,
@@ -1325,7 +1334,8 @@ def reports_custom():
                            factory_diary=factory_diary,
                            sales=sales,
                            purchases=purchases,
-                           transactions=transactions)
+                           transactions=transactions,
+                           combined_diary=combined_diary)
 
 @app.route('/reports/customers')
 @custom_login_required
