@@ -120,7 +120,7 @@
                 <thead><tr><th>التاريخ</th><th>الشخص</th><th>النوع</th><th>المبلغ</th><th>الطريقة</th></tr></thead>
                 <tbody>
                     {% for t in transactions %}
-                    <tr><td>{{ t.date.strftime('%Y-%m-%d') }}</td><td>{{ t.account.person_name if t.account else '' }}</td><td>{{ 'إيداع' if t.transaction_type == 'deposit' else 'سحب' }}</td><td>{{ t.amount }}</td><td>{{ t.payment_method }}</td></tr>
+                    <tr><td>{{ t.date.strftime('%Y-%m-%d') }}</td><td>{{ t.account.person_name if t.account else '' }}</td><td>{% if t.transaction_type == 'deposit' %}إيداع{% else %}سحب{% endif %}</td><td>{{ t.amount }}</td><td>{{ t.payment_method }}</td></tr>
                     {% else %}
                     <tr><td colspan="5" class="text-center">لا يوجد</td></tr>
                     {% endfor %}
