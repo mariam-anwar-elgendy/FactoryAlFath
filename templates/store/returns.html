@@ -1,29 +1,16 @@
 {% extends "base.html" %}
-
 {% block title %}المرتجعات{% endblock %}
-
 {% block content %}
 <div class="d-flex justify-content-between align-items-center mb-4">
     <h2 class="fw-bold text-purple-dark">🔄 المرتجعات</h2>
-    <button class="btn btn-purple" data-bs-toggle="modal" data-bs-target="#addReturnModal">
-        ➕ تسجيل مرتجع
-    </button>
+    <button class="btn btn-purple" data-bs-toggle="modal" data-bs-target="#addReturnModal">➕ تسجيل مرتجع</button>
 </div>
 
 <div class="table-responsive">
     <table class="table table-striped table-hover align-middle">
         <thead class="bg-purple text-white">
             <tr>
-                <th>التاريخ</th>
-                <th>النوع</th>
-                <th>الطرف</th>
-                <th>الصنف</th>
-                <th>المقاس</th>
-                <th>المواصفات</th>
-                <th>الكمية</th>
-                <th>السبب</th>
-                <th>المسؤول</th>
-                <th>إجراءات</th>
+                <th>التاريخ</th><th>النوع</th><th>الطرف</th><th>الصنف</th><th>المقاس</th><th>المواصفات</th><th>الكمية</th><th>السبب</th><th>المسؤول</th><th>إجراءات</th>
             </tr>
         </thead>
         <tbody>
@@ -40,12 +27,13 @@
                 <td>{{ r.created_by }}</td>
                 <td>
                     {% if current_user.role in ['meg','admin','mariam'] or (current_user.role == 'rehab' and (now.date() - r.date).days <= 7) or (current_user.role == 'ahmed' and r.created_by == current_user.id and (now.date() - r.date).days <= 1) %}
-                    <button class="btn btn-sm btn-warning" data-bs-toggle="modal" data-bs-target="#editReturnModal{{ r.id }}">✏️</button>
+                    <button class="btn btn-sm btn-warning" data-bs-toggle="modal" data-bs-target="#editReturnModal{{ r.id }}">✏️ تعديل</button>
                     {% endif %}
-                    {% if current_user.role in ['meg','admin'] %}
+
+                    {% if current_user.role in ['meg','admin','mariam'] or (current_user.role == 'rehab' and (now.date() - r.date).days <= 7) %}
                     <form action="{{ url_for('store_returns') }}" method="POST" class="d-inline" onsubmit="return confirm('هل أنت متأكد من الحذف؟');">
                         <input type="hidden" name="delete_id" value="{{ r.id }}">
-                        <button type="submit" class="btn btn-sm btn-danger">🗑️</button>
+                        <button type="submit" class="btn btn-sm btn-danger">🗑️ حذف</button>
                     </form>
                     {% endif %}
                 </td>
@@ -57,58 +45,116 @@
     </table>
 </div>
 
-<!-- Modal إضافة -->
+<!-- Modal إضافة مرتجع -->
 <div class="modal fade" id="addReturnModal" tabindex="-1">
-    <div class="modal-dialog">
-        <div class="modal-content">
-            <form method="POST" action="{{ url_for('store_returns') }}">
-                <div class="modal-header bg-purple text-white">
-                    <h5 class="modal-title">➕ تسجيل مرتجع</h5>
-                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
-                </div>
-                <div class="modal-body">
-                    <div class="mb-3">
-                        <label class="form-label fw-bold">التاريخ</label>
-                        <input type="date" name="date" class="form-control" value="{{ now.strftime('%Y-%m-%d') }}" required>
-                    </div>
-                    <div class="mb-3">
-                        <label class="form-label fw-bold">النوع</label>
-                        <select name="return_type" class="form-select">
-                            <option value="from_customer">مرتجع من عميل</option>
-                            <option value="to_supplier">مرتجع لمورد</option>
-                        </select>
-                    </div>
-                    <div class="mb-3">
-                        <label class="form-label fw-bold">الطرف (العميل/المورد)</label>
-                        <input type="text" name="party_name" class="form-control" required>
-                    </div>
-                    <div class="mb-3">
-                        <label class="form-label fw-bold">الصنف</label>
-                        <input type="text" name="product_type" class="form-control">
-                    </div>
-                    <div class="mb-3">
-                        <label class="form-label fw-bold">المقاس</label>
-                        <input type="text" name="product_size" class="form-control">
-                    </div>
-                    <div class="mb-3">
-                        <label class="form-label fw-bold">المواصفات</label>
-                        <input type="text" name="product_spec" class="form-control">
-                    </div>
-                    <div class="mb-3">
-                        <label class="form-label fw-bold">الكمية</label>
-                        <input type="number" step="0.01" name="quantity" class="form-control" required>
-                    </div>
-                    <div class="mb-3">
-                        <label class="form-label fw-bold">السبب</label>
-                        <textarea name="reason" class="form-control"></textarea>
-                    </div>
-                </div>
-                <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">إلغاء</button>
-                    <button type="submit" class="btn btn-purple">حفظ</button>
-                </div>
-            </form>
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <form method="POST" action="{{ url_for('store_returns') }}">
+        <div class="modal-header bg-purple text-white">
+          <h5 class="modal-title">➕ تسجيل مرتجع</h5>
+          <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
         </div>
+        <div class="modal-body">
+          <div class="mb-3">
+            <label class="form-label fw-bold">التاريخ</label>
+            <input type="date" name="date" class="form-control" value="{{ now.strftime('%Y-%m-%d') }}" required>
+          </div>
+          <div class="mb-3">
+            <label class="form-label fw-bold">النوع</label>
+            <select name="return_type" class="form-select">
+              <option value="from_customer">مرتجع من عميل</option>
+              <option value="to_supplier">مرتجع لمورد</option>
+            </select>
+          </div>
+          <div class="mb-3">
+            <label class="form-label fw-bold">الطرف (العميل/المورد)</label>
+            <input type="text" name="party_name" class="form-control" required>
+          </div>
+          <div class="mb-3">
+            <label class="form-label fw-bold">الصنف</label>
+            <input type="text" name="product_type" class="form-control">
+          </div>
+          <div class="mb-3">
+            <label class="form-label fw-bold">المقاس</label>
+            <input type="text" name="product_size" class="form-control">
+          </div>
+          <div class="mb-3">
+            <label class="form-label fw-bold">المواصفات</label>
+            <input type="text" name="product_spec" class="form-control">
+          </div>
+          <div class="mb-3">
+            <label class="form-label fw-bold">الكمية</label>
+            <input type="number" step="0.01" name="quantity" class="form-control" required>
+          </div>
+          <div class="mb-3">
+            <label class="form-label fw-bold">السبب</label>
+            <textarea name="reason" class="form-control"></textarea>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">إلغاء</button>
+          <button type="submit" class="btn btn-purple">حفظ</button>
+        </div>
+      </form>
     </div>
+  </div>
 </div>
+
+<!-- Modal تعديل لكل مرتجع -->
+{% for r in returns %}
+<div class="modal fade" id="editReturnModal{{ r.id }}" tabindex="-1">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <form method="POST" action="{{ url_for('store_returns') }}">
+        <input type="hidden" name="edit_id" value="{{ r.id }}">
+        <div class="modal-header bg-warning text-dark">
+          <h5 class="modal-title">✏️ تعديل مرتجع</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+        </div>
+        <div class="modal-body">
+          <div class="mb-3">
+            <label class="form-label fw-bold">التاريخ</label>
+            <input type="date" name="date" class="form-control" value="{{ r.date.strftime('%Y-%m-%d') }}" required>
+          </div>
+          <div class="mb-3">
+            <label class="form-label fw-bold">النوع</label>
+            <select name="return_type" class="form-select">
+              <option value="from_customer" {% if r.return_type == 'from_customer' %}selected{% endif %}>مرتجع من عميل</option>
+              <option value="to_supplier" {% if r.return_type == 'to_supplier' %}selected{% endif %}>مرتجع لمورد</option>
+            </select>
+          </div>
+          <div class="mb-3">
+            <label class="form-label fw-bold">الطرف</label>
+            <input type="text" name="party_name" class="form-control" value="{{ r.party_name }}" required>
+          </div>
+          <div class="mb-3">
+            <label class="form-label fw-bold">الصنف</label>
+            <input type="text" name="product_type" class="form-control" value="{{ r.product_type or '' }}">
+          </div>
+          <div class="mb-3">
+            <label class="form-label fw-bold">المقاس</label>
+            <input type="text" name="product_size" class="form-control" value="{{ r.product_size or '' }}">
+          </div>
+          <div class="mb-3">
+            <label class="form-label fw-bold">المواصفات</label>
+            <input type="text" name="product_spec" class="form-control" value="{{ r.product_spec or '' }}">
+          </div>
+          <div class="mb-3">
+            <label class="form-label fw-bold">الكمية</label>
+            <input type="number" step="0.01" name="quantity" class="form-control" value="{{ r.quantity }}" required>
+          </div>
+          <div class="mb-3">
+            <label class="form-label fw-bold">السبب</label>
+            <textarea name="reason" class="form-control">{{ r.reason or '' }}</textarea>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">إلغاء</button>
+          <button type="submit" class="btn btn-warning">تعديل</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+{% endfor %}
 {% endblock %}
