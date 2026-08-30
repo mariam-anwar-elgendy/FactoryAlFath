@@ -47,7 +47,7 @@
                     <button class="btn btn-sm btn-info" data-bs-toggle="modal" data-bs-target="#itemsModal{{ sale.id }}">📋</button>
                 </td>
             </tr>
-            <!-- Modal دفعة -->
+            <!-- مودال الدفعة -->
             <div class="modal fade" id="paymentModal{{ sale.id }}" tabindex="-1">
                 <div class="modal-dialog">
                     <div class="modal-content">
@@ -79,7 +79,7 @@
                     </div>
                 </div>
             </div>
-            <!-- Modal البنود -->
+            <!-- مودال البنود -->
             <div class="modal fade" id="itemsModal{{ sale.id }}" tabindex="-1">
                 <div class="modal-dialog modal-lg">
                     <div class="modal-content">
@@ -100,6 +100,8 @@
                                         <td>{{ item.unit_price }}</td>
                                         <td>{{ item.total }}</td>
                                     </tr>
+                                    {% else %}
+                                    <tr><td colspan="6" class="text-center">لا توجد بنود</td></tr>
                                     {% endfor %}
                                 </tbody>
                             </table>
@@ -107,6 +109,8 @@
                     </div>
                 </div>
             </div>
+            {% else %}
+            <tr><td colspan="6" class="text-center">لا توجد فواتير</td></tr>
             {% endfor %}
         </tbody>
     </table>
