@@ -116,6 +116,27 @@
     </table>
 </div>
 
+<h5 class="fw-bold mt-4">معاملات الخزينة المتعلقة بهذا المورد</h5>
+<div class="table-responsive">
+    <table class="table table-sm table-striped">
+        <thead>
+            <tr><th>التاريخ</th><th>النوع</th><th>المبلغ</th><th>طريقة الدفع</th></tr>
+        </thead>
+        <tbody>
+            {% for txn in treasury_txns %}
+            <tr>
+                <td>{{ txn.date.strftime('%Y-%m-%d') }}</td>
+                <td>{% if txn.transaction_type == 'deposit' %}إيداع{% else %}سحب{% endif %}</td>
+                <td>{{ txn.amount }}</td>
+                <td>{{ txn.payment_method or '-' }}</td>
+            </tr>
+            {% else %}
+            <tr><td colspan="4" class="text-center text-muted">لا توجد معاملات</td></tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+
 <!-- مودالات الدفع -->
 {% for purchase in purchases %}
 <div class="modal fade" id="paymentModal{{ purchase.id }}" tabindex="-1">
