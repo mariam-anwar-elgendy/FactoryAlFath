@@ -234,33 +234,136 @@
   </div>
 </div>
 
+<!-- نموذج تعديل بيع يتضمن البنود -->
 <div class="modal fade" id="editSaleModal{{ s.id }}" tabindex="-1">
-  <div class="modal-dialog">
+  <div class="modal-dialog modal-xl">
     <div class="modal-content">
       <form method="POST" action="{{ url_for('store_transactions') }}">
         <input type="hidden" name="edit_id" value="{{ s.id }}">
         <input type="hidden" name="transaction_type" value="sale">
         <div class="modal-header bg-warning text-dark">
-          <h5 class="modal-title">تعديل بيع</h5>
+          <h5 class="modal-title">✏️ تعديل بيع</h5>
           <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
         </div>
         <div class="modal-body">
-          <div class="mb-3">
-            <label class="form-label fw-bold">التاريخ</label>
-            <input type="date" name="date" class="form-control" value="{{ s.date.strftime('%Y-%m-%d') }}" required>
+          <div class="row">
+            <div class="col-md-6 mb-3">
+              <label class="form-label fw-bold">التاريخ</label>
+              <input type="date" name="date" class="form-control" value="{{ s.date.strftime('%Y-%m-%d') }}" required>
+            </div>
+            <div class="col-md-6 mb-3">
+              <label class="form-label fw-bold">طريقة الدفع</label>
+              <select name="payment_type" class="form-select">
+                <option value="آجل" {% if s.payment_type == 'آجل' %}selected{% endif %}>آجل</option>
+                <option value="نقدي" {% if s.payment_type == 'نقدي' %}selected{% endif %}>نقدي</option>
+              </select>
+            </div>
           </div>
-          <div class="mb-3">
-            <label class="form-label fw-bold">اسم العميل</label>
-            <input type="text" name="party_name" class="form-control" value="{{ s.customer_name }}" required>
+          <div class="row">
+            <div class="col-md-6 mb-3">
+              <label class="form-label fw-bold">اسم العميل</label>
+              <input type="text" name="party_name" class="form-control" value="{{ s.customer_name }}" required>
+            </div>
+            <div class="col-md-6 mb-3">
+              <label class="form-label fw-bold">الهاتف</label>
+              <input type="text" name="party_phone" class="form-control" value="{{ s.customer_phone or '' }}">
+            </div>
           </div>
-          <div class="mb-3">
-            <label class="form-label fw-bold">الهاتف</label>
-            <input type="text" name="party_phone" class="form-control" value="{{ s.customer_phone or '' }}">
+
+          <div class="card">
+            <div class="card-header bg-light fw-bold">📦 البنود</div>
+            <div class="card-body">
+              <table class="table" id="editItemsSale{{ s.id }}">
+                <thead>
+                  <tr>
+                    <th>الصنف</th><th>المقاس</th><th>المواصفات</th><th>الكمية</th><th>سعر الوحدة</th><th>إجمالي</th><th></th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {% for item in s.items %}
+                  <tr class="edit-item-row">
+                    <td>
+                      <select name="product_type" class="form-select" required>
+                        <option value="{{ item.product_type }}" selected>{{ item.product_type }}</option>
+                        {% for c in categories %}
+                          {% if c.name != item.product_type %}
+                          <option value="{{ c.name }}">{{ c.name }}</option>
+                          {% endif %}
+                        {% endfor %}
+                        <option value="new">➕ جديد...</option>
+                      </select>
+                    </td>
+                    <td>
+                      <select name="product_size" class="form-select">
+                        <option value="{{ item.product_size }}" selected>{{ item.product_size or '' }}</option>
+                        {% for s2 in sizes %}
+                          {% if s2.value != item.product_size %}
+                          <option value="{{ s2.value }}">{{ s2.value }}</option>
+                          {% endif %}
+                        {% endfor %}
+                        <option value="new">➕ جديد...</option>
+                      </select>
+                    </td>
+                    <td>
+                      <select name="product_spec" class="form-select">
+                        <option value="{{ item.product_spec }}" selected>{{ item.product_spec or '' }}</option>
+                        {% for t in thicknesses %}
+                          {% if t.value != item.product_spec %}
+                          <option value="{{ t.value }}">{{ t.value }}</option>
+                          {% endif %}
+                        {% endfor %}
+                        <option value="new">➕ جديد...</option>
+                      </select>
+                    </td>
+                    <td><input type="number" step="0.01" name="quantity" class="form-control" value="{{ item.quantity }}" required></td>
+                    <td><input type="number" step="0.01" name="unit_price" class="form-control" value="{{ item.unit_price }}"></td>
+                    <td><span class="edit-item-total">{{ item.total }}</span></td>
+                    <td><button type="button" class="btn btn-sm btn-danger remove-edit-row">🗑️</button></td>
+                  </tr>
+                  {% else %}
+                  <tr class="edit-item-row">
+                    <td>
+                      <select name="product_type" class="form-select" required>
+                        <option value="">اختر الصنف...</option>
+                        {% for c in categories %}
+                        <option value="{{ c.name }}">{{ c.name }}</option>
+                        {% endfor %}
+                        <option value="new">➕ جديد...</option>
+                      </select>
+                    </td>
+                    <td>
+                      <select name="product_size" class="form-select">
+                        <option value="">اختر المقاس...</option>
+                        {% for s2 in sizes %}
+                        <option value="{{ s2.value }}">{{ s2.value }}</option>
+                        {% endfor %}
+                        <option value="new">➕ جديد...</option>
+                      </select>
+                    </td>
+                    <td>
+                      <select name="product_spec" class="form-select">
+                        <option value="">اختر السماكة...</option>
+                        {% for t in thicknesses %}
+                        <option value="{{ t.value }}">{{ t.value }}</option>
+                        {% endfor %}
+                        <option value="new">➕ جديد...</option>
+                      </select>
+                    </td>
+                    <td><input type="number" step="0.01" name="quantity" class="form-control" required></td>
+                    <td><input type="number" step="0.01" name="unit_price" class="form-control" value="0"></td>
+                    <td><span class="edit-item-total">0</span></td>
+                    <td><button type="button" class="btn btn-sm btn-danger remove-edit-row">🗑️</button></td>
+                  </tr>
+                  {% endfor %}
+                </tbody>
+              </table>
+              <button type="button" class="btn btn-sm btn-outline-purple add-edit-row" data-table="editItemsSale{{ s.id }}">➕ إضافة صف</button>
+            </div>
           </div>
         </div>
         <div class="modal-footer">
           <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">إلغاء</button>
-          <button type="submit" class="btn btn-warning">حفظ</button>
+          <button type="submit" class="btn btn-warning">حفظ التعديل</button>
         </div>
       </form>
     </div>
@@ -308,33 +411,136 @@
   </div>
 </div>
 
+<!-- نموذج تعديل شراء يتضمن البنود -->
 <div class="modal fade" id="editPurchaseModal{{ p.id }}" tabindex="-1">
-  <div class="modal-dialog">
+  <div class="modal-dialog modal-xl">
     <div class="modal-content">
       <form method="POST" action="{{ url_for('store_transactions') }}">
         <input type="hidden" name="edit_id" value="{{ p.id }}">
         <input type="hidden" name="transaction_type" value="purchase">
         <div class="modal-header bg-warning text-dark">
-          <h5 class="modal-title">تعديل شراء</h5>
+          <h5 class="modal-title">✏️ تعديل شراء</h5>
           <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
         </div>
         <div class="modal-body">
-          <div class="mb-3">
-            <label class="form-label fw-bold">التاريخ</label>
-            <input type="date" name="date" class="form-control" value="{{ p.date.strftime('%Y-%m-%d') }}" required>
+          <div class="row">
+            <div class="col-md-6 mb-3">
+              <label class="form-label fw-bold">التاريخ</label>
+              <input type="date" name="date" class="form-control" value="{{ p.date.strftime('%Y-%m-%d') }}" required>
+            </div>
+            <div class="col-md-6 mb-3">
+              <label class="form-label fw-bold">طريقة الدفع</label>
+              <select name="payment_type" class="form-select">
+                <option value="آجل" {% if p.payment_type == 'آجل' %}selected{% endif %}>آجل</option>
+                <option value="نقدي" {% if p.payment_type == 'نقدي' %}selected{% endif %}>نقدي</option>
+              </select>
+            </div>
           </div>
-          <div class="mb-3">
-            <label class="form-label fw-bold">اسم المورد</label>
-            <input type="text" name="party_name" class="form-control" value="{{ p.supplier_name }}" required>
+          <div class="row">
+            <div class="col-md-6 mb-3">
+              <label class="form-label fw-bold">اسم المورد</label>
+              <input type="text" name="party_name" class="form-control" value="{{ p.supplier_name }}" required>
+            </div>
+            <div class="col-md-6 mb-3">
+              <label class="form-label fw-bold">الهاتف</label>
+              <input type="text" name="party_phone" class="form-control" value="{{ p.supplier_phone or '' }}">
+            </div>
           </div>
-          <div class="mb-3">
-            <label class="form-label fw-bold">الهاتف</label>
-            <input type="text" name="party_phone" class="form-control" value="{{ p.supplier_phone or '' }}">
+
+          <div class="card">
+            <div class="card-header bg-light fw-bold">📦 البنود</div>
+            <div class="card-body">
+              <table class="table" id="editItemsPurchase{{ p.id }}">
+                <thead>
+                  <tr>
+                    <th>الصنف</th><th>المقاس</th><th>المواصفات</th><th>الكمية</th><th>سعر الوحدة</th><th>إجمالي</th><th></th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {% for item in p.items %}
+                  <tr class="edit-item-row">
+                    <td>
+                      <select name="product_type" class="form-select" required>
+                        <option value="{{ item.product_type }}" selected>{{ item.product_type }}</option>
+                        {% for c in categories %}
+                          {% if c.name != item.product_type %}
+                          <option value="{{ c.name }}">{{ c.name }}</option>
+                          {% endif %}
+                        {% endfor %}
+                        <option value="new">➕ جديد...</option>
+                      </select>
+                    </td>
+                    <td>
+                      <select name="product_size" class="form-select">
+                        <option value="{{ item.product_size }}" selected>{{ item.product_size or '' }}</option>
+                        {% for s2 in sizes %}
+                          {% if s2.value != item.product_size %}
+                          <option value="{{ s2.value }}">{{ s2.value }}</option>
+                          {% endif %}
+                        {% endfor %}
+                        <option value="new">➕ جديد...</option>
+                      </select>
+                    </td>
+                    <td>
+                      <select name="product_spec" class="form-select">
+                        <option value="{{ item.product_spec }}" selected>{{ item.product_spec or '' }}</option>
+                        {% for t in thicknesses %}
+                          {% if t.value != item.product_spec %}
+                          <option value="{{ t.value }}">{{ t.value }}</option>
+                          {% endif %}
+                        {% endfor %}
+                        <option value="new">➕ جديد...</option>
+                      </select>
+                    </td>
+                    <td><input type="number" step="0.01" name="quantity" class="form-control" value="{{ item.quantity }}" required></td>
+                    <td><input type="number" step="0.01" name="unit_price" class="form-control" value="{{ item.unit_price }}"></td>
+                    <td><span class="edit-item-total">{{ item.total }}</span></td>
+                    <td><button type="button" class="btn btn-sm btn-danger remove-edit-row">🗑️</button></td>
+                  </tr>
+                  {% else %}
+                  <tr class="edit-item-row">
+                    <td>
+                      <select name="product_type" class="form-select" required>
+                        <option value="">اختر الصنف...</option>
+                        {% for c in categories %}
+                        <option value="{{ c.name }}">{{ c.name }}</option>
+                        {% endfor %}
+                        <option value="new">➕ جديد...</option>
+                      </select>
+                    </td>
+                    <td>
+                      <select name="product_size" class="form-select">
+                        <option value="">اختر المقاس...</option>
+                        {% for s2 in sizes %}
+                        <option value="{{ s2.value }}">{{ s2.value }}</option>
+                        {% endfor %}
+                        <option value="new">➕ جديد...</option>
+                      </select>
+                    </td>
+                    <td>
+                      <select name="product_spec" class="form-select">
+                        <option value="">اختر السماكة...</option>
+                        {% for t in thicknesses %}
+                        <option value="{{ t.value }}">{{ t.value }}</option>
+                        {% endfor %}
+                        <option value="new">➕ جديد...</option>
+                      </select>
+                    </td>
+                    <td><input type="number" step="0.01" name="quantity" class="form-control" required></td>
+                    <td><input type="number" step="0.01" name="unit_price" class="form-control" value="0"></td>
+                    <td><span class="edit-item-total">0</span></td>
+                    <td><button type="button" class="btn btn-sm btn-danger remove-edit-row">🗑️</button></td>
+                  </tr>
+                  {% endfor %}
+                </tbody>
+              </table>
+              <button type="button" class="btn btn-sm btn-outline-purple add-edit-row" data-table="editItemsPurchase{{ p.id }}">➕ إضافة صف</button>
+            </div>
           </div>
         </div>
         <div class="modal-footer">
           <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">إلغاء</button>
-          <button type="submit" class="btn btn-warning">حفظ</button>
+          <button type="submit" class="btn btn-warning">حفظ التعديل</button>
         </div>
       </form>
     </div>
@@ -445,6 +651,7 @@
 </div>
 
 <script>
+// إضافة صف جديد في نموذج الإضافة
 document.getElementById('addRow').addEventListener('click', function() {
     var table = document.getElementById('itemsTable').getElementsByTagName('tbody')[0];
     var newRow = table.rows[0].cloneNode(true);
@@ -454,6 +661,20 @@ document.getElementById('addRow').addEventListener('click', function() {
     table.appendChild(newRow);
 });
 
+// إضافة صف جديد في نماذج التعديل
+document.querySelectorAll('.add-edit-row').forEach(function(btn) {
+    btn.addEventListener('click', function() {
+        var tableId = btn.getAttribute('data-table');
+        var table = document.getElementById(tableId).getElementsByTagName('tbody')[0];
+        var newRow = table.rows[0].cloneNode(true);
+        newRow.querySelectorAll('input').forEach(function(input) { input.value = ''; });
+        newRow.querySelectorAll('select').forEach(function(select) { select.value = ''; });
+        newRow.querySelector('.edit-item-total').innerText = '0';
+        table.appendChild(newRow);
+    });
+});
+
+// حذف صف
 document.addEventListener('click', function(e) {
     if (e.target.classList.contains('remove-row')) {
         var row = e.target.closest('tr');
@@ -461,17 +682,26 @@ document.addEventListener('click', function(e) {
             row.remove();
         }
     }
+    if (e.target.classList.contains('remove-edit-row')) {
+        var row = e.target.closest('tr');
+        if (row.parentElement.querySelectorAll('tr').length > 1) {
+            row.remove();
+        }
+    }
 });
 
+// حساب الإجمالي
 document.addEventListener('input', function(e) {
     if (e.target.name === 'quantity' || e.target.name === 'unit_price') {
         var row = e.target.closest('tr');
         var qty = parseFloat(row.querySelector('input[name="quantity"]').value) || 0;
         var price = parseFloat(row.querySelector('input[name="unit_price"]').value) || 0;
-        row.querySelector('.item-total').innerText = (qty * price).toFixed(2);
+        var totalSpan = row.querySelector('.item-total, .edit-item-total');
+        if (totalSpan) totalSpan.innerText = (qty * price).toFixed(2);
     }
 });
 
+// إظهار حقل جديد عند اختيار "جديد"
 document.addEventListener('change', function(e) {
     if (e.target.name === 'product_type' && e.target.value === 'new') {
         e.target.parentElement.querySelector('input[name="new_product_type"]').style.display = 'block';
