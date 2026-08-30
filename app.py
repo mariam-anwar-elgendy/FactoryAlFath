@@ -1340,10 +1340,17 @@ def reports_custom():
 @custom_login_required
 @role_required('meg', 'admin', 'mariam', 'rehab')
 def reports_customers():
+    from_date_str = request.args.get('from_date')
+    to_date_str = request.args.get('to_date')
     customers = Customer.query.order_by(Customer.name.asc()).all()
     customers_data = []
     for c in customers:
-        sales = StoreSale.query.filter_by(customer_name=c.name).all()
+        sales_query = StoreSale.query.filter_by(customer_name=c.name)
+        if from_date_str and to_date_str:
+            from_date = datetime.strptime(from_date_str, '%Y-%m-%d').date()
+            to_date = datetime.strptime(to_date_str, '%Y-%m-%d').date()
+            sales_query = sales_query.filter(StoreSale.date >= from_date, StoreSale.date <= to_date)
+        sales = sales_query.all()
         total_purchases = sum(s.total for s in sales)
         total_paid = sum(s.paid_amount for s in sales)
         customers_data.append({
@@ -1359,25 +1366,41 @@ def reports_customers():
 @role_required('meg', 'admin', 'mariam', 'rehab')
 def report_single_customer(customer_id):
     customer = Customer.query.get_or_404(customer_id)
-    sales = StoreSale.query.filter_by(customer_name=customer.name).order_by(StoreSale.date.asc(), StoreSale.id.asc()).all()
+    from_date_str = request.args.get('from_date')
+    to_date_str = request.args.get('to_date')
+    sales_query = StoreSale.query.filter_by(customer_name=customer.name)
+    if from_date_str and to_date_str:
+        from_date = datetime.strptime(from_date_str, '%Y-%m-%d').date()
+        to_date = datetime.strptime(to_date_str, '%Y-%m-%d').date()
+        sales_query = sales_query.filter(StoreSale.date >= from_date, StoreSale.date <= to_date)
+    sales = sales_query.order_by(StoreSale.date.asc(), StoreSale.id.asc()).all()
     total_purchases = sum(s.total for s in sales)
     total_paid = sum(s.paid_amount for s in sales)
     total_remaining = total_purchases - total_paid
+    treasury_txns = TreasuryTransaction.query.filter_by(source=customer.name).order_by(TreasuryTransaction.date.asc()).all()
     return render_template('reports/customer_detail.html',
                            customer=customer,
                            sales=sales,
                            total_purchases=total_purchases,
                            total_paid=total_paid,
-                           total_remaining=total_remaining)
+                           total_remaining=total_remaining,
+                           treasury_txns=treasury_txns)
 
 @app.route('/reports/suppliers')
 @custom_login_required
 @role_required('meg', 'admin', 'mariam', 'rehab')
 def reports_suppliers():
+    from_date_str = request.args.get('from_date')
+    to_date_str = request.args.get('to_date')
     suppliers = Supplier.query.order_by(Supplier.name.asc()).all()
     suppliers_data = []
     for s in suppliers:
-        purchases = StorePurchase.query.filter_by(supplier_name=s.name).all()
+        purchases_query = StorePurchase.query.filter_by(supplier_name=s.name)
+        if from_date_str and to_date_str:
+            from_date = datetime.strptime(from_date_str, '%Y-%m-%d').date()
+            to_date = datetime.strptime(to_date_str, '%Y-%m-%d').date()
+            purchases_query = purchases_query.filter(StorePurchase.date >= from_date, StorePurchase.date <= to_date)
+        purchases = purchases_query.all()
         total_purchases = sum(p.total for p in purchases)
         total_paid = sum(p.paid_amount for p in purchases)
         suppliers_data.append({
@@ -1393,16 +1416,25 @@ def reports_suppliers():
 @role_required('meg', 'admin', 'mariam', 'rehab')
 def report_single_supplier(supplier_id):
     supplier = Supplier.query.get_or_404(supplier_id)
-    purchases = StorePurchase.query.filter_by(supplier_name=supplier.name).order_by(StorePurchase.date.asc(), StorePurchase.id.asc()).all()
+    from_date_str = request.args.get('from_date')
+    to_date_str = request.args.get('to_date')
+    purchases_query = StorePurchase.query.filter_by(supplier_name=supplier.name)
+    if from_date_str and to_date_str:
+        from_date = datetime.strptime(from_date_str, '%Y-%m-%d').date()
+        to_date = datetime.strptime(to_date_str, '%Y-%m-%d').date()
+        purchases_query = purchases_query.filter(StorePurchase.date >= from_date, StorePurchase.date <= to_date)
+    purchases = purchases_query.order_by(StorePurchase.date.asc(), StorePurchase.id.asc()).all()
     total_purchases = sum(p.total for p in purchases)
     total_paid = sum(p.paid_amount for p in purchases)
     total_remaining = total_purchases - total_paid
+    treasury_txns = TreasuryTransaction.query.filter_by(source=supplier.name).order_by(TreasuryTransaction.date.asc()).all()
     return render_template('reports/supplier_detail.html',
                            supplier=supplier,
                            purchases=purchases,
                            total_purchases=total_purchases,
                            total_paid=total_paid,
-                           total_remaining=total_remaining)
+                           total_remaining=total_remaining,
+                           treasury_txns=treasury_txns)
 
 @app.route('/reports/download-excel/<file_name>')
 @custom_login_required
