@@ -17,24 +17,19 @@
             </tr>
         </thead>
         <tbody>
-            {% for supplier in suppliers %}
+            {% for data in suppliers_data %}
             <tr>
-                <td>{{ supplier.name }}</td>
-                <td>{{ supplier.phone or '-' }}</td>
+                <td>{{ data.supplier.name }}</td>
+                <td>{{ data.supplier.phone or '-' }}</td>
+                <td>{{ data.total_purchases }}</td>
+                <td>{{ data.total_paid }}</td>
+                <td>{{ data.remaining }}</td>
                 <td>
-                    {% set purchases = supplier.name | get_purchases_for_supplier %}
-                    {{ purchases | sum(attribute='total') }}
-                </td>
-                <td>
-                    {{ purchases | sum(attribute='paid_amount') }}
-                </td>
-                <td>
-                    {{ purchases | sum(attribute='remaining') }}
-                </td>
-                <td>
-                    <a href="{{ url_for('report_single_supplier', supplier_id=supplier.id) }}" class="btn btn-sm btn-purple">عرض</a>
+                    <a href="{{ url_for('report_single_supplier', supplier_id=data.supplier.id) }}" class="btn btn-sm btn-purple">عرض</a>
                 </td>
             </tr>
+            {% else %}
+            <tr><td colspan="6" class="text-center">لا يوجد موردين</td></tr>
             {% endfor %}
         </tbody>
     </table>
