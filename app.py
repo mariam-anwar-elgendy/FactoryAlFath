@@ -84,6 +84,17 @@ def get_visible_accounts_for_current_user():
     else:
         return []
 
+# ==================== صلاحية الحذف ====================
+def can_delete_record(user_role, record_date=None):
+    """تحقق من صلاحية حذف السجل بناءً على الدور والتاريخ"""
+    if user_role in ['meg', 'admin', 'mariam']:
+        return True
+    if user_role == 'rehab':
+        if record_date:
+            return (datetime.now().date() - record_date).days <= 7
+        return False
+    return False
+
 # ==================== تسجيل النشاط ====================
 def log_activity(user_id, action, details=''):
     try:
@@ -294,7 +305,7 @@ def factory_raw_materials():
         if request.form.get('delete_id'):
             record_id = int(request.form.get('delete_id'))
             record = FactoryRawMaterial.query.get_or_404(record_id)
-            if current_user.role in ['meg', 'admin']:
+            if can_delete_record(current_user.role, record.date):
                 db.session.delete(record)
                 db.session.commit()
                 log_activity(current_user.id, 'delete', f"حذف وارد ماسورة {record.pipe_size} {record.pipe_thickness}")
@@ -346,7 +357,7 @@ def factory_production():
         if request.form.get('delete_id'):
             record_id = int(request.form.get('delete_id'))
             record = FactoryProduction.query.get_or_404(record_id)
-            if current_user.role in ['meg', 'admin']:
+            if can_delete_record(current_user.role, record.date):
                 db.session.delete(record)
                 db.session.commit()
                 log_activity(current_user.id, 'delete', f"حذف إنتاج {record.elbow_size}")
@@ -398,7 +409,7 @@ def factory_diary():
         if request.form.get('delete_id'):
             record_id = int(request.form.get('delete_id'))
             record = FactoryDiary.query.get_or_404(record_id)
-            if current_user.role in ['meg', 'admin']:
+            if can_delete_record(current_user.role, record.date):
                 db.session.delete(record)
                 db.session.commit()
                 log_activity(current_user.id, 'delete', f"حذف يومية مصنع")
@@ -451,11 +462,10 @@ def store_index():
 @role_required('meg', 'admin', 'mariam', 'rehab', 'ahmed')
 def store_transactions():
     if request.method == 'POST':
-        # حذف
         if request.form.get('delete_id'):
             record_id = int(request.form.get('delete_id'))
             transaction_type = request.form.get('transaction_type')
-            if current_user.role in ['meg', 'admin']:
+            if can_delete_record(current_user.role, StoreSale.query.get_or_404(record_id).date if transaction_type == 'sale' else StorePurchase.query.get_or_404(record_id).date):
                 if transaction_type == 'sale':
                     record = StoreSale.query.get_or_404(record_id)
                     for item in record.items:
@@ -485,7 +495,6 @@ def store_transactions():
                 flash('غير مصرح لك بالحذف', 'danger')
             return redirect(url_for('store_transactions'))
 
-        # تعديل
         if request.form.get('edit_id'):
             record_id = int(request.form.get('edit_id'))
             transaction_type = request.form.get('transaction_type')
@@ -513,18 +522,21 @@ def store_transactions():
                     flash('غير مصرح لك بالتعديل', 'danger')
             return redirect(url_for('store_transactions'))
 
-        # إضافة جديدة
+        # إضافة (نفس المنطق السابق مع البنود)
         transaction_type = request.form.get('transaction_type')
         record_date = datetime.strptime(request.form.get('date'), '%Y-%m-%d').date()
         party_name = request.form.get('party_name')
         party_phone = request.form.get('party_phone')
         payment_type = request.form.get('payment_type', 'آجل')
 
-        product_types = request.form.getlist('product_type[]')
-        product_sizes = request.form.getlist('product_size[]')
-        product_specs = request.form.getlist('product_spec[]')
-        quantities = request.form.getlist('quantity[]')
-        unit_prices = request.form.getlist('unit_price[]')
+        product_types = request.form.getlist('product_type')
+        product_sizes = request.form.getlist('product_size')
+        product_specs = request.form.getlist('product_spec')
+        quantities = request.form.getlist('quantity')
+        unit_prices = request.form.getlist('unit_price')
+        new_product_types = request.form.getlist('new_product_type')
+        new_product_sizes = request.form.getlist('new_product_size')
+        new_product_specs = request.form.getlist('new_product_spec')
 
         if transaction_type == 'sale':
             new_sale = StoreSale(
@@ -541,16 +553,36 @@ def store_transactions():
 
             for i in range(len(product_types)):
                 if product_types[i].strip():
+                    product_type = product_types[i]
+                    if product_type == 'new':
+                        product_type = new_product_types[i] if i < len(new_product_types) else ''
+                        if product_type and not Category.query.filter_by(name=product_type).first():
+                            db.session.add(Category(name=product_type))
+                            db.session.commit()
+                    product_size = product_sizes[i] if i < len(product_sizes) else ''
+                    if product_size == 'new':
+                        product_size = new_product_sizes[i] if i < len(new_product_sizes) else ''
+                        if product_size and not Size.query.filter_by(value=product_size).first():
+                            db.session.add(Size(value=product_size))
+                            db.session.commit()
+                    product_spec = product_specs[i] if i < len(product_specs) else ''
+                    if product_spec == 'new':
+                        product_spec = new_product_specs[i] if i < len(new_product_specs) else ''
+                        if product_spec and not Thickness.query.filter_by(value=product_spec).first():
+                            db.session.add(Thickness(value=product_spec))
+                            db.session.commit()
+
                     item = StoreSaleItem(
                         sale_id=new_sale.id,
-                        product_type=product_types[i],
-                        product_size=product_sizes[i] if i < len(product_sizes) else '',
-                        product_spec=product_specs[i] if i < len(product_specs) else '',
+                        product_type=product_type,
+                        product_size=product_size,
+                        product_spec=product_spec,
                         quantity=float(quantities[i] if i < len(quantities) else 0),
                         unit_price=float(unit_prices[i] if i < len(unit_prices) else 0) if unit_prices[i] else 0,
                     )
                     item.total = item.quantity * item.unit_price
                     db.session.add(item)
+
                     inv = StoreInventory.query.filter_by(product_type=item.product_type,
                                                          product_size=item.product_size,
                                                          product_spec=item.product_spec).first()
@@ -562,6 +594,7 @@ def store_transactions():
                                              product_spec=item.product_spec,
                                              current_quantity=-item.quantity)
                         db.session.add(inv)
+
             db.session.commit()
             total = sum(item.total for item in new_sale.items)
             db.session.add(StoreDiary(date=record_date,
@@ -587,16 +620,36 @@ def store_transactions():
 
             for i in range(len(product_types)):
                 if product_types[i].strip():
+                    product_type = product_types[i]
+                    if product_type == 'new':
+                        product_type = new_product_types[i] if i < len(new_product_types) else ''
+                        if product_type and not Category.query.filter_by(name=product_type).first():
+                            db.session.add(Category(name=product_type))
+                            db.session.commit()
+                    product_size = product_sizes[i] if i < len(product_sizes) else ''
+                    if product_size == 'new':
+                        product_size = new_product_sizes[i] if i < len(new_product_sizes) else ''
+                        if product_size and not Size.query.filter_by(value=product_size).first():
+                            db.session.add(Size(value=product_size))
+                            db.session.commit()
+                    product_spec = product_specs[i] if i < len(product_specs) else ''
+                    if product_spec == 'new':
+                        product_spec = new_product_specs[i] if i < len(new_product_specs) else ''
+                        if product_spec and not Thickness.query.filter_by(value=product_spec).first():
+                            db.session.add(Thickness(value=product_spec))
+                            db.session.commit()
+
                     item = StorePurchaseItem(
                         purchase_id=new_purchase.id,
-                        product_type=product_types[i],
-                        product_size=product_sizes[i] if i < len(product_sizes) else '',
-                        product_spec=product_specs[i] if i < len(product_specs) else '',
+                        product_type=product_type,
+                        product_size=product_size,
+                        product_spec=product_spec,
                         quantity=float(quantities[i] if i < len(quantities) else 0),
                         unit_price=float(unit_prices[i] if i < len(unit_prices) else 0) if unit_prices[i] else 0,
                     )
                     item.total = item.quantity * item.unit_price
                     db.session.add(item)
+
                     inv = StoreInventory.query.filter_by(product_type=item.product_type,
                                                          product_size=item.product_size,
                                                          product_spec=item.product_spec).first()
@@ -608,6 +661,7 @@ def store_transactions():
                                              product_spec=item.product_spec,
                                              current_quantity=item.quantity)
                         db.session.add(inv)
+
             db.session.commit()
             total = sum(item.total for item in new_purchase.items)
             db.session.add(StoreDiary(date=record_date,
@@ -679,7 +733,7 @@ def store_inventory():
         inventory_id = int(request.form.get('inventory_id'))
         item = StoreInventory.query.get_or_404(inventory_id)
         if request.form.get('delete'):
-            if current_user.role in ['meg', 'admin']:
+            if current_user.role in ['meg', 'admin', 'mariam']:
                 db.session.delete(item)
                 db.session.commit()
                 log_activity(current_user.id, 'delete', f"حذف مخزون {item.product_type}")
@@ -705,7 +759,7 @@ def store_returns():
         if request.form.get('delete_id'):
             record_id = int(request.form.get('delete_id'))
             record = StoreReturn.query.get_or_404(record_id)
-            if current_user.role in ['meg', 'admin']:
+            if can_delete_record(current_user.role, record.date):
                 db.session.delete(record)
                 db.session.commit()
                 log_activity(current_user.id, 'delete', f"حذف مرتجع {record.party_name}")
@@ -761,7 +815,7 @@ def store_diary():
         if request.form.get('delete_id'):
             record_id = int(request.form.get('delete_id'))
             record = StoreDiary.query.get_or_404(record_id)
-            if current_user.role in ['meg', 'admin']:
+            if can_delete_record(current_user.role, record.date):
                 db.session.delete(record)
                 db.session.commit()
                 log_activity(current_user.id, 'delete', f"حذف يومية محل")
@@ -839,7 +893,7 @@ def treasury_transactions():
         if request.form.get('delete_id'):
             record_id = int(request.form.get('delete_id'))
             record = TreasuryTransaction.query.get_or_404(record_id)
-            if current_user.role in ['meg', 'admin']:
+            if current_user.role in ['meg', 'admin', 'mariam']:
                 account = TreasuryAccount.query.get(record.account_id)
                 if account:
                     if record.transaction_type == 'deposit':
@@ -945,7 +999,7 @@ def treasury_transfers():
         if request.form.get('delete_id'):
             record_id = int(request.form.get('delete_id'))
             record = TreasuryTransfer.query.get_or_404(record_id)
-            if current_user.role in ['meg', 'admin']:
+            if current_user.role in ['meg', 'admin', 'mariam']:
                 db.session.delete(record)
                 db.session.commit()
                 log_activity(current_user.id, 'delete', f"حذف تحويل {record.amount}")
@@ -1009,23 +1063,29 @@ def treasury_accounts():
         if request.form.get('delete_id'):
             account_id = int(request.form.get('delete_id'))
             account = TreasuryAccount.query.get_or_404(account_id)
-            if account.transactions:
-                flash('لا يمكن حذف حساب له معاملات', 'danger')
+            if current_user.role in ['meg', 'admin', 'mariam']:
+                if account.transactions:
+                    flash('لا يمكن حذف حساب له معاملات', 'danger')
+                else:
+                    db.session.delete(account)
+                    db.session.commit()
+                    log_activity(current_user.id, 'delete', f"حذف حساب خزينة {account.person_name}")
+                    flash('تم حذف الحساب', 'success')
             else:
-                db.session.delete(account)
-                db.session.commit()
-                log_activity(current_user.id, 'delete', f"حذف حساب خزينة {account.person_name}")
-                flash('تم حذف الحساب', 'success')
+                flash('غير مصرح لك بالحذف', 'danger')
             return redirect(url_for('treasury_accounts'))
         if request.form.get('edit_id'):
             account_id = int(request.form.get('edit_id'))
             account = TreasuryAccount.query.get_or_404(account_id)
-            account.person_name = request.form.get('person_name')
-            account.account_type = request.form.get('account_type')
-            account.balance = float(request.form.get('balance', 0))
-            db.session.commit()
-            log_activity(current_user.id, 'edit', f"تعديل حساب خزينة {account.person_name}")
-            flash('تم تحديث الحساب', 'success')
+            if current_user.role in ['meg', 'admin', 'mariam']:
+                account.person_name = request.form.get('person_name')
+                account.account_type = request.form.get('account_type')
+                account.balance = float(request.form.get('balance', 0))
+                db.session.commit()
+                log_activity(current_user.id, 'edit', f"تعديل حساب خزينة {account.person_name}")
+                flash('تم تحديث الحساب', 'success')
+            else:
+                flash('غير مصرح لك بالتعديل', 'danger')
             return redirect(url_for('treasury_accounts'))
         person_name = request.form.get('person_name')
         account_type = request.form.get('account_type')
@@ -1371,7 +1431,7 @@ def admin_edit_category(category_type, item_id):
 
 @app.route('/admin/categories/<string:category_type>/<int:item_id>/delete', methods=['POST'])
 @custom_login_required
-@role_required('meg', 'admin')
+@role_required('meg', 'admin', 'mariam')
 def admin_delete_category(category_type, item_id):
     if category_type == 'category':
         item = Category.query.get_or_404(item_id)
