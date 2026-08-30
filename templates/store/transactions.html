@@ -41,55 +41,65 @@
                 </thead>
                 <tbody>
                     {% for s in sales %}
-                        {% for item in s.items %}
-                        <tr>
-                            <td>{{ s.date.strftime('%Y-%m-%d') }}</td>
-                            <td>{{ s.customer_name }}</td>
-                            <td>{{ item.product_type or '-' }}</td>
-                            <td>{{ item.product_size or '-' }}</td>
-                            <td>{{ item.product_spec or '-' }}</td>
-                            <td>{{ item.quantity }}</td>
-                            <td>{{ item.unit_price }}</td>
-                            <td>{{ item.total }}</td>
-                            <td><span class="badge bg-{{ 'success' if s.payment_type == 'نقدي' else 'warning' }}">{{ s.payment_type }}</span></td>
-                            <td>{{ s.created_by }}</td>
-                            <td>
-                                {% if loop.first %}
-                                <button class="btn btn-sm btn-info" data-bs-toggle="modal" data-bs-target="#itemsSale{{ s.id }}">📋</button>
-                                {% if current_user.role in ['meg','admin','mariam'] or (current_user.role == 'rehab' and (now.date() - s.date).days <= 7) or (current_user.role == 'ahmed' and s.created_by == current_user.id and (now.date() - s.date).days <= 1) %}
-                                <button class="btn btn-sm btn-warning" data-bs-toggle="modal" data-bs-target="#editSaleModal{{ s.id }}">✏️</button>
-                                {% endif %}
-                                {% if current_user.role in ['meg','admin'] %}
-                                <form action="{{ url_for('store_transactions') }}" method="POST" class="d-inline" onsubmit="return confirm('حذف الفاتورة كاملة؟');">
-                                    <input type="hidden" name="delete_id" value="{{ s.id }}">
-                                    <input type="hidden" name="transaction_type" value="sale">
-                                    <button type="submit" class="btn btn-sm btn-danger">🗑️</button>
-                                </form>
-                                {% endif %}
-                                {% endif %}
-                            </td>
-                        </tr>
+                        {% if s.items %}
+                            {% for item in s.items %}
+                            <tr>
+                                <td>{{ s.date.strftime('%Y-%m-%d') }}</td>
+                                <td>{{ s.customer_name }}</td>
+                                <td>{{ item.product_type or '-' }}</td>
+                                <td>{{ item.product_size or '-' }}</td>
+                                <td>{{ item.product_spec or '-' }}</td>
+                                <td>{{ item.quantity }}</td>
+                                <td>{{ item.unit_price }}</td>
+                                <td>{{ item.total }}</td>
+                                <td><span class="badge bg-{{ 'success' if s.payment_type == 'نقدي' else 'warning' }}">{{ s.payment_type }}</span></td>
+                                <td>{{ s.created_by }}</td>
+                                <td>
+                                    {% if loop.first %}
+                                    <button class="btn btn-sm btn-info" data-bs-toggle="modal" data-bs-target="#itemsSale{{ s.id }}">📋</button>
+                                    {% if current_user.role in ['meg','admin','mariam'] or (current_user.role == 'rehab' and (now.date() - s.date).days <= 7) or (current_user.role == 'ahmed' and s.created_by == current_user.id and (now.date() - s.date).days <= 1) %}
+                                    <button class="btn btn-sm btn-warning" data-bs-toggle="modal" data-bs-target="#editSaleModal{{ s.id }}">✏️</button>
+                                    {% endif %}
+
+                                    {# حذف متاح لـ meg, admin, mariam, rehab (خلال 7 أيام) #}
+                                    {% if current_user.role in ['meg','admin','mariam'] or (current_user.role == 'rehab' and (now.date() - s.date).days <= 7) %}
+                                    <form action="{{ url_for('store_transactions') }}" method="POST" class="d-inline" onsubmit="return confirm('حذف الفاتورة كاملة؟');">
+                                        <input type="hidden" name="delete_id" value="{{ s.id }}">
+                                        <input type="hidden" name="transaction_type" value="sale">
+                                        <button type="submit" class="btn btn-sm btn-danger">🗑️</button>
+                                    </form>
+                                    {% endif %}
+                                    {% endif %}
+                                </td>
+                            </tr>
+                            {% endfor %}
                         {% else %}
-                        <tr>
-                            <td>{{ s.date.strftime('%Y-%m-%d') }}</td>
-                            <td>{{ s.customer_name }}</td>
-                            <td colspan="8" class="text-muted">لا توجد بنود مسجلة</td>
-                            <td>{{ s.created_by }}</td>
-                            <td>
-                                <button class="btn btn-sm btn-info" data-bs-toggle="modal" data-bs-target="#itemsSale{{ s.id }}">📋</button>
-                                {% if current_user.role in ['meg','admin','mariam'] or (current_user.role == 'rehab' and (now.date() - s.date).days <= 7) or (current_user.role == 'ahmed' and s.created_by == current_user.id and (now.date() - s.date).days <= 1) %}
-                                <button class="btn btn-sm btn-warning" data-bs-toggle="modal" data-bs-target="#editSaleModal{{ s.id }}">✏️</button>
-                                {% endif %}
-                                {% if current_user.role in ['meg','admin'] %}
-                                <form action="{{ url_for('store_transactions') }}" method="POST" class="d-inline" onsubmit="return confirm('حذف الفاتورة كاملة؟');">
-                                    <input type="hidden" name="delete_id" value="{{ s.id }}">
-                                    <input type="hidden" name="transaction_type" value="sale">
-                                    <button type="submit" class="btn btn-sm btn-danger">🗑️</button>
-                                </form>
-                                {% endif %}
-                            </td>
-                        </tr>
-                        {% endfor %}
+                            <tr>
+                                <td>{{ s.date.strftime('%Y-%m-%d') }}</td>
+                                <td>{{ s.customer_name }}</td>
+                                <td>{{ s.product_type or '-' }}</td>
+                                <td>{{ s.product_size or '-' }}</td>
+                                <td>{{ s.product_spec or '-' }}</td>
+                                <td>{{ s.quantity if s.quantity is not none else '-' }}</td>
+                                <td>{{ s.unit_price if s.unit_price is not none else '-' }}</td>
+                                <td>{{ s.total }}</td>
+                                <td><span class="badge bg-{{ 'success' if s.payment_type == 'نقدي' else 'warning' }}">{{ s.payment_type }}</span></td>
+                                <td>{{ s.created_by }}</td>
+                                <td>
+                                    <button class="btn btn-sm btn-info" data-bs-toggle="modal" data-bs-target="#itemsSale{{ s.id }}">📋</button>
+                                    {% if current_user.role in ['meg','admin','mariam'] or (current_user.role == 'rehab' and (now.date() - s.date).days <= 7) or (current_user.role == 'ahmed' and s.created_by == current_user.id and (now.date() - s.date).days <= 1) %}
+                                    <button class="btn btn-sm btn-warning" data-bs-toggle="modal" data-bs-target="#editSaleModal{{ s.id }}">✏️</button>
+                                    {% endif %}
+                                    {% if current_user.role in ['meg','admin','mariam'] or (current_user.role == 'rehab' and (now.date() - s.date).days <= 7) %}
+                                    <form action="{{ url_for('store_transactions') }}" method="POST" class="d-inline" onsubmit="return confirm('حذف الفاتورة كاملة؟');">
+                                        <input type="hidden" name="delete_id" value="{{ s.id }}">
+                                        <input type="hidden" name="transaction_type" value="sale">
+                                        <button type="submit" class="btn btn-sm btn-danger">🗑️</button>
+                                    </form>
+                                    {% endif %}
+                                </td>
+                            </tr>
+                        {% endif %}
                     {% else %}
                     <tr><td colspan="11" class="text-center text-muted">لا توجد مبيعات</td></tr>
                     {% endfor %}
@@ -119,55 +129,63 @@
                 </thead>
                 <tbody>
                     {% for p in purchases %}
-                        {% for item in p.items %}
-                        <tr>
-                            <td>{{ p.date.strftime('%Y-%m-%d') }}</td>
-                            <td>{{ p.supplier_name }}</td>
-                            <td>{{ item.product_type or '-' }}</td>
-                            <td>{{ item.product_size or '-' }}</td>
-                            <td>{{ item.product_spec or '-' }}</td>
-                            <td>{{ item.quantity }}</td>
-                            <td>{{ item.unit_price }}</td>
-                            <td>{{ item.total }}</td>
-                            <td><span class="badge bg-{{ 'success' if p.payment_type == 'نقدي' else 'warning' }}">{{ p.payment_type }}</span></td>
-                            <td>{{ p.created_by }}</td>
-                            <td>
-                                {% if loop.first %}
-                                <button class="btn btn-sm btn-info" data-bs-toggle="modal" data-bs-target="#itemsPurchase{{ p.id }}">📋</button>
-                                {% if current_user.role in ['meg','admin','mariam'] or (current_user.role == 'rehab' and (now.date() - p.date).days <= 7) or (current_user.role == 'ahmed' and p.created_by == current_user.id and (now.date() - p.date).days <= 1) %}
-                                <button class="btn btn-sm btn-warning" data-bs-toggle="modal" data-bs-target="#editPurchaseModal{{ p.id }}">✏️</button>
-                                {% endif %}
-                                {% if current_user.role in ['meg','admin'] %}
-                                <form action="{{ url_for('store_transactions') }}" method="POST" class="d-inline" onsubmit="return confirm('حذف الفاتورة كاملة؟');">
-                                    <input type="hidden" name="delete_id" value="{{ p.id }}">
-                                    <input type="hidden" name="transaction_type" value="purchase">
-                                    <button type="submit" class="btn btn-sm btn-danger">🗑️</button>
-                                </form>
-                                {% endif %}
-                                {% endif %}
-                            </td>
-                        </tr>
+                        {% if p.items %}
+                            {% for item in p.items %}
+                            <tr>
+                                <td>{{ p.date.strftime('%Y-%m-%d') }}</td>
+                                <td>{{ p.supplier_name }}</td>
+                                <td>{{ item.product_type or '-' }}</td>
+                                <td>{{ item.product_size or '-' }}</td>
+                                <td>{{ item.product_spec or '-' }}</td>
+                                <td>{{ item.quantity }}</td>
+                                <td>{{ item.unit_price }}</td>
+                                <td>{{ item.total }}</td>
+                                <td><span class="badge bg-{{ 'success' if p.payment_type == 'نقدي' else 'warning' }}">{{ p.payment_type }}</span></td>
+                                <td>{{ p.created_by }}</td>
+                                <td>
+                                    {% if loop.first %}
+                                    <button class="btn btn-sm btn-info" data-bs-toggle="modal" data-bs-target="#itemsPurchase{{ p.id }}">📋</button>
+                                    {% if current_user.role in ['meg','admin','mariam'] or (current_user.role == 'rehab' and (now.date() - p.date).days <= 7) or (current_user.role == 'ahmed' and p.created_by == current_user.id and (now.date() - p.date).days <= 1) %}
+                                    <button class="btn btn-sm btn-warning" data-bs-toggle="modal" data-bs-target="#editPurchaseModal{{ p.id }}">✏️</button>
+                                    {% endif %}
+                                    {% if current_user.role in ['meg','admin','mariam'] or (current_user.role == 'rehab' and (now.date() - p.date).days <= 7) %}
+                                    <form action="{{ url_for('store_transactions') }}" method="POST" class="d-inline" onsubmit="return confirm('حذف الفاتورة كاملة؟');">
+                                        <input type="hidden" name="delete_id" value="{{ p.id }}">
+                                        <input type="hidden" name="transaction_type" value="purchase">
+                                        <button type="submit" class="btn btn-sm btn-danger">🗑️</button>
+                                    </form>
+                                    {% endif %}
+                                    {% endif %}
+                                </td>
+                            </tr>
+                            {% endfor %}
                         {% else %}
-                        <tr>
-                            <td>{{ p.date.strftime('%Y-%m-%d') }}</td>
-                            <td>{{ p.supplier_name }}</td>
-                            <td colspan="8" class="text-muted">لا توجد بنود مسجلة</td>
-                            <td>{{ p.created_by }}</td>
-                            <td>
-                                <button class="btn btn-sm btn-info" data-bs-toggle="modal" data-bs-target="#itemsPurchase{{ p.id }}">📋</button>
-                                {% if current_user.role in ['meg','admin','mariam'] or (current_user.role == 'rehab' and (now.date() - p.date).days <= 7) or (current_user.role == 'ahmed' and p.created_by == current_user.id and (now.date() - p.date).days <= 1) %}
-                                <button class="btn btn-sm btn-warning" data-bs-toggle="modal" data-bs-target="#editPurchaseModal{{ p.id }}">✏️</button>
-                                {% endif %}
-                                {% if current_user.role in ['meg','admin'] %}
-                                <form action="{{ url_for('store_transactions') }}" method="POST" class="d-inline" onsubmit="return confirm('حذف الفاتورة كاملة؟');">
-                                    <input type="hidden" name="delete_id" value="{{ p.id }}">
-                                    <input type="hidden" name="transaction_type" value="purchase">
-                                    <button type="submit" class="btn btn-sm btn-danger">🗑️</button>
-                                </form>
-                                {% endif %}
-                            </td>
-                        </tr>
-                        {% endfor %}
+                            <tr>
+                                <td>{{ p.date.strftime('%Y-%m-%d') }}</td>
+                                <td>{{ p.supplier_name }}</td>
+                                <td>{{ p.product_type or '-' }}</td>
+                                <td>{{ p.product_size or '-' }}</td>
+                                <td>{{ p.product_spec or '-' }}</td>
+                                <td>{{ p.quantity if p.quantity is not none else '-' }}</td>
+                                <td>{{ p.unit_price if p.unit_price is not none else '-' }}</td>
+                                <td>{{ p.total }}</td>
+                                <td><span class="badge bg-{{ 'success' if p.payment_type == 'نقدي' else 'warning' }}">{{ p.payment_type }}</span></td>
+                                <td>{{ p.created_by }}</td>
+                                <td>
+                                    <button class="btn btn-sm btn-info" data-bs-toggle="modal" data-bs-target="#itemsPurchase{{ p.id }}">📋</button>
+                                    {% if current_user.role in ['meg','admin','mariam'] or (current_user.role == 'rehab' and (now.date() - p.date).days <= 7) or (current_user.role == 'ahmed' and p.created_by == current_user.id and (now.date() - p.date).days <= 1) %}
+                                    <button class="btn btn-sm btn-warning" data-bs-toggle="modal" data-bs-target="#editPurchaseModal{{ p.id }}">✏️</button>
+                                    {% endif %}
+                                    {% if current_user.role in ['meg','admin','mariam'] or (current_user.role == 'rehab' and (now.date() - p.date).days <= 7) %}
+                                    <form action="{{ url_for('store_transactions') }}" method="POST" class="d-inline" onsubmit="return confirm('حذف الفاتورة كاملة؟');">
+                                        <input type="hidden" name="delete_id" value="{{ p.id }}">
+                                        <input type="hidden" name="transaction_type" value="purchase">
+                                        <button type="submit" class="btn btn-sm btn-danger">🗑️</button>
+                                    </form>
+                                    {% endif %}
+                                </td>
+                            </tr>
+                        {% endif %}
                     {% else %}
                     <tr><td colspan="11" class="text-center text-muted">لا توجد مشتريات</td></tr>
                     {% endfor %}
@@ -177,237 +195,237 @@
     </div>
 </div>
 
-<!-- المودالات خارج الجداول (بنفس الكود السابق) -->
+<!-- بقية المودالات (بنفس الشكل السابق) -->
 {% for s in sales %}
 <div class="modal fade" id="itemsSale{{ s.id }}" tabindex="-1">
-    <div class="modal-dialog modal-lg">
-        <div class="modal-content">
-            <div class="modal-header bg-info text-white">
-                <h5 class="modal-title">بنود فاتورة بيع - {{ s.customer_name }}</h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-            </div>
-            <div class="modal-body">
-                <table class="table table-sm">
-                    <thead><tr><th>الصنف</th><th>المقاس</th><th>المواصفات</th><th>الكمية</th><th>السعر</th><th>الإجمالي</th></tr></thead>
-                    <tbody>
-                        {% for item in s.items %}
-                        <tr>
-                            <td>{{ item.product_type }}</td>
-                            <td>{{ item.product_size or '-' }}</td>
-                            <td>{{ item.product_spec or '-' }}</td>
-                            <td>{{ item.quantity }}</td>
-                            <td>{{ item.unit_price }}</td>
-                            <td>{{ item.total }}</td>
-                        </tr>
-                        {% endfor %}
-                    </tbody>
-                </table>
-                <p class="fw-bold text-end">الإجمالي: {{ s.total }}</p>
-                <p class="text-end">المدفوع: {{ s.paid_amount }} | المتبقي: {{ s.remaining }}</p>
-            </div>
-        </div>
+  <div class="modal-dialog modal-lg">
+    <div class="modal-content">
+      <div class="modal-header bg-info text-white">
+        <h5 class="modal-title">بنود فاتورة بيع - {{ s.customer_name }}</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body">
+        <table class="table table-sm">
+          <thead><tr><th>الصنف</th><th>المقاس</th><th>المواصفات</th><th>الكمية</th><th>السعر</th><th>الإجمالي</th></tr></thead>
+          <tbody>
+            {% for item in s.items %}
+            <tr>
+              <td>{{ item.product_type }}</td>
+              <td>{{ item.product_size or '-' }}</td>
+              <td>{{ item.product_spec or '-' }}</td>
+              <td>{{ item.quantity }}</td>
+              <td>{{ item.unit_price }}</td>
+              <td>{{ item.total }}</td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+        <p class="fw-bold text-end">الإجمالي: {{ s.total }}</p>
+        <p class="text-end">المدفوع: {{ s.paid_amount }} | المتبقي: {{ s.remaining }}</p>
+      </div>
     </div>
+  </div>
 </div>
 
 <div class="modal fade" id="editSaleModal{{ s.id }}" tabindex="-1">
-    <div class="modal-dialog">
-        <div class="modal-content">
-            <form method="POST" action="{{ url_for('store_transactions') }}">
-                <input type="hidden" name="edit_id" value="{{ s.id }}">
-                <input type="hidden" name="transaction_type" value="sale">
-                <div class="modal-header bg-warning text-dark">
-                    <h5 class="modal-title">تعديل بيع</h5>
-                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-                </div>
-                <div class="modal-body">
-                    <div class="mb-3">
-                        <label class="form-label fw-bold">التاريخ</label>
-                        <input type="date" name="date" class="form-control" value="{{ s.date.strftime('%Y-%m-%d') }}" required>
-                    </div>
-                    <div class="mb-3">
-                        <label class="form-label fw-bold">اسم العميل</label>
-                        <input type="text" name="party_name" class="form-control" value="{{ s.customer_name }}" required>
-                    </div>
-                    <div class="mb-3">
-                        <label class="form-label fw-bold">الهاتف</label>
-                        <input type="text" name="party_phone" class="form-control" value="{{ s.customer_phone or '' }}">
-                    </div>
-                </div>
-                <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">إلغاء</button>
-                    <button type="submit" class="btn btn-warning">حفظ</button>
-                </div>
-            </form>
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <form method="POST" action="{{ url_for('store_transactions') }}">
+        <input type="hidden" name="edit_id" value="{{ s.id }}">
+        <input type="hidden" name="transaction_type" value="sale">
+        <div class="modal-header bg-warning text-dark">
+          <h5 class="modal-title">تعديل بيع</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
         </div>
+        <div class="modal-body">
+          <div class="mb-3">
+            <label class="form-label fw-bold">التاريخ</label>
+            <input type="date" name="date" class="form-control" value="{{ s.date.strftime('%Y-%m-%d') }}" required>
+          </div>
+          <div class="mb-3">
+            <label class="form-label fw-bold">اسم العميل</label>
+            <input type="text" name="party_name" class="form-control" value="{{ s.customer_name }}" required>
+          </div>
+          <div class="mb-3">
+            <label class="form-label fw-bold">الهاتف</label>
+            <input type="text" name="party_phone" class="form-control" value="{{ s.customer_phone or '' }}">
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">إلغاء</button>
+          <button type="submit" class="btn btn-warning">حفظ</button>
+        </div>
+      </form>
     </div>
+  </div>
 </div>
 {% endfor %}
 
 {% for p in purchases %}
 <div class="modal fade" id="itemsPurchase{{ p.id }}" tabindex="-1">
-    <div class="modal-dialog modal-lg">
-        <div class="modal-content">
-            <div class="modal-header bg-info text-white">
-                <h5 class="modal-title">بنود فاتورة شراء - {{ p.supplier_name }}</h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-            </div>
-            <div class="modal-body">
-                <table class="table table-sm">
-                    <thead><tr><th>الصنف</th><th>المقاس</th><th>المواصفات</th><th>الكمية</th><th>السعر</th><th>الإجمالي</th></tr></thead>
-                    <tbody>
-                        {% for item in p.items %}
-                        <tr>
-                            <td>{{ item.product_type }}</td>
-                            <td>{{ item.product_size or '-' }}</td>
-                            <td>{{ item.product_spec or '-' }}</td>
-                            <td>{{ item.quantity }}</td>
-                            <td>{{ item.unit_price }}</td>
-                            <td>{{ item.total }}</td>
-                        </tr>
-                        {% endfor %}
-                    </tbody>
-                </table>
-                <p class="fw-bold text-end">الإجمالي: {{ p.total }}</p>
-                <p class="text-end">المدفوع: {{ p.paid_amount }} | المتبقي: {{ p.remaining }}</p>
-            </div>
-        </div>
+  <div class="modal-dialog modal-lg">
+    <div class="modal-content">
+      <div class="modal-header bg-info text-white">
+        <h5 class="modal-title">بنود فاتورة شراء - {{ p.supplier_name }}</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body">
+        <table class="table table-sm">
+          <thead><tr><th>الصنف</th><th>المقاس</th><th>المواصفات</th><th>الكمية</th><th>السعر</th><th>الإجمالي</th></tr></thead>
+          <tbody>
+            {% for item in p.items %}
+            <tr>
+              <td>{{ item.product_type }}</td>
+              <td>{{ item.product_size or '-' }}</td>
+              <td>{{ item.product_spec or '-' }}</td>
+              <td>{{ item.quantity }}</td>
+              <td>{{ item.unit_price }}</td>
+              <td>{{ item.total }}</td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+        <p class="fw-bold text-end">الإجمالي: {{ p.total }}</p>
+        <p class="text-end">المدفوع: {{ p.paid_amount }} | المتبقي: {{ p.remaining }}</p>
+      </div>
     </div>
+  </div>
 </div>
 
 <div class="modal fade" id="editPurchaseModal{{ p.id }}" tabindex="-1">
-    <div class="modal-dialog">
-        <div class="modal-content">
-            <form method="POST" action="{{ url_for('store_transactions') }}">
-                <input type="hidden" name="edit_id" value="{{ p.id }}">
-                <input type="hidden" name="transaction_type" value="purchase">
-                <div class="modal-header bg-warning text-dark">
-                    <h5 class="modal-title">تعديل شراء</h5>
-                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-                </div>
-                <div class="modal-body">
-                    <div class="mb-3">
-                        <label class="form-label fw-bold">التاريخ</label>
-                        <input type="date" name="date" class="form-control" value="{{ p.date.strftime('%Y-%m-%d') }}" required>
-                    </div>
-                    <div class="mb-3">
-                        <label class="form-label fw-bold">اسم المورد</label>
-                        <input type="text" name="party_name" class="form-control" value="{{ p.supplier_name }}" required>
-                    </div>
-                    <div class="mb-3">
-                        <label class="form-label fw-bold">الهاتف</label>
-                        <input type="text" name="party_phone" class="form-control" value="{{ p.supplier_phone or '' }}">
-                    </div>
-                </div>
-                <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">إلغاء</button>
-                    <button type="submit" class="btn btn-warning">حفظ</button>
-                </div>
-            </form>
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <form method="POST" action="{{ url_for('store_transactions') }}">
+        <input type="hidden" name="edit_id" value="{{ p.id }}">
+        <input type="hidden" name="transaction_type" value="purchase">
+        <div class="modal-header bg-warning text-dark">
+          <h5 class="modal-title">تعديل شراء</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
         </div>
+        <div class="modal-body">
+          <div class="mb-3">
+            <label class="form-label fw-bold">التاريخ</label>
+            <input type="date" name="date" class="form-control" value="{{ p.date.strftime('%Y-%m-%d') }}" required>
+          </div>
+          <div class="mb-3">
+            <label class="form-label fw-bold">اسم المورد</label>
+            <input type="text" name="party_name" class="form-control" value="{{ p.supplier_name }}" required>
+          </div>
+          <div class="mb-3">
+            <label class="form-label fw-bold">الهاتف</label>
+            <input type="text" name="party_phone" class="form-control" value="{{ p.supplier_phone or '' }}">
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">إلغاء</button>
+          <button type="submit" class="btn btn-warning">حفظ</button>
+        </div>
+      </form>
     </div>
+  </div>
 </div>
 {% endfor %}
 
-<!-- Modal إضافة معاملة جديدة مع بنود متعددة -->
+<!-- Modal إضافة معاملة جديدة (بنفس الكود السابق) -->
 <div class="modal fade" id="addTransactionModal" tabindex="-1">
-    <div class="modal-dialog modal-xl">
-        <div class="modal-content">
-            <form method="POST" action="{{ url_for('store_transactions') }}">
-                <div class="modal-header bg-purple text-white">
-                    <h5 class="modal-title">➕ معاملة جديدة</h5>
-                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
-                </div>
-                <div class="modal-body">
-                    <div class="row">
-                        <div class="col-md-4 mb-3">
-                            <label class="form-label fw-bold">نوع المعاملة</label>
-                            <select name="transaction_type" id="transaction_type" class="form-select" required>
-                                <option value="sale">بيع</option>
-                                <option value="purchase">شراء</option>
-                            </select>
-                        </div>
-                        <div class="col-md-4 mb-3">
-                            <label class="form-label fw-bold">التاريخ</label>
-                            <input type="date" name="date" class="form-control" value="{{ now.strftime('%Y-%m-%d') }}" required>
-                        </div>
-                        <div class="col-md-4 mb-3">
-                            <label class="form-label fw-bold">طريقة الدفع</label>
-                            <select name="payment_type" class="form-select">
-                                <option value="آجل">آجل</option>
-                                <option value="نقدي">نقدي</option>
-                            </select>
-                        </div>
-                    </div>
-                    <div class="row">
-                        <div class="col-md-6 mb-3">
-                            <label class="form-label fw-bold">اسم الطرف</label>
-                            <input type="text" name="party_name" class="form-control" placeholder="اسم العميل / المورد" required>
-                        </div>
-                        <div class="col-md-6 mb-3">
-                            <label class="form-label fw-bold">الهاتف</label>
-                            <input type="text" name="party_phone" class="form-control">
-                        </div>
-                    </div>
-
-                    <div class="card">
-                        <div class="card-header bg-light fw-bold">📦 البنود</div>
-                        <div class="card-body">
-                            <table class="table" id="itemsTable">
-                                <thead>
-                                    <tr>
-                                        <th>الصنف</th><th>المقاس</th><th>المواصفات</th><th>الكمية</th><th>سعر الوحدة</th><th>إجمالي</th><th></th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    <tr class="item-row">
-                                        <td>
-                                            <select name="product_type" class="form-select" required>
-                                                <option value="">اختر الصنف...</option>
-                                                {% for c in categories %}
-                                                <option value="{{ c.name }}">{{ c.name }}</option>
-                                                {% endfor %}
-                                                <option value="new">➕ صنف جديد...</option>
-                                            </select>
-                                            <input type="text" name="new_product_type" class="form-control mt-1" style="display:none;" placeholder="اسم الصنف الجديد">
-                                        </td>
-                                        <td>
-                                            <select name="product_size" class="form-select">
-                                                <option value="">اختر المقاس...</option>
-                                                {% for s in sizes %}
-                                                <option value="{{ s.value }}">{{ s.value }}</option>
-                                                {% endfor %}
-                                                <option value="new">➕ مقاس جديد...</option>
-                                            </select>
-                                            <input type="text" name="new_product_size" class="form-control mt-1" style="display:none;" placeholder="المقاس الجديد">
-                                        </td>
-                                        <td>
-                                            <select name="product_spec" class="form-select">
-                                                <option value="">اختر السماكة...</option>
-                                                {% for t in thicknesses %}
-                                                <option value="{{ t.value }}">{{ t.value }}</option>
-                                                {% endfor %}
-                                                <option value="new">➕ سماكة جديدة...</option>
-                                            </select>
-                                            <input type="text" name="new_product_spec" class="form-control mt-1" style="display:none;" placeholder="السماكة الجديدة">
-                                        </td>
-                                        <td><input type="number" step="0.01" name="quantity" class="form-control" required></td>
-                                        <td><input type="number" step="0.01" name="unit_price" class="form-control" value="0"></td>
-                                        <td><span class="item-total">0</span></td>
-                                        <td><button type="button" class="btn btn-sm btn-danger remove-row">🗑️</button></td>
-                                    </tr>
-                                </tbody>
-                            </table>
-                            <button type="button" class="btn btn-sm btn-outline-purple" id="addRow">➕ إضافة صف</button>
-                        </div>
-                    </div>
-                </div>
-                <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">إلغاء</button>
-                    <button type="submit" class="btn btn-purple">حفظ المعاملة</button>
-                </div>
-            </form>
+  <div class="modal-dialog modal-xl">
+    <div class="modal-content">
+      <form method="POST" action="{{ url_for('store_transactions') }}">
+        <div class="modal-header bg-purple text-white">
+          <h5 class="modal-title">➕ معاملة جديدة</h5>
+          <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
         </div>
+        <div class="modal-body">
+          <div class="row">
+            <div class="col-md-4 mb-3">
+              <label class="form-label fw-bold">نوع المعاملة</label>
+              <select name="transaction_type" id="transaction_type" class="form-select" required>
+                <option value="sale">بيع</option>
+                <option value="purchase">شراء</option>
+              </select>
+            </div>
+            <div class="col-md-4 mb-3">
+              <label class="form-label fw-bold">التاريخ</label>
+              <input type="date" name="date" class="form-control" value="{{ now.strftime('%Y-%m-%d') }}" required>
+            </div>
+            <div class="col-md-4 mb-3">
+              <label class="form-label fw-bold">طريقة الدفع</label>
+              <select name="payment_type" class="form-select">
+                <option value="آجل">آجل</option>
+                <option value="نقدي">نقدي</option>
+              </select>
+            </div>
+          </div>
+          <div class="row">
+            <div class="col-md-6 mb-3">
+              <label class="form-label fw-bold">اسم الطرف</label>
+              <input type="text" name="party_name" class="form-control" placeholder="اسم العميل / المورد" required>
+            </div>
+            <div class="col-md-6 mb-3">
+              <label class="form-label fw-bold">الهاتف</label>
+              <input type="text" name="party_phone" class="form-control">
+            </div>
+          </div>
+
+          <div class="card">
+            <div class="card-header bg-light fw-bold">📦 البنود</div>
+            <div class="card-body">
+              <table class="table" id="itemsTable">
+                <thead>
+                  <tr>
+                    <th>الصنف</th><th>المقاس</th><th>المواصفات</th><th>الكمية</th><th>سعر الوحدة</th><th>إجمالي</th><th></th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr class="item-row">
+                    <td>
+                      <select name="product_type" class="form-select" required>
+                        <option value="">اختر الصنف...</option>
+                        {% for c in categories %}
+                        <option value="{{ c.name }}">{{ c.name }}</option>
+                        {% endfor %}
+                        <option value="new">➕ صنف جديد...</option>
+                      </select>
+                      <input type="text" name="new_product_type" class="form-control mt-1" style="display:none;" placeholder="اسم الصنف الجديد">
+                    </td>
+                    <td>
+                      <select name="product_size" class="form-select">
+                        <option value="">اختر المقاس...</option>
+                        {% for s in sizes %}
+                        <option value="{{ s.value }}">{{ s.value }}</option>
+                        {% endfor %}
+                        <option value="new">➕ مقاس جديد...</option>
+                      </select>
+                      <input type="text" name="new_product_size" class="form-control mt-1" style="display:none;" placeholder="المقاس الجديد">
+                    </td>
+                    <td>
+                      <select name="product_spec" class="form-select">
+                        <option value="">اختر السماكة...</option>
+                        {% for t in thicknesses %}
+                        <option value="{{ t.value }}">{{ t.value }}</option>
+                        {% endfor %}
+                        <option value="new">➕ سماكة جديدة...</option>
+                      </select>
+                      <input type="text" name="new_product_spec" class="form-control mt-1" style="display:none;" placeholder="السماكة الجديدة">
+                    </td>
+                    <td><input type="number" step="0.01" name="quantity" class="form-control" required></td>
+                    <td><input type="number" step="0.01" name="unit_price" class="form-control" value="0"></td>
+                    <td><span class="item-total">0</span></td>
+                    <td><button type="button" class="btn btn-sm btn-danger remove-row">🗑️</button></td>
+                  </tr>
+                </tbody>
+              </table>
+              <button type="button" class="btn btn-sm btn-outline-purple" id="addRow">➕ إضافة صف</button>
+            </div>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">إلغاء</button>
+          <button type="submit" class="btn btn-purple">حفظ المعاملة</button>
+        </div>
+      </form>
     </div>
+  </div>
 </div>
 
 <script>
