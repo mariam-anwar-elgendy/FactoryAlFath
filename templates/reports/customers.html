@@ -13,28 +13,28 @@
     <table class="table table-striped table-hover align-middle">
         <thead class="bg-purple text-white">
             <tr>
-                <th>اسم العميل</th><th>الهاتف</th><th>إجمالي المشتريات</th><th>المدفوع</th><th>المتبقي</th><th>تفاصيل</th>
+                <th>اسم العميل</th>
+                <th>الهاتف</th>
+                <th>إجمالي المشتريات</th>
+                <th>المدفوع</th>
+                <th>المتبقي</th>
+                <th>تفاصيل الأصناف</th>
             </tr>
         </thead>
         <tbody>
-            {% for customer in customers %}
+            {% for data in customers_data %}
             <tr>
-                <td>{{ customer.name }}</td>
-                <td>{{ customer.phone or '-' }}</td>
+                <td>{{ data.customer.name }}</td>
+                <td>{{ data.customer.phone or '-' }}</td>
+                <td>{{ data.total_purchases }}</td>
+                <td>{{ data.total_paid }}</td>
+                <td>{{ data.remaining }}</td>
                 <td>
-                    {% set sales = customer.name | get_sales_for_customer %}
-                    {{ sales | sum(attribute='total') }}
-                </td>
-                <td>
-                    {{ sales | sum(attribute='paid_amount') }}
-                </td>
-                <td>
-                    {{ sales | sum(attribute='remaining') }}
-                </td>
-                <td>
-                    <a href="{{ url_for('report_single_customer', customer_id=customer.id) }}" class="btn btn-sm btn-purple">عرض</a>
+                    <a href="{{ url_for('report_single_customer', customer_id=data.customer.id) }}" class="btn btn-sm btn-purple">عرض الأصناف والفواتير</a>
                 </td>
             </tr>
+            {% else %}
+            <tr><td colspan="6" class="text-center text-muted">لا يوجد عملاء</td></tr>
             {% endfor %}
         </tbody>
     </table>
