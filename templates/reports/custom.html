@@ -8,6 +8,39 @@
     <button onclick="window.print()" class="btn btn-purple no-print">🖨️ طباعة</button>
 </div>
 
+<!-- سجل اليوميات (المصنع والمحل) -->
+<div class="card border-0 shadow-sm mb-4">
+    <div class="card-header bg-purple text-white fw-bold">📔 سجل اليوميات (المصنع والمحل)</div>
+    <div class="card-body">
+        <div class="table-responsive">
+            <table class="table table-sm">
+                <thead>
+                    <tr>
+                        <th>التاريخ</th>
+                        <th>النوع</th>
+                        <th>الوصف</th>
+                        <th>المبلغ</th>
+                        <th>المسؤول</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for d in combined_diary %}
+                    <tr>
+                        <td>{{ d.date.strftime('%Y-%m-%d') }}</td>
+                        <td>{{ d.type }}</td>
+                        <td>{{ d.description }}</td>
+                        <td>{{ d.amount }}</td>
+                        <td>{{ d.created_by }}</td>
+                    </tr>
+                    {% else %}
+                    <tr><td colspan="5" class="text-center">لا توجد يوميات</td></tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
 {% if report_type == 'all' or report_type == 'factory' %}
 <div class="card border-0 shadow-sm mb-4">
     <div class="card-header bg-purple text-white fw-bold">🏭 المصنع</div>
@@ -35,20 +68,6 @@
                     <tr><td>{{ p.date.strftime('%Y-%m-%d') }}</td><td>{{ p.elbow_size }}</td><td>{{ p.elbow_thickness or '-' }}</td><td>{{ p.quantity }}</td></tr>
                     {% else %}
                     <tr><td colspan="4" class="text-center">لا يوجد</td></tr>
-                    {% endfor %}
-                </tbody>
-            </table>
-        </div>
-
-        <h6 class="fw-bold mt-3">اليوميات</h6>
-        <div class="table-responsive">
-            <table class="table table-sm">
-                <thead><tr><th>التاريخ</th><th>الوصف</th><th>المبلغ</th></tr></thead>
-                <tbody>
-                    {% for d in factory_diary %}
-                    <tr><td>{{ d.date.strftime('%Y-%m-%d') }}</td><td>{{ d.description }}</td><td>{{ d.amount }}</td></tr>
-                    {% else %}
-                    <tr><td colspan="3" class="text-center">لا يوجد</td></tr>
                     {% endfor %}
                 </tbody>
             </table>
