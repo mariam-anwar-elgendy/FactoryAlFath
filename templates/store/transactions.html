@@ -103,7 +103,7 @@
     </div>
 </div>
 
-<!-- جميع المودالات خارج الجدول -->
+<!-- المودالات خارج الجداول -->
 {% for s in sales %}
 <div class="modal fade" id="itemsSale{{ s.id }}" tabindex="-1">
     <div class="modal-dialog modal-lg">
@@ -234,7 +234,7 @@
 </div>
 {% endfor %}
 
-<!-- Modal إضافة معاملة جديدة مع بنود متعددة -->
+<!-- Modal إضافة معاملة جديدة -->
 <div class="modal fade" id="addTransactionModal" tabindex="-1">
     <div class="modal-dialog modal-xl">
         <div class="modal-content">
@@ -275,40 +275,53 @@
                         </div>
                     </div>
 
+                    <!-- جدول البنود -->
                     <div class="card">
-                        <div class="card-header bg-light fw-bold">📦 البنود</div>
+                        <div class="card-header bg-light fw-bold">📦 البنود (الصنف، المقاس، المواصفات)</div>
                         <div class="card-body">
                             <table class="table" id="itemsTable">
                                 <thead>
                                     <tr>
-                                        <th>الصنف</th><th>المقاس</th><th>المواصفات</th><th>الكمية</th><th>سعر الوحدة</th><th>إجمالي</th><th></th>
+                                        <th>الصنف</th>
+                                        <th>المقاس</th>
+                                        <th>المواصفات/السماكة</th>
+                                        <th>الكمية</th>
+                                        <th>سعر الوحدة</th>
+                                        <th>الإجمالي</th>
+                                        <th></th>
                                     </tr>
                                 </thead>
                                 <tbody>
                                     <tr class="item-row">
                                         <td>
-                                            <select name="product_type" class="form-select">
-                                                <option value="">اختر...</option>
+                                            <select name="product_type" class="form-select" required>
+                                                <option value="">اختر الصنف...</option>
                                                 {% for c in categories %}
                                                 <option value="{{ c.name }}">{{ c.name }}</option>
                                                 {% endfor %}
+                                                <option value="new">➕ صنف جديد...</option>
                                             </select>
+                                            <input type="text" name="new_product_type" class="form-control mt-1" style="display:none;" placeholder="اسم الصنف الجديد">
                                         </td>
                                         <td>
                                             <select name="product_size" class="form-select">
-                                                <option value="">اختر...</option>
+                                                <option value="">اختر المقاس...</option>
                                                 {% for s in sizes %}
                                                 <option value="{{ s.value }}">{{ s.value }}</option>
                                                 {% endfor %}
+                                                <option value="new">➕ مقاس جديد...</option>
                                             </select>
+                                            <input type="text" name="new_product_size" class="form-control mt-1" style="display:none;" placeholder="المقاس الجديد">
                                         </td>
                                         <td>
                                             <select name="product_spec" class="form-select">
-                                                <option value="">اختر...</option>
+                                                <option value="">اختر السماكة...</option>
                                                 {% for t in thicknesses %}
                                                 <option value="{{ t.value }}">{{ t.value }}</option>
                                                 {% endfor %}
+                                                <option value="new">➕ سماكة جديدة...</option>
                                             </select>
+                                            <input type="text" name="new_product_spec" class="form-control mt-1" style="display:none;" placeholder="السماكة الجديدة">
                                         </td>
                                         <td><input type="number" step="0.01" name="quantity" class="form-control" required></td>
                                         <td><input type="number" step="0.01" name="unit_price" class="form-control" value="0"></td>
@@ -331,15 +344,17 @@
 </div>
 
 <script>
+// إضافة صف جديد
 document.getElementById('addRow').addEventListener('click', function() {
     var table = document.getElementById('itemsTable').getElementsByTagName('tbody')[0];
     var newRow = table.rows[0].cloneNode(true);
-    newRow.querySelectorAll('input').forEach(function(input) { input.value = ''; });
-    newRow.querySelectorAll('select').forEach(function(select) { select.value = ''; });
+    newRow.querySelectorAll('input').forEach(function(input) { input.value = ''; input.style.display = 'none'; });
+    newRow.querySelectorAll('select').forEach(function(select) { select.value = ''; select.style.display = 'block'; });
     newRow.querySelector('.item-total').innerText = '0';
     table.appendChild(newRow);
 });
 
+// حذف صف
 document.addEventListener('click', function(e) {
     if (e.target.classList.contains('remove-row')) {
         var row = e.target.closest('tr');
@@ -349,12 +364,26 @@ document.addEventListener('click', function(e) {
     }
 });
 
+// حساب الإجمالي
 document.addEventListener('input', function(e) {
     if (e.target.name === 'quantity' || e.target.name === 'unit_price') {
         var row = e.target.closest('tr');
         var qty = parseFloat(row.querySelector('input[name="quantity"]').value) || 0;
         var price = parseFloat(row.querySelector('input[name="unit_price"]').value) || 0;
         row.querySelector('.item-total').innerText = (qty * price).toFixed(2);
+    }
+});
+
+// إظهار حقل جديد عند اختيار "جديد"
+document.addEventListener('change', function(e) {
+    if (e.target.name === 'product_type' && e.target.value === 'new') {
+        e.target.parentElement.querySelector('input[name="new_product_type"]').style.display = 'block';
+    }
+    if (e.target.name === 'product_size' && e.target.value === 'new') {
+        e.target.parentElement.querySelector('input[name="new_product_size"]').style.display = 'block';
+    }
+    if (e.target.name === 'product_spec' && e.target.value === 'new') {
+        e.target.parentElement.querySelector('input[name="new_product_spec"]').style.display = 'block';
     }
 });
 </script>
