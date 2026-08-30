@@ -5,27 +5,44 @@
 {% block content %}
 <h2 class="fw-bold mb-4 text-purple-dark">📊 التقارير</h2>
 
-<div class="row g-3">
-    <div class="col-md-3">
-        <a href="{{ url_for('reports_daily') }}" class="btn btn-purple w-100">📅 التقرير اليومي</a>
+<div class="card border-0 shadow-sm">
+    <div class="card-header bg-purple text-white fw-bold">
+        🗓️ تقرير مخصص (من تاريخ إلى تاريخ)
     </div>
-    <div class="col-md-3">
-        <a href="{{ url_for('reports_weekly') }}" class="btn btn-purple w-100">📆 التقرير الأسبوعي</a>
+    <div class="card-body">
+        <form method="GET" action="{{ url_for('reports_custom') }}">
+            <div class="row">
+                <div class="col-md-4 mb-3">
+                    <label class="form-label fw-bold">من تاريخ</label>
+                    <input type="date" name="from_date" class="form-control" required>
+                </div>
+                <div class="col-md-4 mb-3">
+                    <label class="form-label fw-bold">إلى تاريخ</label>
+                    <input type="date" name="to_date" class="form-control" required>
+                </div>
+                <div class="col-md-4 mb-3">
+                    <label class="form-label fw-bold">نوع التقرير</label>
+                    <select name="report_type" class="form-select">
+                        <option value="all">كل العمليات</option>
+                        <option value="factory">المصنع</option>
+                        <option value="store">المحل</option>
+                        <option value="treasury">الخزينة</option>
+                    </select>
+                </div>
+            </div>
+            <div class="text-center">
+                <button type="submit" class="btn btn-purple btn-lg">عرض التقرير</button>
+            </div>
+        </form>
     </div>
-    <div class="col-md-3">
-        <a href="{{ url_for('reports_monthly') }}" class="btn btn-purple w-100">📆 التقرير الشهري</a>
+</div>
+
+<div class="row mt-4">
+    <div class="col-md-6">
+        <a href="{{ url_for('reports_customers') }}" class="btn btn-purple w-100 mb-2">👥 تقرير العملاء</a>
     </div>
-    <div class="col-md-3">
-        <a href="{{ url_for('reports_customers') }}" class="btn btn-purple w-100">👥 تقرير العملاء</a>
-    </div>
-    <div class="col-md-3">
-        <a href="{{ url_for('reports_suppliers') }}" class="btn btn-purple w-100">🏢 تقرير الموردين</a>
-    </div>
-    <div class="col-md-3">
-        <a href="{{ url_for('financial_transactions') }}" class="btn btn-purple w-100">💰 معاملات مالية</a>
-    </div>
-    <div class="col-md-3">
-        <a href="{{ url_for('treasury_accounts') }}" class="btn btn-purple w-100">💼 حسابات الخزينة</a>
+    <div class="col-md-6">
+        <a href="{{ url_for('reports_suppliers') }}" class="btn btn-purple w-100 mb-2">🏢 تقرير الموردين</a>
     </div>
 </div>
 {% endblock %}
