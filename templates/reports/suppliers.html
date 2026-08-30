@@ -9,11 +9,36 @@
     <button onclick="window.print()" class="btn btn-purple no-print">🖨️ طباعة</button>
 </div>
 
+<div class="card border-0 shadow-sm mb-4 no-print">
+    <div class="card-body">
+        <form method="GET" action="{{ url_for('reports_suppliers') }}">
+            <div class="row">
+                <div class="col-md-4 mb-2">
+                    <label class="form-label fw-bold">من تاريخ</label>
+                    <input type="date" name="from_date" class="form-control" value="{{ request.args.get('from_date', '') }}">
+                </div>
+                <div class="col-md-4 mb-2">
+                    <label class="form-label fw-bold">إلى تاريخ</label>
+                    <input type="date" name="to_date" class="form-control" value="{{ request.args.get('to_date', '') }}">
+                </div>
+                <div class="col-md-4 mb-2 d-flex align-items-end">
+                    <button type="submit" class="btn btn-purple w-100">عرض</button>
+                </div>
+            </div>
+        </form>
+    </div>
+</div>
+
 <div class="table-responsive">
     <table class="table table-striped table-hover align-middle">
         <thead class="bg-purple text-white">
             <tr>
-                <th>اسم المورد</th><th>الهاتف</th><th>إجمالي المشتريات</th><th>المدفوع</th><th>المتبقي</th><th>تفاصيل</th>
+                <th>اسم المورد</th>
+                <th>الهاتف</th>
+                <th>إجمالي المشتريات</th>
+                <th>المدفوع</th>
+                <th>المتبقي</th>
+                <th>تفاصيل الأصناف</th>
             </tr>
         </thead>
         <tbody>
@@ -25,11 +50,11 @@
                 <td>{{ data.total_paid }}</td>
                 <td>{{ data.remaining }}</td>
                 <td>
-                    <a href="{{ url_for('report_single_supplier', supplier_id=data.supplier.id) }}" class="btn btn-sm btn-purple">عرض</a>
+                    <a href="{{ url_for('report_single_supplier', supplier_id=data.supplier.id, from_date=request.args.get('from_date'), to_date=request.args.get('to_date')) }}" class="btn btn-sm btn-purple">عرض الأصناف والفواتير</a>
                 </td>
             </tr>
             {% else %}
-            <tr><td colspan="6" class="text-center">لا يوجد موردين</td></tr>
+            <tr><td colspan="6" class="text-center text-muted">لا يوجد موردين</td></tr>
             {% endfor %}
         </tbody>
     </table>
