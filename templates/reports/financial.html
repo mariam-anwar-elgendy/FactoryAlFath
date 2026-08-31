@@ -59,7 +59,7 @@
     </table>
 </div>
 
-<!-- ========== MODAL إضافة معاملة مالية (مُعدَّل نهائياً) ========== -->
+<!-- ========== MODAL إضافة معاملة مالية ========== -->
 <div class="modal fade" id="addFinancialModal" tabindex="-1">
     <div class="modal-dialog modal-xl">
         <div class="modal-content">
@@ -70,7 +70,6 @@
                 </div>
                 <div class="modal-body">
                     <div class="table-responsive">
-                        <!-- ✅ جدول بقياسات ثابتة -->
                         <table class="table" id="financialRows" style="table-layout: fixed;">
                             <thead>
                                 <tr>
@@ -101,7 +100,6 @@
                                         <select name="source[]" class="form-select source-select">
                                             <option value="">اختر الطرف...</option>
                                         </select>
-                                        <!-- ✅ تم تغيير الاسم من new_source إلى new_parties عشان يشتغل مع الـ Backend -->
                                         <input type="text" name="new_parties[]" class="form-control mt-1 d-none" placeholder="اسم جديد (عميل/مورد)">
                                     </td>
                                     <!-- عمود "من" (للتحويل) -->
@@ -126,7 +124,7 @@
                                         </select>
                                         <input type="text" name="new_supplier_name[]" class="form-control mt-1 d-none" placeholder="اسم المورد الجديد">
                                     </td>
-                                    <!-- ✅ عمود الحساب: يظهر دائماً (لأن الـ Backend محتاجه حتى في التحويل) -->
+                                    <!-- عمود الحساب (يظهر دائماً) -->
                                     <td class="account-cell">
                                         <select name="account_id[]" class="form-select account-select">
                                             {% for account in accounts %}
@@ -160,35 +158,37 @@
     </div>
 </div>
 
-<!-- ========== JavaScript المُعدَّل نهائياً ========== -->
+<!-- ========== JavaScript ========== -->
 <script>
-    // دالة لملء قائمة المصدر حسب النوع (إيداع = عملاء، سحب = موردين)
-    function populateSourceSelect(selectElement, type, customers, suppliers) {
+    // 1. استيراد قوائم العملاء والموردين من Flask إلى JavaScript
+    var customersList = [
+        {% for c in customers %}
+            "{{ c.name }}",
+        {% endfor %}
+    ];
+    var suppliersList = [
+        {% for s in suppliers %}
+            "{{ s.name }}",
+        {% endfor %}
+    ];
+
+    // 2. دالة لتعبئة قائمة المصدر بناءً على النوع
+    function populateSourceSelect(selectElement, type) {
         selectElement.innerHTML = '<option value="">اختر الطرف...</option>';
-        if (type === 'deposit') {
-            customers.forEach(function(c) {
+        var list = (type === 'deposit') ? customersList : suppliersList;
+        if (type === 'deposit' || type === 'withdrawal') {
+            list.forEach(function(item) {
                 var opt = document.createElement('option');
-                opt.value = c;
-                opt.textContent = c;
+                opt.value = item;
+                opt.textContent = item;
                 selectElement.appendChild(opt);
             });
             var optNew = document.createElement('option');
             optNew.value = 'new';
-            optNew.textContent = '➕ عميل جديد...';
-            selectElement.appendChild(optNew);
-        } else if (type === 'withdrawal') {
-            suppliers.forEach(function(s) {
-                var opt = document.createElement('option');
-                opt.value = s;
-                opt.textContent = s;
-                selectElement.appendChild(opt);
-            });
-            var optNew = document.createElement('option');
-            optNew.value = 'new';
-            optNew.textContent = '➕ مورد جديد...';
+            optNew.textContent = (type === 'deposit') ? '➕ عميل جديد...' : '➕ مورد جديد...';
             selectElement.appendChild(optNew);
         } else {
-            // تحويل: نعرض خيار فارغ (لن يُستخدم المصدر هنا)
+            // تحويل: لا نستخدم المصدر
             var opt = document.createElement('option');
             opt.value = '';
             opt.textContent = 'غير مستخدم';
@@ -196,39 +196,35 @@
         }
     }
 
-    // دالة لإظهار/إخفاء الأعمدة حسب النوع
-    function toggleRowVisibility(row, customers, suppliers) {
+    // 3. دالة لإظهار/إخفاء الأعمدة حسب النوع
+    function toggleRowVisibility(row) {
         var type = row.querySelector('.type-select').value;
         var sourceCell = row.querySelector('.source-cell');
         var fromCell = row.querySelector('.from-cell');
         var toCell = row.querySelector('.to-cell');
-        var accountCell = row.querySelector('.account-cell'); // ✅ هنخليه ظاهر دايماً
+        var accountCell = row.querySelector('.account-cell');
 
         // إخفاء الكل أولاً
         sourceCell.style.display = 'none';
         fromCell.style.display = 'none';
         toCell.style.display = 'none';
-        // ✅ accountCell مش هنخفيه، هنخليه visible دايماً
+        // accountCell يظهر دائماً
+        accountCell.style.display = '';
 
         if (type === 'deposit' || type === 'withdrawal') {
             sourceCell.style.display = '';
-            // ملء قائمة المصدر بالعملاء أو الموردين
             var sourceSelect = row.querySelector('.source-select');
-            populateSourceSelect(sourceSelect, type, customers, suppliers);
-            // إخفاء الحقل النصي الجديد للمصدر
+            populateSourceSelect(sourceSelect, type);
+            // إخفاء الحقل النصي الجديد
             var newInput = row.querySelector('input[name="new_parties[]"]');
             if (newInput) newInput.classList.add('d-none');
         } else if (type === 'transfer_customer_supplier') {
             fromCell.style.display = '';
             toCell.style.display = '';
-            // ✅ accountCell هيفضل ظاهر
         }
-
-        // ✅ نتأكد إن accountCell يفضل visible في كل الأحوال
-        accountCell.style.display = '';
     }
 
-    // === إضافة صف جديد ===
+    // 4. إضافة صف جديد
     document.getElementById('addFinancialRow').addEventListener('click', function() {
         var tbody = document.querySelector('#financialRows tbody');
         var firstRow = tbody.querySelector('tr');
@@ -245,48 +241,22 @@
             sel.selectedIndex = 0;
         });
 
-        tbody.appendChild(newRow);
+        // تعبئة قائمة المصدر في الصف الجديد حسب النوع الافتراضي (إيداع)
+        var sourceSelect = newRow.querySelector('.source-select');
+        populateSourceSelect(sourceSelect, 'deposit');
 
-        // تطبيق الرؤية بناءً على النوع الافتراضي (إيداع)
-        var customers = [];
-        var suppliers = [];
-        var firstFromSelect = firstRow.querySelector('.from-select');
-        var firstToSelect = firstRow.querySelector('.to-select');
-        if (firstFromSelect) {
-            firstFromSelect.querySelectorAll('option').forEach(function(opt) {
-                if (opt.value && opt.value !== 'new') customers.push(opt.value);
-            });
-        }
-        if (firstToSelect) {
-            firstToSelect.querySelectorAll('option').forEach(function(opt) {
-                if (opt.value && opt.value !== 'new') suppliers.push(opt.value);
-            });
-        }
-        toggleRowVisibility(newRow, customers, suppliers);
+        tbody.appendChild(newRow);
+        toggleRowVisibility(newRow);
     });
 
-    // === تغيير النوع ===
+    // 5. تغيير النوع
     document.addEventListener('change', function(e) {
         if (e.target.classList.contains('type-select')) {
             var row = e.target.closest('tr');
-            var customers = [];
-            var suppliers = [];
-            var fromSelect = row.querySelector('.from-select');
-            var toSelect = row.querySelector('.to-select');
-            if (fromSelect) {
-                fromSelect.querySelectorAll('option').forEach(function(opt) {
-                    if (opt.value && opt.value !== 'new') customers.push(opt.value);
-                });
-            }
-            if (toSelect) {
-                toSelect.querySelectorAll('option').forEach(function(opt) {
-                    if (opt.value && opt.value !== 'new') suppliers.push(opt.value);
-                });
-            }
-            toggleRowVisibility(row, customers, suppliers);
+            toggleRowVisibility(row);
         }
 
-        // === إظهار حقل النص عند اختيار "جديد" في المصدر (name="new_parties[]") ===
+        // 6. إظهار/إخفاء حقل النص الجديد للمصدر
         if (e.target.classList.contains('source-select')) {
             var row = e.target.closest('tr');
             var newInput = row.querySelector('input[name="new_parties[]"]');
@@ -297,7 +267,7 @@
             }
         }
 
-        // === إظهار حقل النص عند اختيار "جديد" في "من" (للتحويل) ===
+        // 7. إظهار/إخفاء حقل النص الجديد لـ "من" (التحويل)
         if (e.target.classList.contains('from-select')) {
             var row = e.target.closest('tr');
             var newInput = row.querySelector('input[name="new_customer_name[]"]');
@@ -308,7 +278,7 @@
             }
         }
 
-        // === إظهار حقل النص عند اختيار "جديد" في "إلى" (للتحويل) ===
+        // 8. إظهار/إخفاء حقل النص الجديد لـ "إلى" (التحويل)
         if (e.target.classList.contains('to-select')) {
             var row = e.target.closest('tr');
             var newInput = row.querySelector('input[name="new_supplier_name[]"]');
@@ -320,7 +290,7 @@
         }
     });
 
-    // === حذف صف ===
+    // 9. حذف صف
     document.addEventListener('click', function(e) {
         if (e.target.classList.contains('remove-financial-row')) {
             var row = e.target.closest('tr');
@@ -333,25 +303,11 @@
         }
     });
 
-    // === تهيئة الصف الأول عند تحميل الصفحة ===
+    // 10. تهيئة الصف الأول عند تحميل الصفحة
     document.addEventListener('DOMContentLoaded', function() {
         var firstRow = document.querySelector('#financialRows tbody tr');
         if (firstRow) {
-            var customers = [];
-            var suppliers = [];
-            var fromSelect = firstRow.querySelector('.from-select');
-            var toSelect = firstRow.querySelector('.to-select');
-            if (fromSelect) {
-                fromSelect.querySelectorAll('option').forEach(function(opt) {
-                    if (opt.value && opt.value !== 'new') customers.push(opt.value);
-                });
-            }
-            if (toSelect) {
-                toSelect.querySelectorAll('option').forEach(function(opt) {
-                    if (opt.value && opt.value !== 'new') suppliers.push(opt.value);
-                });
-            }
-            toggleRowVisibility(firstRow, customers, suppliers);
+            toggleRowVisibility(firstRow);
         }
     });
 </script>
