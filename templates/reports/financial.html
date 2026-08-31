@@ -70,15 +70,15 @@
                 </div>
                 <div class="modal-body">
                     <div class="table-responsive">
-                        <table class="table" id="financialRows" style="table-layout: fixed;">
+                        <table class="table" id="financialRows" style="table-layout: fixed; min-width: 1200px;">
                             <thead>
                                 <tr>
                                     <th style="width: 10%;">التاريخ</th>
                                     <th style="width: 12%;">النوع</th>
-                                    <th style="width: 15%;" class="source-header">المصدر / الطرف</th>
-                                    <th style="width: 15%;" class="from-header">من (عميل)</th>
-                                    <th style="width: 15%;" class="to-header">إلى (مورد)</th>
-                                    <th style="width: 15%;" class="account-header">الحساب المسحوب منه</th>
+                                    <th style="width: 20%;" class="source-header">المصدر / الطرف</th>
+                                    <th style="width: 20%;" class="from-header">من (عميل)</th>
+                                    <th style="width: 20%;" class="to-header">إلى (مورد)</th>
+                                    <th style="width: 15%;" class="account-header">الحساب</th>
                                     <th style="width: 10%;">المبلغ</th>
                                     <th style="width: 12%;">طريقة الدفع</th>
                                     <th style="width: 15%;">ملاحظات</th>
@@ -95,14 +95,14 @@
                                             <option value="transfer_customer_supplier">تحويل (من عميل لمورد)</option>
                                         </select>
                                     </td>
-                                    <!-- عمود المصدر (للإيداع/السحب) -->
+                                    <!-- عمود المصدر (يظهر فقط في الإيداع/السحب) -->
                                     <td class="source-cell">
                                         <select name="source[]" class="form-select source-select">
                                             <option value="">اختر الطرف...</option>
                                         </select>
                                         <input type="text" name="new_parties[]" class="form-control mt-1 d-none" placeholder="اسم جديد (عميل/مورد)">
                                     </td>
-                                    <!-- عمود "من" (للتحويل) -->
+                                    <!-- عمود "من" (يظهر فقط في التحويل) -->
                                     <td class="from-cell">
                                         <select name="from_customer[]" class="form-select from-select">
                                             <option value="">اختر العميل...</option>
@@ -113,7 +113,7 @@
                                         </select>
                                         <input type="text" name="new_customer_name[]" class="form-control mt-1 d-none" placeholder="اسم العميل الجديد">
                                     </td>
-                                    <!-- عمود "إلى" (للتحويل) -->
+                                    <!-- عمود "إلى" (يظهر فقط في التحويل) -->
                                     <td class="to-cell">
                                         <select name="to_supplier[]" class="form-select to-select">
                                             <option value="">اختر المورد...</option>
@@ -131,7 +131,6 @@
                                             <option value="{{ account.id }}">{{ account.person_name }} - {{ account.account_type }}</option>
                                             {% endfor %}
                                         </select>
-                                        <small class="text-muted">(الحساب الذي سيُسحب منه المبلغ)</small>
                                     </td>
                                     <td><input type="number" step="0.01" name="amount[]" class="form-control" required></td>
                                     <td>
@@ -160,7 +159,7 @@
 
 <!-- ========== JavaScript ========== -->
 <script>
-    // 1. استيراد قوائم العملاء والموردين من Flask إلى JavaScript
+    // 1. استيراد قوائم العملاء والموردين من Flask
     var customersList = [
         {% for c in customers %}
             "{{ c.name }}",
@@ -176,19 +175,22 @@
     function populateSourceSelect(selectElement, type) {
         selectElement.innerHTML = '<option value="">اختر الطرف...</option>';
         var list = (type === 'deposit') ? customersList : suppliersList;
+        
         if (type === 'deposit' || type === 'withdrawal') {
+            // نضيف العملاء أو الموردين
             list.forEach(function(item) {
                 var opt = document.createElement('option');
                 opt.value = item;
                 opt.textContent = item;
                 selectElement.appendChild(opt);
             });
+            // نضيف خيار جديد
             var optNew = document.createElement('option');
             optNew.value = 'new';
             optNew.textContent = (type === 'deposit') ? '➕ عميل جديد...' : '➕ مورد جديد...';
             selectElement.appendChild(optNew);
         } else {
-            // تحويل: لا نستخدم المصدر
+            // في حالة التحويل: نعرض رسالة بأن الحقل غير مستخدم
             var opt = document.createElement('option');
             opt.value = '';
             opt.textContent = 'غير مستخدم';
@@ -204,14 +206,14 @@
         var toCell = row.querySelector('.to-cell');
         var accountCell = row.querySelector('.account-cell');
 
-        // إخفاء الكل أولاً
+        // ✅ إخفاء الكل أولاً
         sourceCell.style.display = 'none';
         fromCell.style.display = 'none';
         toCell.style.display = 'none';
-        // accountCell يظهر دائماً
-        accountCell.style.display = '';
+        accountCell.style.display = ''; // الحساب يظهر دائماً
 
         if (type === 'deposit' || type === 'withdrawal') {
+            // ✅ الإيداع/السحب: يظهر عمود المصدر فقط
             sourceCell.style.display = '';
             var sourceSelect = row.querySelector('.source-select');
             populateSourceSelect(sourceSelect, type);
@@ -219,8 +221,12 @@
             var newInput = row.querySelector('input[name="new_parties[]"]');
             if (newInput) newInput.classList.add('d-none');
         } else if (type === 'transfer_customer_supplier') {
+            // ✅ التحويل: يظهر عمودي "من" و "إلى" فقط (بدون المصدر)
             fromCell.style.display = '';
             toCell.style.display = '';
+            // ✅ نعبي قائمة المصدر بخيار "غير مستخدم"
+            var sourceSelect = row.querySelector('.source-select');
+            populateSourceSelect(sourceSelect, 'transfer_customer_supplier');
         }
     }
 
@@ -267,7 +273,7 @@
             }
         }
 
-        // 7. إظهار/إخفاء حقل النص الجديد لـ "من" (التحويل)
+        // 7. إظهار/إخفاء حقل النص الجديد لـ "من"
         if (e.target.classList.contains('from-select')) {
             var row = e.target.closest('tr');
             var newInput = row.querySelector('input[name="new_customer_name[]"]');
@@ -278,7 +284,7 @@
             }
         }
 
-        // 8. إظهار/إخفاء حقل النص الجديد لـ "إلى" (التحويل)
+        // 8. إظهار/إخفاء حقل النص الجديد لـ "إلى"
         if (e.target.classList.contains('to-select')) {
             var row = e.target.closest('tr');
             var newInput = row.querySelector('input[name="new_supplier_name[]"]');
