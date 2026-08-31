@@ -548,7 +548,7 @@
 </div>
 {% endfor %}
 
-<!-- Modal إضافة معاملة جديدة مع بنود متعددة -->
+<!-- ==================== Modal إضافة معاملة جديدة (المعدل) ==================== -->
 <div class="modal fade" id="addTransactionModal" tabindex="-1">
   <div class="modal-dialog modal-xl">
     <div class="modal-content">
@@ -581,7 +581,17 @@
           <div class="row">
             <div class="col-md-6 mb-3">
               <label class="form-label fw-bold">اسم الطرف</label>
-              <input type="text" name="party_name" class="form-control" placeholder="اسم العميل / المورد" required>
+              <!-- ✅ التعديل الأول: إضافة datalist لربط العملاء والموردين -->
+              <input type="text" name="party_name" class="form-control" placeholder="اسم العميل / المورد" list="party_list" required>
+              <datalist id="party_list">
+                {% for customer in customers %}
+                  <option value="{{ customer.name }}">
+                {% endfor %}
+                {% for supplier in suppliers %}
+                  <option value="{{ supplier.name }}">
+                {% endfor %}
+              </datalist>
+              <small class="text-muted">اكتب الاسم وسيظهر لك الاقتراحات، أو اكتب اسم جديد وسيتم إضافته تلقائياً عند الحفظ.</small>
             </div>
             <div class="col-md-6 mb-3">
               <label class="form-label fw-bold">الهاتف</label>
@@ -592,10 +602,17 @@
           <div class="card">
             <div class="card-header bg-light fw-bold">📦 البنود</div>
             <div class="card-body">
-              <table class="table" id="itemsTable">
+              <!-- ✅ التعديل الثاني: إضافة table-layout:fixed و min-width للأعمدة -->
+              <table class="table" id="itemsTable" style="table-layout: fixed;">
                 <thead>
                   <tr>
-                    <th>الصنف</th><th>المقاس</th><th>المواصفات</th><th>الكمية</th><th>سعر الوحدة</th><th>إجمالي</th><th></th>
+                    <th style="width: 20%;">الصنف</th>
+                    <th style="width: 15%;">المقاس</th>
+                    <th style="width: 15%;">المواصفات</th>
+                    <th style="width: 15%;">الكمية</th>
+                    <th style="width: 15%;">سعر الوحدة</th>
+                    <th style="width: 15%;">إجمالي</th>
+                    <th style="width: 5%;"></th>
                   </tr>
                 </thead>
                 <tbody>
@@ -631,7 +648,7 @@
                       <input type="text" name="new_product_spec" class="form-control mt-1" style="display:none;" placeholder="السماكة الجديدة">
                     </td>
                     <td><input type="number" step="0.01" name="quantity" class="form-control" required></td>
-                    <td><input type="number" step="0.01" name="unit_price" class="form-control" value="0"></td>
+                    <td><input type="number" step="0.01" name="unit_price" class="form-control" value="0" required></td>
                     <td><span class="item-total">0</span></td>
                     <td><button type="button" class="btn btn-sm btn-danger remove-row">🗑️</button></td>
                   </tr>
@@ -650,67 +667,148 @@
   </div>
 </div>
 
+<!-- ==================== JavaScript المُعدل ==================== -->
 <script>
-// إضافة صف جديد في نموذج الإضافة
+// (أ) دالة إضافة صف جديد بطريقة صحيحة (بدون اختفاء الأعمدة)
 document.getElementById('addRow').addEventListener('click', function() {
-    var table = document.getElementById('itemsTable').getElementsByTagName('tbody')[0];
-    var newRow = table.rows[0].cloneNode(true);
-    newRow.querySelectorAll('input').forEach(function(input) { input.value = ''; input.style.display = 'none'; });
-    newRow.querySelectorAll('select').forEach(function(select) { select.value = ''; select.style.display = 'block'; });
-    newRow.querySelector('.item-total').innerText = '0';
-    table.appendChild(newRow);
+    var tbody = document.getElementById('itemsTable').getElementsByTagName('tbody')[0];
+    var newRow = document.createElement('tr');
+    newRow.className = 'item-row';
+    newRow.innerHTML = `
+        <td>
+            <select name="product_type" class="form-select" required>
+                <option value="">اختر الصنف...</option>
+                {% for c in categories %}
+                <option value="{{ c.name }}">{{ c.name }}</option>
+                {% endfor %}
+                <option value="new">➕ صنف جديد...</option>
+            </select>
+            <input type="text" name="new_product_type" class="form-control mt-1" style="display:none;" placeholder="اسم الصنف الجديد">
+        </td>
+        <td>
+            <select name="product_size" class="form-select">
+                <option value="">اختر المقاس...</option>
+                {% for s in sizes %}
+                <option value="{{ s.value }}">{{ s.value }}</option>
+                {% endfor %}
+                <option value="new">➕ مقاس جديد...</option>
+            </select>
+            <input type="text" name="new_product_size" class="form-control mt-1" style="display:none;" placeholder="المقاس الجديد">
+        </td>
+        <td>
+            <select name="product_spec" class="form-select">
+                <option value="">اختر السماكة...</option>
+                {% for t in thicknesses %}
+                <option value="{{ t.value }}">{{ t.value }}</option>
+                {% endfor %}
+                <option value="new">➕ سماكة جديدة...</option>
+            </select>
+            <input type="text" name="new_product_spec" class="form-control mt-1" style="display:none;" placeholder="السماكة الجديدة">
+        </td>
+        <td><input type="number" step="0.01" name="quantity" class="form-control" required></td>
+        <td><input type="number" step="0.01" name="unit_price" class="form-control" value="0" required></td>
+        <td><span class="item-total">0</span></td>
+        <td><button type="button" class="btn btn-sm btn-danger remove-row">🗑️</button></td>
+    `;
+    tbody.appendChild(newRow);
 });
 
-// إضافة صف جديد في نماذج التعديل
-document.querySelectorAll('.add-edit-row').forEach(function(btn) {
-    btn.addEventListener('click', function() {
-        var tableId = btn.getAttribute('data-table');
-        var table = document.getElementById(tableId).getElementsByTagName('tbody')[0];
-        var newRow = table.rows[0].cloneNode(true);
-        newRow.querySelectorAll('input').forEach(function(input) { input.value = ''; });
-        newRow.querySelectorAll('select').forEach(function(select) { select.value = ''; });
-        newRow.querySelector('.edit-item-total').innerText = '0';
-        table.appendChild(newRow);
-    });
-});
-
-// حذف صف
-document.addEventListener('click', function(e) {
-    if (e.target.classList.contains('remove-row')) {
-        var row = e.target.closest('tr');
-        if (document.querySelectorAll('#itemsTable tbody tr').length > 1) {
-            row.remove();
-        }
-    }
-    if (e.target.classList.contains('remove-edit-row')) {
-        var row = e.target.closest('tr');
-        if (row.parentElement.querySelectorAll('tr').length > 1) {
-            row.remove();
-        }
-    }
-});
-
-// حساب الإجمالي
-document.addEventListener('input', function(e) {
-    if (e.target.name === 'quantity' || e.target.name === 'unit_price') {
-        var row = e.target.closest('tr');
+// (ب) Event Delegation لحساب الإجمالي مع الصفوف الجديدة
+document.getElementById('itemsTable').addEventListener('input', function(e) {
+    var target = e.target;
+    if (target.name === 'quantity' || target.name === 'unit_price') {
+        var row = target.closest('tr');
         var qty = parseFloat(row.querySelector('input[name="quantity"]').value) || 0;
         var price = parseFloat(row.querySelector('input[name="unit_price"]').value) || 0;
-        var totalSpan = row.querySelector('.item-total, .edit-item-total');
+        var totalSpan = row.querySelector('.item-total');
         if (totalSpan) totalSpan.innerText = (qty * price).toFixed(2);
     }
 });
 
-// إظهار حقل جديد عند اختيار "جديد"
+// (ج) إظهار/إخفاء الحقول الجديدة عند اختيار "جديد"
 document.addEventListener('change', function(e) {
     if (e.target.name === 'product_type' && e.target.value === 'new') {
-        e.target.parentElement.querySelector('input[name="new_product_type"]').style.display = 'block';
+        var parent = e.target.parentElement;
+        parent.querySelector('input[name="new_product_type"]').style.display = 'block';
+    } else if (e.target.name === 'product_type') {
+        var parent = e.target.parentElement;
+        var newInput = parent.querySelector('input[name="new_product_type"]');
+        if (newInput) newInput.style.display = 'none';
     }
     if (e.target.name === 'product_size' && e.target.value === 'new') {
-        e.target.parentElement.querySelector('input[name="new_product_size"]').style.display = 'block';
+        var parent = e.target.parentElement;
+        parent.querySelector('input[name="new_product_size"]').style.display = 'block';
+    } else if (e.target.name === 'product_size') {
+        var parent = e.target.parentElement;
+        var newInput = parent.querySelector('input[name="new_product_size"]');
+        if (newInput) newInput.style.display = 'none';
     }
     if (e.target.name === 'product_spec' && e.target.value === 'new') {
-        e.target.parentElement.querySelector('input[name="new_product_spec"]').style.display = 'block';
+        var parent = e.target.parentElement;
+        parent.querySelector('input[name="new_product_spec"]').style.display = 'block';
+    } else if (e.target.name === 'product_spec') {
+        var parent = e.target.parentElement;
+        var newInput = parent.querySelector('input[name="new_product_spec"]');
+        if (newInput) newInput.style.display = 'none';
+    }
+});
+
+// (د) حذف الصف (مع الاحتفاظ بصف واحد على الأقل)
+document.addEventListener('click', function(e) {
+    if (e.target.classList.contains('remove-row')) {
+        var row = e.target.closest('tr');
+        var tbody = row.parentElement;
+        if (tbody.querySelectorAll('tr').length > 1) {
+            row.remove();
+        } else {
+            alert('يجب أن يبقى صف واحد على الأقل.');
+        }
+    }
+});
+
+// (هـ) إضافة صفوف التعديل (نفس المنطق مع edit)
+document.querySelectorAll('.add-edit-row').forEach(function(btn) {
+    btn.addEventListener('click', function() {
+        var tableId = btn.getAttribute('data-table');
+        var tbody = document.getElementById(tableId).getElementsByTagName('tbody')[0];
+        var newRow = document.createElement('tr');
+        newRow.className = 'edit-item-row';
+        // ننسخ محتوى الصف الأول مع تغيير القيم الفارغة
+        var firstRow = tbody.querySelector('tr');
+        if (!firstRow) return;
+        var clone = firstRow.cloneNode(true);
+        // نضبط الحقول الفارغة
+        clone.querySelectorAll('input').forEach(function(inp) { inp.value = ''; });
+        clone.querySelectorAll('select').forEach(function(sel) { sel.value = ''; });
+        var totalSpan = clone.querySelector('.edit-item-total');
+        if (totalSpan) totalSpan.innerText = '0';
+        tbody.appendChild(clone);
+    });
+});
+
+// (و) حذف صف التعديل
+document.addEventListener('click', function(e) {
+    if (e.target.classList.contains('remove-edit-row')) {
+        var row = e.target.closest('tr');
+        var tbody = row.parentElement;
+        if (tbody.querySelectorAll('tr').length > 1) {
+            row.remove();
+        } else {
+            alert('يجب أن يبقى صف واحد على الأقل.');
+        }
+    }
+});
+
+// (ز) حساب الإجمالي في صفوف التعديل أيضاً (event delegation)
+document.addEventListener('input', function(e) {
+    if (e.target.name === 'quantity' || e.target.name === 'unit_price') {
+        var row = e.target.closest('tr');
+        if (row) {
+            var qty = parseFloat(row.querySelector('input[name="quantity"]').value) || 0;
+            var price = parseFloat(row.querySelector('input[name="unit_price"]').value) || 0;
+            var totalSpan = row.querySelector('.edit-item-total');
+            if (totalSpan) totalSpan.innerText = (qty * price).toFixed(2);
+        }
     }
 });
 </script>
