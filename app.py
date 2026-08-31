@@ -220,7 +220,16 @@ def inject_globals():
     unread_notifications = 0
     if current_user.is_authenticated:
         unread_notifications = Notification.query.filter_by(user_id=current_user.id, is_read=False).count()
-    return {'now': datetime.now(), 'unread_notifications': unread_notifications}
+    def get_user_name(user_id):
+        if not user_id:
+            return 'غير معروف'
+        user = User.query.get(user_id)
+        return user.full_name if user else 'غير معروف'
+    return {
+        'now': datetime.now(),
+        'unread_notifications': unread_notifications,
+        'get_user_name': get_user_name
+    }
 
 @app.route('/health')
 def health():
@@ -271,40 +280,48 @@ def logout():
 @app.route('/dashboard')
 @custom_login_required
 def dashboard():
+    role = current_user.role
     stats = {
-        'raw_materials_count': FactoryRawMaterial.query.count() if current_user.role in ['meg','admin','mariam','rehab','mohamed'] else 0,
-        'production_count': FactoryProduction.query.count() if current_user.role in ['meg','admin','mariam','rehab','mohamed'] else 0,
-        'sales_count': StoreSale.query.count() if current_user.role in ['meg','admin','mariam','rehab','ahmed'] else 0,
-        'purchases_count': StorePurchase.query.count() if current_user.role in ['meg','admin','mariam','rehab','ahmed'] else 0,
-        'customers_count': Customer.query.count() if current_user.role in ['meg','admin','mariam','rehab','ahmed'] else 0,
-        'suppliers_count': Supplier.query.count() if current_user.role in ['meg','admin','mariam','rehab','ahmed'] else 0,
+        'raw_materials_count': FactoryRawMaterial.query.count() if role in ['meg','admin','mariam','rehab','mohamed'] else 0,
+        'production_count': FactoryProduction.query.count() if role in ['meg','admin','mariam','rehab','mohamed'] else 0,
+        'sales_count': StoreSale.query.count() if role in ['meg','admin','mariam','rehab','ahmed'] else 0,
+        'purchases_count': StorePurchase.query.count() if role in ['meg','admin','mariam','rehab','ahmed'] else 0,
+        'customers_count': Customer.query.count() if role in ['meg','admin','mariam','rehab','ahmed'] else 0,
+        'suppliers_count': Supplier.query.count() if role in ['meg','admin','mariam','rehab','ahmed'] else 0,
         'treasury_balance': 0,
         'today_sales': db.session.query(db.func.sum(StoreSaleItem.total)).join(StoreSale).filter(StoreSale.date == date.today()).scalar() or 0,
         'today_purchases': db.session.query(db.func.sum(StorePurchaseItem.total)).join(StorePurchase).filter(StorePurchase.date == date.today()).scalar() or 0,
-        'low_inventory_count': StoreInventory.query.filter(StoreInventory.current_quantity <= StoreInventory.min_quantity).count() if current_user.role in ['meg','admin','mariam','rehab','ahmed'] else 0,
+        'low_inventory_count': StoreInventory.query.filter(StoreInventory.current_quantity <= StoreInventory.min_quantity).count() if role in ['meg','admin','mariam','rehab','ahmed'] else 0,
     }
 
-    if current_user.role in ['meg', 'admin', 'mariam']:
+    if role in ['meg', 'admin', 'mariam']:
         stats['treasury_balance'] = db.session.query(db.func.sum(TreasuryAccount.balance)).scalar() or 0
-    elif current_user.role in ['ahmed', 'eid', 'abdo']:
-        stats['treasury_balance'] = db.session.query(db.func.sum(TreasuryAccount.balance)).filter(TreasuryAccount.person_name == current_user.full_name).scalar() or 0
-    else:
-        stats['treasury_balance'] = 0
-
-    if current_user.role in ['meg', 'admin', 'mariam', 'rehab', 'mohamed', 'ahmed']:
         recent_sales = StoreSale.query.order_by(StoreSale.date.desc()).limit(5).all()
         recent_production = FactoryProduction.query.order_by(FactoryProduction.date.desc()).limit(5).all()
-        if current_user.role in ['meg', 'admin', 'mariam']:
-            recent_transactions = TreasuryTransaction.query.order_by(TreasuryTransaction.date.desc()).limit(5).all()
-        else:
-            recent_transactions = TreasuryTransaction.query.filter_by(created_by=current_user.id).order_by(TreasuryTransaction.date.desc()).limit(5).all()
-    else:
+        recent_transactions = TreasuryTransaction.query.order_by(TreasuryTransaction.date.desc()).limit(5).all()
+    elif role == 'rehab':
+        stats['treasury_balance'] = 0
+        recent_sales = StoreSale.query.order_by(StoreSale.date.desc()).limit(5).all()
+        recent_production = FactoryProduction.query.order_by(FactoryProduction.date.desc()).limit(5).all()
+        recent_transactions = []
+    elif role == 'mohamed':
+        stats['treasury_balance'] = 0
+        recent_sales = []
+        recent_production = FactoryProduction.query.order_by(FactoryProduction.date.desc()).limit(5).all()
+        recent_transactions = []
+    elif role == 'ahmed':
+        stats['treasury_balance'] = db.session.query(db.func.sum(TreasuryAccount.balance)).filter(TreasuryAccount.person_name == current_user.full_name).scalar() or 0
+        recent_sales = StoreSale.query.order_by(StoreSale.date.desc()).limit(5).all()
+        recent_production = []
+        recent_transactions = TreasuryTransaction.query.filter_by(created_by=current_user.id).order_by(TreasuryTransaction.date.desc()).limit(5).all()
+    else:  # eid, abdo
+        stats['treasury_balance'] = db.session.query(db.func.sum(TreasuryAccount.balance)).filter(TreasuryAccount.person_name == current_user.full_name).scalar() or 0
         recent_sales = []
         recent_production = []
         recent_transactions = TreasuryTransaction.query.filter_by(created_by=current_user.id).order_by(TreasuryTransaction.date.desc()).limit(5).all()
 
     inactive_users_count = 0
-    if current_user.role == 'admin':
+    if role == 'admin':
         threshold = datetime.utcnow() - timedelta(days=3)
         inactive_users_count = User.query.filter(User.is_hidden == False, User.last_activity < threshold).count()
 
