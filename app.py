@@ -1277,12 +1277,15 @@ def financial_transactions():
     if request.method == 'POST':
         dates = request.form.getlist('date[]')
         types = request.form.getlist('transaction_type[]')
-        accounts = request.form.getlist('account_id[]')
         amounts = request.form.getlist('amount[]')
-        sources = request.form.getlist('source[]')
         payment_methods = request.form.getlist('payment_method[]')
         notes_list = request.form.getlist('notes[]')
-        new_parties = request.form.getlist('new_party_name[]')
+        
+        # ✅ الحقول الجديدة من الـ HTML
+        from_parties = request.form.getlist('from_party[]')
+        to_parties = request.form.getlist('to_party[]')
+        new_from_parties = request.form.getlist('new_from_party[]')
+        new_to_parties = request.form.getlist('new_to_party[]')
 
         for i in range(len(amounts)):
             if not amounts[i].strip():
@@ -1290,60 +1293,112 @@ def financial_transactions():
             try:
                 amount = float(amounts[i])
                 record_date = datetime.strptime(dates[i], '%Y-%m-%d').date() if dates[i] else date.today()
-                txn_type = types[i]
-                source = sources[i] if i < len(sources) else ''
+                txn_type = types[i] if i < len(types) else 'deposit'
                 payment_method = payment_methods[i] if i < len(payment_methods) else 'كاش'
                 notes = notes_list[i] if i < len(notes_list) else ''
 
-                # حالة "من عميل لمورد"
-                if txn_type == 'transfer_customer_supplier':
-                    # في هذه الحالة source سيحتوي على اسم العميل والمورد معاً
-                    # سنفترض أنه تم اختيار العميل والمورد من قوائم منسدلة مختلفة في النموذج
-                    # وسنستقبلهم من حقول إضافية في النموذج
-                    customer_name = request.form.getlist('from_customer[]')[i] if i < len(request.form.getlist('from_customer[]')) else ''
-                    supplier_name = request.form.getlist('to_supplier[]')[i] if i < len(request.form.getlist('to_supplier[]')) else ''
-                    new_customer = request.form.getlist('new_customer_name[]')[i] if i < len(request.form.getlist('new_customer_name[]')) else ''
-                    new_supplier = request.form.getlist('new_supplier_name[]')[i] if i < len(request.form.getlist('new_supplier_name[]')) else ''
-                    # إضافة جديد إذا لزم
-                    if customer_name == 'new' and new_customer:
-                        if not Customer.query.filter_by(name=new_customer).first():
-                            db.session.add(Customer(name=new_customer))
-                            db.session.commit()
-                        customer_name = new_customer
-                    if supplier_name == 'new' and new_supplier:
-                        if not Supplier.query.filter_by(name=new_supplier).first():
-                            db.session.add(Supplier(name=new_supplier))
-                            db.session.commit()
-                        supplier_name = new_supplier
-                    source = f"من {customer_name} إلى {supplier_name}"
-                    txn_type = 'withdrawal'  # معاملة سحب من حساب معين، ويمكن لاحقاً تحسينها
-                else:
-                    # معاملة عادية
-                    new_party = new_parties[i] if i < len(new_parties) else ''
-                    if source == 'new' and new_party:
-                        # إنشاء عميل أو مورد حسب نوع المعاملة (إيداع = عميل، سحب = مورد)
-                        if txn_type == 'deposit':
-                            if not Customer.query.filter_by(name=new_party).first():
-                                db.session.add(Customer(name=new_party))
-                                db.session.commit()
-                        else:
-                            if not Supplier.query.filter_by(name=new_party).first():
-                                db.session.add(Supplier(name=new_party))
-                                db.session.commit()
-                        source = new_party
+                from_party = from_parties[i] if i < len(from_parties) else ''
+                to_party = to_parties[i] if i < len(to_parties) else ''
+                new_from_party = new_from_parties[i] if i < len(new_from_parties) else ''
+                new_to_party = new_to_parties[i] if i < len(new_to_parties) else ''
 
-                account_id = int(accounts[i]) if i < len(accounts) else 1
-                account = TreasuryAccount.query.get(account_id)
-                if account:
+                # ✅ التعامل مع "جديد" في "من"
+                if from_party == 'new' and new_from_party:
                     if txn_type == 'deposit':
-                        account.balance += amount
+                        # إيداع: من = عميل
+                        if not Customer.query.filter_by(name=new_from_party).first():
+                            db.session.add(Customer(name=new_from_party))
+                            db.session.commit()
                     elif txn_type == 'withdrawal':
-                        account.balance -= amount
-                    db.session.commit()
+                        # سحب: من = حساباتنا (مش هنضيف حاجة جديدة)
+                        pass
+                    elif txn_type == 'transfer_customer_supplier':
+                        # تحويل: من = عميل
+                        if not Customer.query.filter_by(name=new_from_party).first():
+                            db.session.add(Customer(name=new_from_party))
+                            db.session.commit()
+                    from_party = new_from_party
 
+                # ✅ التعامل مع "جديد" في "إلى"
+                if to_party == 'new' and new_to_party:
+                    if txn_type == 'deposit':
+                        # إيداع: إلى = حساباتنا (مش هنضيف حاجة جديدة)
+                        pass
+                    elif txn_type == 'withdrawal':
+                        # سحب: إلى = مورد
+                        if not Supplier.query.filter_by(name=new_to_party).first():
+                            db.session.add(Supplier(name=new_to_party))
+                            db.session.commit()
+                    elif txn_type == 'transfer_customer_supplier':
+                        # تحويل: إلى = مورد
+                        if not Supplier.query.filter_by(name=new_to_party).first():
+                            db.session.add(Supplier(name=new_to_party))
+                            db.session.commit()
+                    to_party = new_to_party
+
+                # ✅ تحديد الحساب المناسب
+                account = None
+                if txn_type == 'deposit':
+                    # إيداع: الفلوس بتجيلنا
+                    account_name = current_user.full_name
+                    account = TreasuryAccount.query.filter_by(
+                        person_name=account_name, 
+                        account_type=payment_method
+                    ).first()
+                    if not account:
+                        account = TreasuryAccount(
+                            person_name=account_name, 
+                            account_type=payment_method, 
+                            balance=0
+                        )
+                        db.session.add(account)
+                        db.session.commit()
+                    account.balance += amount
+                    db.session.commit()
+                    source = from_party
+                    txn_type_db = 'deposit'
+
+                elif txn_type == 'withdrawal':
+                    # سحب: الفلوس بتخرج من حسابنا
+                    account_name = current_user.full_name
+                    account = TreasuryAccount.query.filter_by(
+                        person_name=account_name, 
+                        account_type=payment_method
+                    ).first()
+                    if not account:
+                        account = TreasuryAccount(
+                            person_name=account_name, 
+                            account_type=payment_method, 
+                            balance=0
+                        )
+                        db.session.add(account)
+                        db.session.commit()
+                    account.balance -= amount
+                    db.session.commit()
+                    source = to_party
+                    txn_type_db = 'withdrawal'
+
+                elif txn_type == 'transfer_customer_supplier':
+                    # تحويل من عميل لمورد: مفيش حساباتنا هنا
+                    account = TreasuryAccount.query.filter_by(
+                        person_name='تحويلات العملاء', 
+                        account_type='تحويل'
+                    ).first()
+                    if not account:
+                        account = TreasuryAccount(
+                            person_name='تحويلات العملاء', 
+                            account_type='تحويل', 
+                            balance=0
+                        )
+                        db.session.add(account)
+                        db.session.commit()
+                    source = f"من {from_party} إلى {to_party}"
+                    txn_type_db = 'transfer'
+
+                # ✅ تسجيل المعاملة
                 new_txn = TreasuryTransaction(
-                    account_id=account_id,
-                    transaction_type=txn_type if txn_type in ['deposit','withdrawal'] else 'withdrawal',
+                    account_id=account.id,
+                    transaction_type=txn_type_db,
                     amount=amount,
                     source=source,
                     payment_method=payment_method,
@@ -1353,17 +1408,25 @@ def financial_transactions():
                     created_at=datetime.utcnow()
                 )
                 db.session.add(new_txn)
+                db.session.commit()
+
             except Exception as e:
-                print(f"Error adding financial transaction: {e}")
+                print(f"❌ Error adding financial transaction: {e}")
+                flash(f'خطأ في إضافة المعاملة: {str(e)}', 'danger')
                 continue
-        db.session.commit()
-        flash('تم تسجيل المعاملات المالية بنجاح', 'success')
+
+        flash('✅ تم تسجيل المعاملات المالية بنجاح', 'success')
         return redirect(url_for('financial_transactions'))
 
-    transactions = TreasuryTransaction.query.order_by(TreasuryTransaction.date.asc(), TreasuryTransaction.id.asc()).all()
+    # GET: عرض الصفحة
+    transactions = TreasuryTransaction.query.order_by(
+        TreasuryTransaction.date.asc(), 
+        TreasuryTransaction.id.asc()
+    ).all()
     accounts = TreasuryAccount.query.all()
     customers = Customer.query.order_by(Customer.name.asc()).all()
     suppliers = Supplier.query.order_by(Supplier.name.asc()).all()
+    
     return render_template('reports/financial.html',
                            transactions=transactions,
                            accounts=accounts,
@@ -1400,7 +1463,6 @@ def reports_custom():
     report_type = request.args.get('report_type', 'all')
 
     if not from_date_str or not to_date_str:
-        # إذا لم تكن التواريخ محددة، اعرض الصفحة فارغة مع النموذج
         return render_template('reports/custom.html',
                                from_date=None,
                                to_date=None,
