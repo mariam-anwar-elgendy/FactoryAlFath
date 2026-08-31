@@ -496,7 +496,7 @@ def store_index():
     receiving = StoreReceiving.query.filter_by(date=today).order_by(StoreReceiving.id.asc()).all()
     return render_template('store/index.html', sales=sales, purchases=purchases, receiving=receiving)
 
-# ==================== معاملات المحل (المُعدَّلة) ====================
+# ==================== معاملات المحل ====================
 @app.route('/store/transactions', methods=['GET', 'POST'])
 @custom_login_required
 @role_required('meg', 'admin', 'mariam', 'rehab', 'ahmed')
@@ -701,7 +701,7 @@ def store_transactions():
                     flash('غير مصرح لك بالتعديل', 'danger')
             return redirect(url_for('store_transactions'))
 
-        # ========== إضافة جديدة (المُعدَّلة) ==========
+        # ========== إضافة جديدة ==========
         transaction_type = request.form.get('transaction_type')
         record_date = datetime.strptime(request.form.get('date'), '%Y-%m-%d').date()
         party_name = request.form.get('party_name')
