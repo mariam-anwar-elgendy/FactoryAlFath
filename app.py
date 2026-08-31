@@ -183,14 +183,12 @@ def init_db():
         db.session.commit()
         print("✅ تم تهيئة قاعدة البيانات وإنشاء المستخدمين")
 
-        # إنشاء حسابات الخزينة للأشخاص المحددين
         treasury_persons = ['الحاج أحمد', 'عيد', 'عبدالله', 'الحاج فتحي']
         account_types = ['كاش', 'فودافون كاش', 'انستا باي']
         for person in treasury_persons:
             for acc_type in account_types:
                 get_or_create_treasury_account(person, acc_type)
 
-        # تنظيف الحسابات القديمة بالإنجليزية
         name_mapping = {
             'Ahmed': 'الحاج أحمد',
             'ahmed': 'الحاج أحمد',
@@ -225,11 +223,7 @@ def inject_globals():
             return 'غير معروف'
         user = User.query.get(user_id)
         return user.full_name if user else 'غير معروف'
-    return {
-        'now': datetime.now(),
-        'unread_notifications': unread_notifications,
-        'get_user_name': get_user_name
-    }
+    return {'now': datetime.now(), 'unread_notifications': unread_notifications, 'get_user_name': get_user_name}
 
 @app.route('/health')
 def health():
@@ -314,7 +308,7 @@ def dashboard():
         recent_sales = StoreSale.query.order_by(StoreSale.date.desc()).limit(5).all()
         recent_production = []
         recent_transactions = TreasuryTransaction.query.filter_by(created_by=current_user.id).order_by(TreasuryTransaction.date.desc()).limit(5).all()
-    else:  # eid, abdo
+    else:
         stats['treasury_balance'] = db.session.query(db.func.sum(TreasuryAccount.balance)).filter(TreasuryAccount.person_name == current_user.full_name).scalar() or 0
         recent_sales = []
         recent_production = []
@@ -1276,10 +1270,74 @@ def treasury_accounts():
     return render_template('treasury/accounts.html', accounts=accounts)
 
 # ==================== المعاملات المالية ====================
-@app.route('/financial-transactions')
+@app.route('/financial-transactions', methods=['GET', 'POST'])
 @custom_login_required
 @role_required('meg', 'admin', 'mariam', 'rehab', 'ahmed', 'eid', 'abdo')
 def financial_transactions():
+    if request.method == 'POST':
+        dates = request.form.getlist('date[]')
+        types = request.form.getlist('transaction_type[]')
+        accounts = request.form.getlist('account_id[]')
+        amounts = request.form.getlist('amount[]')
+        sources = request.form.getlist('source[]')
+        payment_methods = request.form.getlist('payment_method[]')
+        notes_list = request.form.getlist('notes[]')
+        new_parties = request.form.getlist('new_party_name[]')
+
+        for i in range(len(amounts)):
+            if not amounts[i].strip():
+                continue
+            try:
+                amount = float(amounts[i])
+                record_date = datetime.strptime(dates[i], '%Y-%m-%d').date() if dates[i] else date.today()
+                txn_type = types[i]
+                source = sources[i] if i < len(sources) else ''
+                payment_method = payment_methods[i] if i < len(payment_methods) else 'كاش'
+                notes = notes_list[i] if i < len(notes_list) else ''
+
+                # حالة "من عميل لمورد"
+                if txn_type == 'transfer_customer_supplier':
+                    customer_name = source
+                    supplier_name = source
+                    new_party = new_parties[i] if i < len(new_parties) else ''
+                    # نستخدم new_party فقط إذا كان source == new
+                    if source == 'new' and new_party:
+                        source = new_party
+                        # إنشاء عميل/مورد جديد
+                        if not Customer.query.filter_by(name=new_party).first():
+                            db.session.add(Customer(name=new_party))
+                            db.session.commit()
+                    txn_type = 'withdrawal'
+                    source = f"تحويل من {source} إلى {source}"
+
+                account_id = int(accounts[i]) if i < len(accounts) else 1
+                account = TreasuryAccount.query.get(account_id)
+                if account:
+                    if txn_type == 'deposit':
+                        account.balance += amount
+                    elif txn_type == 'withdrawal':
+                        account.balance -= amount
+                    db.session.commit()
+
+                new_txn = TreasuryTransaction(
+                    account_id=account_id,
+                    transaction_type=txn_type if txn_type in ['deposit','withdrawal'] else 'withdrawal',
+                    amount=amount,
+                    source=source,
+                    payment_method=payment_method,
+                    date=record_date,
+                    notes=notes,
+                    created_by=current_user.id,
+                    created_at=datetime.utcnow()
+                )
+                db.session.add(new_txn)
+            except Exception as e:
+                print(f"Error adding financial transaction: {e}")
+                continue
+        db.session.commit()
+        flash('تم تسجيل المعاملات المالية بنجاح', 'success')
+        return redirect(url_for('financial_transactions'))
+
     transactions = TreasuryTransaction.query.order_by(TreasuryTransaction.date.asc(), TreasuryTransaction.id.asc()).all()
     accounts = TreasuryAccount.query.all()
     customers = Customer.query.order_by(Customer.name.asc()).all()
