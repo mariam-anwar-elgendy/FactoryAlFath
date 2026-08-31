@@ -59,7 +59,7 @@
     </table>
 </div>
 
-<!-- ========== MODAL إضافة معاملة مالية (النهائي) ========== -->
+<!-- ========== MODAL إضافة معاملة مالية ========== -->
 <div class="modal fade" id="addFinancialModal" tabindex="-1">
     <div class="modal-dialog modal-xl">
         <div class="modal-content">
@@ -70,13 +70,14 @@
                 </div>
                 <div class="modal-body">
                     <div class="table-responsive">
-                        <table class="table" id="financialRows" style="table-layout: fixed; min-width: 1200px;">
+                        <table class="table" id="financialRows" style="table-layout: fixed; min-width: 1100px;">
                             <thead>
                                 <tr>
                                     <th style="width: 10%;">التاريخ</th>
                                     <th style="width: 12%;">النوع</th>
                                     <th style="width: 25%;" class="from-header">من</th>
                                     <th style="width: 25%;" class="to-header">إلى</th>
+                                    <!-- ✅ عمود الحساب: يظهر فقط في الإيداع/السحب -->
                                     <th style="width: 15%;" class="account-header">الحساب</th>
                                     <th style="width: 10%;">المبلغ</th>
                                     <th style="width: 12%;">طريقة الدفع</th>
@@ -94,21 +95,21 @@
                                             <option value="transfer_customer_supplier">تحويل (من عميل لمورد)</option>
                                         </select>
                                     </td>
-                                    <!-- ✅ عمود "من" -->
+                                    <!-- عمود "من" -->
                                     <td class="from-cell">
                                         <select name="from_party[]" class="form-select from-select">
                                             <option value="">اختر الطرف...</option>
                                         </select>
                                         <input type="text" name="new_from_party[]" class="form-control mt-1 d-none" placeholder="اسم جديد (عميل/مورد)">
                                     </td>
-                                    <!-- ✅ عمود "إلى" -->
+                                    <!-- عمود "إلى" -->
                                     <td class="to-cell">
                                         <select name="to_party[]" class="form-select to-select">
                                             <option value="">اختر الطرف...</option>
                                         </select>
                                         <input type="text" name="new_to_party[]" class="form-control mt-1 d-none" placeholder="اسم جديد (عميل/مورد)">
                                     </td>
-                                    <!-- ✅ عمود الحساب (يظهر دائماً) -->
+                                    <!-- ✅ عمود الحساب: يظهر فقط في الإيداع/السحب -->
                                     <td class="account-cell">
                                         <select name="account_id[]" class="form-select account-select">
                                             {% for account in accounts %}
@@ -159,7 +160,6 @@
             "{{ account.person_name }}",
         {% endfor %}
     ];
-    // إزالة التكرارات من treasuryPersons
     treasuryPersons = [...new Set(treasuryPersons)];
 
     // 2. دالة لتعبئة قائمة "من" و "إلى"
@@ -182,7 +182,7 @@
                 list = [...customersList, ...suppliersList];
             }
         } else if (type === 'transfer_customer_supplier') {
-            // تحويل: من = عميل, إلى = مورد
+            // تحويل: من = عميل, إلى = مورد (مفيش حساباتنا)
             if (isFrom) {
                 list = customersList;
             } else {
@@ -197,26 +197,20 @@
             selectElement.appendChild(opt);
         });
 
-        // نضيف خيار جديد
         var optNew = document.createElement('option');
         optNew.value = 'new';
         optNew.textContent = '➕ جديد...';
         selectElement.appendChild(optNew);
     }
 
-    // 3. دالة إظهار/إخفاء الأعمدة وتعبئتها
+    // 3. دالة إظهار/إخفاء الأعمدة
     function toggleRowVisibility(row) {
         var type = row.querySelector('.type-select').value;
         var fromCell = row.querySelector('.from-cell');
         var toCell = row.querySelector('.to-cell');
         var accountCell = row.querySelector('.account-cell');
 
-        // إظهار الكل
-        fromCell.style.display = '';
-        toCell.style.display = '';
-        accountCell.style.display = '';
-
-        // تعبئة القوائم
+        // تعبئة القوائم أولاً
         var fromSelect = row.querySelector('.from-select');
         var toSelect = row.querySelector('.to-select');
         populatePartySelect(fromSelect, type, true);
@@ -227,6 +221,15 @@
         var newToInput = row.querySelector('input[name="new_to_party[]"]');
         if (newFromInput) newFromInput.classList.add('d-none');
         if (newToInput) newToInput.classList.add('d-none');
+
+        // ✅ التحكم في ظهور/اختفاء عمود الحساب
+        if (type === 'transfer_customer_supplier') {
+            // ✅ في التحويل: نخفي عمود الحساب نهائياً
+            accountCell.style.display = 'none';
+        } else {
+            // ✅ في الإيداع/السحب: نضهر عمود الحساب
+            accountCell.style.display = '';
+        }
     }
 
     // 4. إضافة صف جديد
