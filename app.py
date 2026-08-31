@@ -496,6 +496,7 @@ def store_index():
     receiving = StoreReceiving.query.filter_by(date=today).order_by(StoreReceiving.id.asc()).all()
     return render_template('store/index.html', sales=sales, purchases=purchases, receiving=receiving)
 
+# ==================== معاملات المحل (المُعدَّلة) ====================
 @app.route('/store/transactions', methods=['GET', 'POST'])
 @custom_login_required
 @role_required('meg', 'admin', 'mariam', 'rehab', 'ahmed')
@@ -545,6 +546,7 @@ def store_transactions():
                     record.customer_phone = request.form.get('party_phone')
                     record.payment_type = request.form.get('payment_type', 'آجل')
 
+                    # حذف البنود القديمة وإعادة إنشائها
                     for item in record.items:
                         inv = StoreInventory.query.filter_by(product_type=item.product_type,
                                                              product_size=item.product_size,
@@ -565,48 +567,52 @@ def store_transactions():
                     new_product_specs = request.form.getlist('new_product_spec')
 
                     for i in range(len(product_types)):
-                        if product_types[i].strip():
-                            product_type = product_types[i]
-                            if product_type == 'new':
-                                product_type = new_product_types[i] if i < len(new_product_types) else ''
-                                if product_type and not Category.query.filter_by(name=product_type).first():
-                                    db.session.add(Category(name=product_type))
-                                    db.session.commit()
-                            product_size = product_sizes[i] if i < len(product_sizes) else ''
-                            if product_size == 'new':
-                                product_size = new_product_sizes[i] if i < len(new_product_sizes) else ''
-                                if product_size and not Size.query.filter_by(value=product_size).first():
-                                    db.session.add(Size(value=product_size))
-                                    db.session.commit()
-                            product_spec = product_specs[i] if i < len(product_specs) else ''
-                            if product_spec == 'new':
-                                product_spec = new_product_specs[i] if i < len(new_product_specs) else ''
-                                if product_spec and not Thickness.query.filter_by(value=product_spec).first():
-                                    db.session.add(Thickness(value=product_spec))
-                                    db.session.commit()
+                        if not product_types[i].strip() or not quantities[i].strip():
+                            continue
+                        
+                        product_type = product_types[i]
+                        if product_type == 'new':
+                            product_type = new_product_types[i] if i < len(new_product_types) else ''
+                            if product_type and not Category.query.filter_by(name=product_type).first():
+                                db.session.add(Category(name=product_type))
+                                db.session.commit()
+                        
+                        product_size = product_sizes[i] if i < len(product_sizes) else ''
+                        if product_size == 'new':
+                            product_size = new_product_sizes[i] if i < len(new_product_sizes) else ''
+                            if product_size and not Size.query.filter_by(value=product_size).first():
+                                db.session.add(Size(value=product_size))
+                                db.session.commit()
+                        
+                        product_spec = product_specs[i] if i < len(product_specs) else ''
+                        if product_spec == 'new':
+                            product_spec = new_product_specs[i] if i < len(new_product_specs) else ''
+                            if product_spec and not Thickness.query.filter_by(value=product_spec).first():
+                                db.session.add(Thickness(value=product_spec))
+                                db.session.commit()
 
-                            item = StoreSaleItem(
-                                sale_id=record.id,
-                                product_type=product_type,
-                                product_size=product_size,
-                                product_spec=product_spec,
-                                quantity=float(quantities[i] if i < len(quantities) else 0),
-                                unit_price=float(unit_prices[i] if i < len(unit_prices) else 0) if unit_prices[i] else 0,
-                            )
-                            item.total = item.quantity * item.unit_price
-                            db.session.add(item)
+                        item = StoreSaleItem(
+                            sale_id=record.id,
+                            product_type=product_type,
+                            product_size=product_size,
+                            product_spec=product_spec,
+                            quantity=float(quantities[i]) if quantities[i] else 0,
+                            unit_price=float(unit_prices[i]) if unit_prices[i] else 0,
+                        )
+                        item.total = item.quantity * item.unit_price
+                        db.session.add(item)
 
-                            inv = StoreInventory.query.filter_by(product_type=item.product_type,
-                                                                 product_size=item.product_size,
-                                                                 product_spec=item.product_spec).first()
-                            if inv:
-                                inv.current_quantity -= item.quantity
-                            else:
-                                inv = StoreInventory(product_type=item.product_type,
-                                                     product_size=item.product_size,
-                                                     product_spec=item.product_spec,
-                                                     current_quantity=-item.quantity)
-                                db.session.add(inv)
+                        inv = StoreInventory.query.filter_by(product_type=item.product_type,
+                                                             product_size=item.product_size,
+                                                             product_spec=item.product_spec).first()
+                        if inv:
+                            inv.current_quantity -= item.quantity
+                        else:
+                            inv = StoreInventory(product_type=item.product_type,
+                                                 product_size=item.product_size,
+                                                 product_spec=item.product_spec,
+                                                 current_quantity=-item.quantity)
+                            db.session.add(inv)
 
                     db.session.commit()
                     log_activity(current_user.id, 'edit', f"تعديل بيع {record.customer_name}")
@@ -641,48 +647,52 @@ def store_transactions():
                     new_product_specs = request.form.getlist('new_product_spec')
 
                     for i in range(len(product_types)):
-                        if product_types[i].strip():
-                            product_type = product_types[i]
-                            if product_type == 'new':
-                                product_type = new_product_types[i] if i < len(new_product_types) else ''
-                                if product_type and not Category.query.filter_by(name=product_type).first():
-                                    db.session.add(Category(name=product_type))
-                                    db.session.commit()
-                            product_size = product_sizes[i] if i < len(product_sizes) else ''
-                            if product_size == 'new':
-                                product_size = new_product_sizes[i] if i < len(new_product_sizes) else ''
-                                if product_size and not Size.query.filter_by(value=product_size).first():
-                                    db.session.add(Size(value=product_size))
-                                    db.session.commit()
-                            product_spec = product_specs[i] if i < len(product_specs) else ''
-                            if product_spec == 'new':
-                                product_spec = new_product_specs[i] if i < len(new_product_specs) else ''
-                                if product_spec and not Thickness.query.filter_by(value=product_spec).first():
-                                    db.session.add(Thickness(value=product_spec))
-                                    db.session.commit()
+                        if not product_types[i].strip() or not quantities[i].strip():
+                            continue
+                        
+                        product_type = product_types[i]
+                        if product_type == 'new':
+                            product_type = new_product_types[i] if i < len(new_product_types) else ''
+                            if product_type and not Category.query.filter_by(name=product_type).first():
+                                db.session.add(Category(name=product_type))
+                                db.session.commit()
+                        
+                        product_size = product_sizes[i] if i < len(product_sizes) else ''
+                        if product_size == 'new':
+                            product_size = new_product_sizes[i] if i < len(new_product_sizes) else ''
+                            if product_size and not Size.query.filter_by(value=product_size).first():
+                                db.session.add(Size(value=product_size))
+                                db.session.commit()
+                        
+                        product_spec = product_specs[i] if i < len(product_specs) else ''
+                        if product_spec == 'new':
+                            product_spec = new_product_specs[i] if i < len(new_product_specs) else ''
+                            if product_spec and not Thickness.query.filter_by(value=product_spec).first():
+                                db.session.add(Thickness(value=product_spec))
+                                db.session.commit()
 
-                            item = StorePurchaseItem(
-                                purchase_id=record.id,
-                                product_type=product_type,
-                                product_size=product_size,
-                                product_spec=product_spec,
-                                quantity=float(quantities[i] if i < len(quantities) else 0),
-                                unit_price=float(unit_prices[i] if i < len(unit_prices) else 0) if unit_prices[i] else 0,
-                            )
-                            item.total = item.quantity * item.unit_price
-                            db.session.add(item)
+                        item = StorePurchaseItem(
+                            purchase_id=record.id,
+                            product_type=product_type,
+                            product_size=product_size,
+                            product_spec=product_spec,
+                            quantity=float(quantities[i]) if quantities[i] else 0,
+                            unit_price=float(unit_prices[i]) if unit_prices[i] else 0,
+                        )
+                        item.total = item.quantity * item.unit_price
+                        db.session.add(item)
 
-                            inv = StoreInventory.query.filter_by(product_type=item.product_type,
-                                                                 product_size=item.product_size,
-                                                                 product_spec=item.product_spec).first()
-                            if inv:
-                                inv.current_quantity += item.quantity
-                            else:
-                                inv = StoreInventory(product_type=item.product_type,
-                                                     product_size=item.product_size,
-                                                     product_spec=item.product_spec,
-                                                     current_quantity=item.quantity)
-                                db.session.add(inv)
+                        inv = StoreInventory.query.filter_by(product_type=item.product_type,
+                                                             product_size=item.product_size,
+                                                             product_spec=item.product_spec).first()
+                        if inv:
+                            inv.current_quantity += item.quantity
+                        else:
+                            inv = StoreInventory(product_type=item.product_type,
+                                                 product_size=item.product_size,
+                                                 product_spec=item.product_spec,
+                                                 current_quantity=item.quantity)
+                            db.session.add(inv)
 
                     db.session.commit()
                     log_activity(current_user.id, 'edit', f"تعديل شراء {record.supplier_name}")
@@ -691,7 +701,7 @@ def store_transactions():
                     flash('غير مصرح لك بالتعديل', 'danger')
             return redirect(url_for('store_transactions'))
 
-        # إضافة جديدة
+        # ========== إضافة جديدة (المُعدَّلة) ==========
         transaction_type = request.form.get('transaction_type')
         record_date = datetime.strptime(request.form.get('date'), '%Y-%m-%d').date()
         party_name = request.form.get('party_name')
@@ -707,6 +717,17 @@ def store_transactions():
         new_product_sizes = request.form.getlist('new_product_size')
         new_product_specs = request.form.getlist('new_product_spec')
 
+        # ✅ التحقق من وجود بنود
+        has_items = False
+        for i in range(len(product_types)):
+            if product_types[i].strip() and quantities[i].strip():
+                has_items = True
+                break
+        
+        if not has_items:
+            flash('⚠️ يجب إضافة على الأقل صنف واحد مع الكمية', 'danger')
+            return redirect(url_for('store_transactions'))
+
         if transaction_type == 'sale':
             new_sale = StoreSale(
                 invoice_number=f"INV-{datetime.now().strftime('%Y%m%d%H%M%S')}",
@@ -721,60 +742,74 @@ def store_transactions():
             db.session.commit()
 
             for i in range(len(product_types)):
-                if product_types[i].strip():
-                    product_type = product_types[i]
-                    if product_type == 'new':
-                        product_type = new_product_types[i] if i < len(new_product_types) else ''
-                        if product_type and not Category.query.filter_by(name=product_type).first():
-                            db.session.add(Category(name=product_type))
-                            db.session.commit()
-                    product_size = product_sizes[i] if i < len(product_sizes) else ''
-                    if product_size == 'new':
-                        product_size = new_product_sizes[i] if i < len(new_product_sizes) else ''
-                        if product_size and not Size.query.filter_by(value=product_size).first():
-                            db.session.add(Size(value=product_size))
-                            db.session.commit()
-                    product_spec = product_specs[i] if i < len(product_specs) else ''
-                    if product_spec == 'new':
-                        product_spec = new_product_specs[i] if i < len(new_product_specs) else ''
-                        if product_spec and not Thickness.query.filter_by(value=product_spec).first():
-                            db.session.add(Thickness(value=product_spec))
-                            db.session.commit()
+                if not product_types[i].strip() or not quantities[i].strip():
+                    continue
+                
+                product_type = product_types[i]
+                if product_type == 'new':
+                    product_type = new_product_types[i] if i < len(new_product_types) else ''
+                    if product_type and not Category.query.filter_by(name=product_type).first():
+                        db.session.add(Category(name=product_type))
+                        db.session.commit()
+                
+                product_size = product_sizes[i] if i < len(product_sizes) else ''
+                if product_size == 'new':
+                    product_size = new_product_sizes[i] if i < len(new_product_sizes) else ''
+                    if product_size and not Size.query.filter_by(value=product_size).first():
+                        db.session.add(Size(value=product_size))
+                        db.session.commit()
+                
+                product_spec = product_specs[i] if i < len(product_specs) else ''
+                if product_spec == 'new':
+                    product_spec = new_product_specs[i] if i < len(new_product_specs) else ''
+                    if product_spec and not Thickness.query.filter_by(value=product_spec).first():
+                        db.session.add(Thickness(value=product_spec))
+                        db.session.commit()
 
-                    item = StoreSaleItem(
-                        sale_id=new_sale.id,
-                        product_type=product_type,
-                        product_size=product_size,
-                        product_spec=product_spec,
-                        quantity=float(quantities[i] if i < len(quantities) else 0),
-                        unit_price=float(unit_prices[i] if i < len(unit_prices) else 0) if unit_prices[i] else 0,
+                item = StoreSaleItem(
+                    sale_id=new_sale.id,
+                    product_type=product_type,
+                    product_size=product_size,
+                    product_spec=product_spec,
+                    quantity=float(quantities[i]) if quantities[i] else 0,
+                    unit_price=float(unit_prices[i]) if unit_prices[i] else 0,
+                )
+                item.total = item.quantity * item.unit_price
+                db.session.add(item)
+
+                inv = StoreInventory.query.filter_by(
+                    product_type=item.product_type,
+                    product_size=item.product_size,
+                    product_spec=item.product_spec
+                ).first()
+                if inv:
+                    inv.current_quantity -= item.quantity
+                else:
+                    inv = StoreInventory(
+                        product_type=item.product_type,
+                        product_size=item.product_size,
+                        product_spec=item.product_spec,
+                        current_quantity=-item.quantity
                     )
-                    item.total = item.quantity * item.unit_price
-                    db.session.add(item)
-
-                    inv = StoreInventory.query.filter_by(product_type=item.product_type,
-                                                         product_size=item.product_size,
-                                                         product_spec=item.product_spec).first()
-                    if inv:
-                        inv.current_quantity -= item.quantity
-                    else:
-                        inv = StoreInventory(product_type=item.product_type,
-                                             product_size=item.product_size,
-                                             product_spec=item.product_spec,
-                                             current_quantity=-item.quantity)
-                        db.session.add(inv)
+                    db.session.add(inv)
 
             db.session.commit()
-            total = sum(item.total for item in new_sale.items)
-            db.session.add(StoreDiary(date=record_date,
-                                      description=f"بيع إلى {party_name} بقيمة {total}",
-                                      amount=total,
-                                      created_by=current_user.id,
-                                      created_at=datetime.utcnow()))
+            
+            total = db.session.query(db.func.sum(StoreSaleItem.total)).filter(StoreSaleItem.sale_id == new_sale.id).scalar() or 0
+            
+            db.session.add(StoreDiary(
+                date=record_date,
+                description=f"بيع إلى {party_name} بقيمة {total}",
+                amount=total,
+                created_by=current_user.id,
+                created_at=datetime.utcnow()
+            ))
             db.session.commit()
+            
             log_activity(current_user.id, 'create', f"إضافة بيع لـ {party_name}")
             flash('تم تسجيل البيع بنجاح', 'success')
-        else:
+
+        else:  # شراء
             new_purchase = StorePurchase(
                 invoice_number=f"PUR-{datetime.now().strftime('%Y%m%d%H%M%S')}",
                 supplier_name=party_name,
@@ -788,62 +823,76 @@ def store_transactions():
             db.session.commit()
 
             for i in range(len(product_types)):
-                if product_types[i].strip():
-                    product_type = product_types[i]
-                    if product_type == 'new':
-                        product_type = new_product_types[i] if i < len(new_product_types) else ''
-                        if product_type and not Category.query.filter_by(name=product_type).first():
-                            db.session.add(Category(name=product_type))
-                            db.session.commit()
-                    product_size = product_sizes[i] if i < len(product_sizes) else ''
-                    if product_size == 'new':
-                        product_size = new_product_sizes[i] if i < len(new_product_sizes) else ''
-                        if product_size and not Size.query.filter_by(value=product_size).first():
-                            db.session.add(Size(value=product_size))
-                            db.session.commit()
-                    product_spec = product_specs[i] if i < len(product_specs) else ''
-                    if product_spec == 'new':
-                        product_spec = new_product_specs[i] if i < len(new_product_specs) else ''
-                        if product_spec and not Thickness.query.filter_by(value=product_spec).first():
-                            db.session.add(Thickness(value=product_spec))
-                            db.session.commit()
+                if not product_types[i].strip() or not quantities[i].strip():
+                    continue
+                
+                product_type = product_types[i]
+                if product_type == 'new':
+                    product_type = new_product_types[i] if i < len(new_product_types) else ''
+                    if product_type and not Category.query.filter_by(name=product_type).first():
+                        db.session.add(Category(name=product_type))
+                        db.session.commit()
+                
+                product_size = product_sizes[i] if i < len(product_sizes) else ''
+                if product_size == 'new':
+                    product_size = new_product_sizes[i] if i < len(new_product_sizes) else ''
+                    if product_size and not Size.query.filter_by(value=product_size).first():
+                        db.session.add(Size(value=product_size))
+                        db.session.commit()
+                
+                product_spec = product_specs[i] if i < len(product_specs) else ''
+                if product_spec == 'new':
+                    product_spec = new_product_specs[i] if i < len(new_product_specs) else ''
+                    if product_spec and not Thickness.query.filter_by(value=product_spec).first():
+                        db.session.add(Thickness(value=product_spec))
+                        db.session.commit()
 
-                    item = StorePurchaseItem(
-                        purchase_id=new_purchase.id,
-                        product_type=product_type,
-                        product_size=product_size,
-                        product_spec=product_spec,
-                        quantity=float(quantities[i] if i < len(quantities) else 0),
-                        unit_price=float(unit_prices[i] if i < len(unit_prices) else 0) if unit_prices[i] else 0,
+                item = StorePurchaseItem(
+                    purchase_id=new_purchase.id,
+                    product_type=product_type,
+                    product_size=product_size,
+                    product_spec=product_spec,
+                    quantity=float(quantities[i]) if quantities[i] else 0,
+                    unit_price=float(unit_prices[i]) if unit_prices[i] else 0,
+                )
+                item.total = item.quantity * item.unit_price
+                db.session.add(item)
+
+                inv = StoreInventory.query.filter_by(
+                    product_type=item.product_type,
+                    product_size=item.product_size,
+                    product_spec=item.product_spec
+                ).first()
+                if inv:
+                    inv.current_quantity += item.quantity
+                else:
+                    inv = StoreInventory(
+                        product_type=item.product_type,
+                        product_size=item.product_size,
+                        product_spec=item.product_spec,
+                        current_quantity=item.quantity
                     )
-                    item.total = item.quantity * item.unit_price
-                    db.session.add(item)
-
-                    inv = StoreInventory.query.filter_by(product_type=item.product_type,
-                                                         product_size=item.product_size,
-                                                         product_spec=item.product_spec).first()
-                    if inv:
-                        inv.current_quantity += item.quantity
-                    else:
-                        inv = StoreInventory(product_type=item.product_type,
-                                             product_size=item.product_size,
-                                             product_spec=item.product_spec,
-                                             current_quantity=item.quantity)
-                        db.session.add(inv)
+                    db.session.add(inv)
 
             db.session.commit()
-            total = sum(item.total for item in new_purchase.items)
-            db.session.add(StoreDiary(date=record_date,
-                                      description=f"شراء من {party_name} بقيمة {total}",
-                                      amount=total,
-                                      created_by=current_user.id,
-                                      created_at=datetime.utcnow()))
+            
+            total = db.session.query(db.func.sum(StorePurchaseItem.total)).filter(StorePurchaseItem.purchase_id == new_purchase.id).scalar() or 0
+            
+            db.session.add(StoreDiary(
+                date=record_date,
+                description=f"شراء من {party_name} بقيمة {total}",
+                amount=total,
+                created_by=current_user.id,
+                created_at=datetime.utcnow()
+            ))
             db.session.commit()
+            
             log_activity(current_user.id, 'create', f"إضافة شراء من {party_name}")
             flash('تم تسجيل الشراء بنجاح', 'success')
 
         return redirect(url_for('store_transactions'))
 
+    # GET: عرض الصفحة
     sales = StoreSale.query.order_by(StoreSale.date.asc(), StoreSale.id.asc()).all()
     purchases = StorePurchase.query.order_by(StorePurchase.date.asc(), StorePurchase.id.asc()).all()
     customers = Customer.query.order_by(Customer.name.asc()).all()
@@ -1281,7 +1330,6 @@ def financial_transactions():
         payment_methods = request.form.getlist('payment_method[]')
         notes_list = request.form.getlist('notes[]')
         
-        # ✅ الحقول الجديدة من الـ HTML
         from_parties = request.form.getlist('from_party[]')
         to_parties = request.form.getlist('to_party[]')
         new_from_parties = request.form.getlist('new_from_party[]')
@@ -1302,44 +1350,30 @@ def financial_transactions():
                 new_from_party = new_from_parties[i] if i < len(new_from_parties) else ''
                 new_to_party = new_to_parties[i] if i < len(new_to_parties) else ''
 
-                # ✅ التعامل مع "جديد" في "من"
                 if from_party == 'new' and new_from_party:
                     if txn_type == 'deposit':
-                        # إيداع: من = عميل
                         if not Customer.query.filter_by(name=new_from_party).first():
                             db.session.add(Customer(name=new_from_party))
                             db.session.commit()
-                    elif txn_type == 'withdrawal':
-                        # سحب: من = حساباتنا (مش هنضيف حاجة جديدة)
-                        pass
                     elif txn_type == 'transfer_customer_supplier':
-                        # تحويل: من = عميل
                         if not Customer.query.filter_by(name=new_from_party).first():
                             db.session.add(Customer(name=new_from_party))
                             db.session.commit()
                     from_party = new_from_party
 
-                # ✅ التعامل مع "جديد" في "إلى"
                 if to_party == 'new' and new_to_party:
-                    if txn_type == 'deposit':
-                        # إيداع: إلى = حساباتنا (مش هنضيف حاجة جديدة)
-                        pass
-                    elif txn_type == 'withdrawal':
-                        # سحب: إلى = مورد
+                    if txn_type == 'withdrawal':
                         if not Supplier.query.filter_by(name=new_to_party).first():
                             db.session.add(Supplier(name=new_to_party))
                             db.session.commit()
                     elif txn_type == 'transfer_customer_supplier':
-                        # تحويل: إلى = مورد
                         if not Supplier.query.filter_by(name=new_to_party).first():
                             db.session.add(Supplier(name=new_to_party))
                             db.session.commit()
                     to_party = new_to_party
 
-                # ✅ تحديد الحساب المناسب
                 account = None
                 if txn_type == 'deposit':
-                    # إيداع: الفلوس بتجيلنا
                     account_name = current_user.full_name
                     account = TreasuryAccount.query.filter_by(
                         person_name=account_name, 
@@ -1359,7 +1393,6 @@ def financial_transactions():
                     txn_type_db = 'deposit'
 
                 elif txn_type == 'withdrawal':
-                    # سحب: الفلوس بتخرج من حسابنا
                     account_name = current_user.full_name
                     account = TreasuryAccount.query.filter_by(
                         person_name=account_name, 
@@ -1379,7 +1412,6 @@ def financial_transactions():
                     txn_type_db = 'withdrawal'
 
                 elif txn_type == 'transfer_customer_supplier':
-                    # تحويل من عميل لمورد: مفيش حساباتنا هنا
                     account = TreasuryAccount.query.filter_by(
                         person_name='تحويلات العملاء', 
                         account_type='تحويل'
@@ -1395,7 +1427,6 @@ def financial_transactions():
                     source = f"من {from_party} إلى {to_party}"
                     txn_type_db = 'transfer'
 
-                # ✅ تسجيل المعاملة
                 new_txn = TreasuryTransaction(
                     account_id=account.id,
                     transaction_type=txn_type_db,
@@ -1418,7 +1449,6 @@ def financial_transactions():
         flash('✅ تم تسجيل المعاملات المالية بنجاح', 'success')
         return redirect(url_for('financial_transactions'))
 
-    # GET: عرض الصفحة
     transactions = TreasuryTransaction.query.order_by(
         TreasuryTransaction.date.asc(), 
         TreasuryTransaction.id.asc()
