@@ -59,7 +59,7 @@
     </table>
 </div>
 
-<!-- ========== MODAL إضافة معاملة مالية (بدون حساب) ========== -->
+<!-- ========== MODAL إضافة معاملة مالية ========== -->
 <div class="modal fade" id="addFinancialModal" tabindex="-1">
     <div class="modal-dialog modal-xl">
         <div class="modal-content">
@@ -70,16 +70,16 @@
                 </div>
                 <div class="modal-body">
                     <div class="table-responsive">
-                        <table class="table" id="financialRows" style="table-layout: fixed; min-width: 1000px;">
+                        <table class="table" id="financialRows" style="table-layout: fixed; min-width: 1200px;">
                             <thead>
                                 <tr>
-                                    <th style="width: 12%;">التاريخ</th>
-                                    <th style="width: 15%;">النوع</th>
+                                    <th style="width: 10%;">التاريخ</th>
+                                    <th style="width: 12%;">النوع</th>
                                     <th style="width: 25%;" class="from-header">من</th>
                                     <th style="width: 25%;" class="to-header">إلى</th>
-                                    <th style="width: 12%;">المبلغ</th>
-                                    <th style="width: 15%;">طريقة الدفع</th>
-                                    <th style="width: 20%;">ملاحظات</th>
+                                    <th style="width: 10%;">المبلغ</th>
+                                    <th style="width: 12%;">طريقة الدفع</th>
+                                    <th style="width: 15%;">ملاحظات</th>
                                     <th style="width: 5%;"></th>
                                 </tr>
                             </thead>
@@ -132,7 +132,6 @@
     </div>
 </div>
 
-<!-- ========== JavaScript ========== -->
 <script>
     // 1. قوائم العملاء والموردين وحساباتنا
     var customersList = [
@@ -158,21 +157,18 @@
         var list = [];
         
         if (type === 'deposit') {
-            // إيداع: من = عميل/مورد, إلى = حساباتنا
             if (isFrom) {
                 list = [...customersList, ...suppliersList];
             } else {
                 list = treasuryPersons;
             }
         } else if (type === 'withdrawal') {
-            // سحب: من = حساباتنا, إلى = عميل/مورد
             if (isFrom) {
                 list = treasuryPersons;
             } else {
                 list = [...customersList, ...suppliersList];
             }
         } else if (type === 'transfer_customer_supplier') {
-            // تحويل: من = عميل, إلى = مورد
             if (isFrom) {
                 list = customersList;
             } else {
@@ -193,19 +189,17 @@
         selectElement.appendChild(optNew);
     }
 
-    // 3. دالة إظهار/إخفاء وتعبئة الأعمدة
+    // 3. دالة إظهار/إخفاء الأعمدة
     function toggleRowVisibility(row) {
         var type = row.querySelector('.type-select').value;
         var fromCell = row.querySelector('.from-cell');
         var toCell = row.querySelector('.to-cell');
 
-        // تعبئة القوائم
         var fromSelect = row.querySelector('.from-select');
         var toSelect = row.querySelector('.to-select');
         populatePartySelect(fromSelect, type, true);
         populatePartySelect(toSelect, type, false);
 
-        // إخفاء الحقول النصية الجديدة
         var newFromInput = row.querySelector('input[name="new_from_party[]"]');
         var newToInput = row.querySelector('input[name="new_to_party[]"]');
         if (newFromInput) newFromInput.classList.add('d-none');
@@ -239,7 +233,6 @@
             toggleRowVisibility(row);
         }
 
-        // 6. إظهار/إخفاء حقل النص الجديد لـ "من"
         if (e.target.classList.contains('from-select')) {
             var row = e.target.closest('tr');
             var newInput = row.querySelector('input[name="new_from_party[]"]');
@@ -250,7 +243,6 @@
             }
         }
 
-        // 7. إظهار/إخفاء حقل النص الجديد لـ "إلى"
         if (e.target.classList.contains('to-select')) {
             var row = e.target.closest('tr');
             var newInput = row.querySelector('input[name="new_to_party[]"]');
@@ -262,7 +254,7 @@
         }
     });
 
-    // 8. حذف صف
+    // 6. حذف صف
     document.addEventListener('click', function(e) {
         if (e.target.classList.contains('remove-financial-row')) {
             var row = e.target.closest('tr');
@@ -275,7 +267,7 @@
         }
     });
 
-    // 9. تهيئة الصف الأول
+    // 7. تهيئة الصف الأول
     document.addEventListener('DOMContentLoaded', function() {
         var firstRow = document.querySelector('#financialRows tbody tr');
         if (firstRow) {
