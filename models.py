@@ -105,13 +105,6 @@ class StoreSale(db.Model):
     created_by = db.Column(db.Integer, db.ForeignKey('users.id'))
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
 
-    # حقول قديمة للتوافق
-    product_type = db.Column(db.String(100))
-    product_size = db.Column(db.String(50))
-    product_spec = db.Column(db.String(50))
-    quantity = db.Column(db.Float)
-    unit_price = db.Column(db.Float)
-
     items = db.relationship('StoreSaleItem', backref='sale', lazy=True, cascade="all, delete-orphan")
     payments = db.relationship('Payment', backref='sale', lazy=True, cascade="all, delete-orphan")
 
@@ -119,8 +112,6 @@ class StoreSale(db.Model):
     def total(self):
         if self.items:
             return sum(item.total for item in self.items)
-        if self.quantity is not None and self.unit_price is not None:
-            return self.quantity * self.unit_price
         return 0
 
     @property
@@ -142,13 +133,6 @@ class StorePurchase(db.Model):
     created_by = db.Column(db.Integer, db.ForeignKey('users.id'))
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
 
-    # حقول قديمة
-    product_type = db.Column(db.String(100))
-    product_size = db.Column(db.String(50))
-    product_spec = db.Column(db.String(50))
-    quantity = db.Column(db.Float)
-    unit_price = db.Column(db.Float)
-
     items = db.relationship('StorePurchaseItem', backref='purchase', lazy=True, cascade="all, delete-orphan")
     payments = db.relationship('Payment', backref='purchase', lazy=True, cascade="all, delete-orphan")
 
@@ -156,8 +140,6 @@ class StorePurchase(db.Model):
     def total(self):
         if self.items:
             return sum(item.total for item in self.items)
-        if self.quantity is not None and self.unit_price is not None:
-            return self.quantity * self.unit_price
         return 0
 
     @property
