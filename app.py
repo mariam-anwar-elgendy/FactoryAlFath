@@ -123,6 +123,32 @@ def init_db():
             db.session.commit()
         except:
             pass
+        
+        # ✅ حذف الأعمدة القديمة من store_sales
+        try:
+            db.session.execute(db.text('ALTER TABLE store_sales DROP COLUMN IF EXISTS product_type CASCADE'))
+            db.session.execute(db.text('ALTER TABLE store_sales DROP COLUMN IF EXISTS product_size CASCADE'))
+            db.session.execute(db.text('ALTER TABLE store_sales DROP COLUMN IF EXISTS product_spec CASCADE'))
+            db.session.execute(db.text('ALTER TABLE store_sales DROP COLUMN IF EXISTS quantity CASCADE'))
+            db.session.execute(db.text('ALTER TABLE store_sales DROP COLUMN IF EXISTS unit_price CASCADE'))
+            db.session.commit()
+            print("✅ تم حذف الأعمدة القديمة من store_sales")
+        except Exception as e:
+            db.session.rollback()
+            print(f"⚠️ ملاحظة store_sales: {e}")
+        
+        # ✅ حذف الأعمدة القديمة من store_purchases
+        try:
+            db.session.execute(db.text('ALTER TABLE store_purchases DROP COLUMN IF EXISTS product_type CASCADE'))
+            db.session.execute(db.text('ALTER TABLE store_purchases DROP COLUMN IF EXISTS product_size CASCADE'))
+            db.session.execute(db.text('ALTER TABLE store_purchases DROP COLUMN IF EXISTS product_spec CASCADE'))
+            db.session.execute(db.text('ALTER TABLE store_purchases DROP COLUMN IF EXISTS quantity CASCADE'))
+            db.session.execute(db.text('ALTER TABLE store_purchases DROP COLUMN IF EXISTS unit_price CASCADE'))
+            db.session.commit()
+            print("✅ تم حذف الأعمدة القديمة من store_purchases")
+        except Exception as e:
+            db.session.rollback()
+            print(f"⚠️ ملاحظة store_purchases: {e}")
 
         users_data = [
             {'username': os.environ.get('MEG_USERNAME', 'meg'),
