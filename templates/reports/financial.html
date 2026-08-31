@@ -59,7 +59,7 @@
     </table>
 </div>
 
-<!-- ========== MODAL إضافة معاملة مالية (مُعدَّل) ========== -->
+<!-- ========== MODAL إضافة معاملة مالية (مُعدَّل نهائياً) ========== -->
 <div class="modal fade" id="addFinancialModal" tabindex="-1">
     <div class="modal-dialog modal-xl">
         <div class="modal-content">
@@ -70,16 +70,16 @@
                 </div>
                 <div class="modal-body">
                     <div class="table-responsive">
-                        <!-- ✅ إضافة table-layout:fixed و عرض محدد لكل عمود -->
+                        <!-- ✅ جدول بقياسات ثابتة -->
                         <table class="table" id="financialRows" style="table-layout: fixed;">
                             <thead>
                                 <tr>
                                     <th style="width: 10%;">التاريخ</th>
                                     <th style="width: 12%;">النوع</th>
-                                    <th style="width: 15%;" class="source-header">المصدر</th>
-                                    <th style="width: 15%;" class="from-header">من</th>
-                                    <th style="width: 15%;" class="to-header">إلى</th>
-                                    <th style="width: 15%;" class="account-header">الحساب</th>
+                                    <th style="width: 15%;" class="source-header">المصدر / الطرف</th>
+                                    <th style="width: 15%;" class="from-header">من (عميل)</th>
+                                    <th style="width: 15%;" class="to-header">إلى (مورد)</th>
+                                    <th style="width: 15%;" class="account-header">الحساب المسحوب منه</th>
                                     <th style="width: 10%;">المبلغ</th>
                                     <th style="width: 12%;">طريقة الدفع</th>
                                     <th style="width: 15%;">ملاحظات</th>
@@ -100,9 +100,9 @@
                                     <td class="source-cell">
                                         <select name="source[]" class="form-select source-select">
                                             <option value="">اختر الطرف...</option>
-                                            <!-- سيتم ملؤه بواسطة JavaScript حسب النوع -->
                                         </select>
-                                        <input type="text" name="new_source[]" class="form-control mt-1 d-none" placeholder="اسم جديد">
+                                        <!-- ✅ تم تغيير الاسم من new_source إلى new_parties عشان يشتغل مع الـ Backend -->
+                                        <input type="text" name="new_parties[]" class="form-control mt-1 d-none" placeholder="اسم جديد (عميل/مورد)">
                                     </td>
                                     <!-- عمود "من" (للتحويل) -->
                                     <td class="from-cell">
@@ -126,13 +126,14 @@
                                         </select>
                                         <input type="text" name="new_supplier_name[]" class="form-control mt-1 d-none" placeholder="اسم المورد الجديد">
                                     </td>
-                                    <!-- عمود الحساب (للإيداع/السحب) -->
+                                    <!-- ✅ عمود الحساب: يظهر دائماً (لأن الـ Backend محتاجه حتى في التحويل) -->
                                     <td class="account-cell">
                                         <select name="account_id[]" class="form-select account-select">
                                             {% for account in accounts %}
                                             <option value="{{ account.id }}">{{ account.person_name }} - {{ account.account_type }}</option>
                                             {% endfor %}
                                         </select>
+                                        <small class="text-muted">(الحساب الذي سيُسحب منه المبلغ)</small>
                                     </td>
                                     <td><input type="number" step="0.01" name="amount[]" class="form-control" required></td>
                                     <td>
@@ -159,13 +160,12 @@
     </div>
 </div>
 
-<!-- ========== JavaScript المُعدَّل ========== -->
+<!-- ========== JavaScript المُعدَّل نهائياً ========== -->
 <script>
-    // دالة لملء قائمة المصدر حسب النوع
+    // دالة لملء قائمة المصدر حسب النوع (إيداع = عملاء، سحب = موردين)
     function populateSourceSelect(selectElement, type, customers, suppliers) {
         selectElement.innerHTML = '<option value="">اختر الطرف...</option>';
         if (type === 'deposit') {
-            // إيداع: نعرض العملاء
             customers.forEach(function(c) {
                 var opt = document.createElement('option');
                 opt.value = c;
@@ -177,7 +177,6 @@
             optNew.textContent = '➕ عميل جديد...';
             selectElement.appendChild(optNew);
         } else if (type === 'withdrawal') {
-            // سحب: نعرض الموردين
             suppliers.forEach(function(s) {
                 var opt = document.createElement('option');
                 opt.value = s;
@@ -189,7 +188,7 @@
             optNew.textContent = '➕ مورد جديد...';
             selectElement.appendChild(optNew);
         } else {
-            // تحويل: لا نستخدم المصدر
+            // تحويل: نعرض خيار فارغ (لن يُستخدم المصدر هنا)
             var opt = document.createElement('option');
             opt.value = '';
             opt.textContent = 'غير مستخدم';
@@ -203,54 +202,30 @@
         var sourceCell = row.querySelector('.source-cell');
         var fromCell = row.querySelector('.from-cell');
         var toCell = row.querySelector('.to-cell');
-        var accountCell = row.querySelector('.account-cell');
+        var accountCell = row.querySelector('.account-cell'); // ✅ هنخليه ظاهر دايماً
 
         // إخفاء الكل أولاً
         sourceCell.style.display = 'none';
         fromCell.style.display = 'none';
         toCell.style.display = 'none';
-        accountCell.style.display = 'none';
+        // ✅ accountCell مش هنخفيه، هنخليه visible دايماً
 
-        // مصفوفة أسماء العملاء والموردين من data attributes أو من المتغيرات العامة
-        var customerNames = [];
-        var supplierNames = [];
-        // نجلبهم من الـ selects الموجودة في الصف (لكن الأفضل من المتغيرات العامة)
-        // سنستخدم المتغيرات الممررة من Flask
-        var customerSelect = row.querySelector('.from-select');
-        var supplierSelect = row.querySelector('.to-select');
-        if (customerSelect) {
-            customerSelect.querySelectorAll('option').forEach(function(opt) {
-                if (opt.value && opt.value !== 'new') customerNames.push(opt.value);
-            });
-        }
-        if (supplierSelect) {
-            supplierSelect.querySelectorAll('option').forEach(function(opt) {
-                if (opt.value && opt.value !== 'new') supplierNames.push(opt.value);
-            });
-        }
-
-        if (type === 'deposit') {
+        if (type === 'deposit' || type === 'withdrawal') {
             sourceCell.style.display = '';
-            accountCell.style.display = '';
-            // ملء قائمة المصدر بالعملاء
+            // ملء قائمة المصدر بالعملاء أو الموردين
             var sourceSelect = row.querySelector('.source-select');
-            populateSourceSelect(sourceSelect, 'deposit', customerNames, []);
+            populateSourceSelect(sourceSelect, type, customers, suppliers);
             // إخفاء الحقل النصي الجديد للمصدر
-            var newSourceInput = row.querySelector('input[name="new_source[]"]');
-            if (newSourceInput) newSourceInput.classList.add('d-none');
-        } else if (type === 'withdrawal') {
-            sourceCell.style.display = '';
-            accountCell.style.display = '';
-            var sourceSelect = row.querySelector('.source-select');
-            populateSourceSelect(sourceSelect, 'withdrawal', [], supplierNames);
-            var newSourceInput = row.querySelector('input[name="new_source[]"]');
-            if (newSourceInput) newSourceInput.classList.add('d-none');
+            var newInput = row.querySelector('input[name="new_parties[]"]');
+            if (newInput) newInput.classList.add('d-none');
         } else if (type === 'transfer_customer_supplier') {
             fromCell.style.display = '';
             toCell.style.display = '';
-            // accountCell مخفى
-            // إخفاء أي حقول جديدة
+            // ✅ accountCell هيفضل ظاهر
         }
+
+        // ✅ نتأكد إن accountCell يفضل visible في كل الأحوال
+        accountCell.style.display = '';
     }
 
     // === إضافة صف جديد ===
@@ -262,23 +237,19 @@
         // إعادة تعيين القيم
         newRow.querySelectorAll('input').forEach(function(inp) {
             inp.value = '';
-            if (inp.name && inp.name.includes('new_')) {
+            if (inp.name && (inp.name.includes('new_') || inp.name === 'new_parties[]')) {
                 inp.classList.add('d-none');
             }
         });
         newRow.querySelectorAll('select').forEach(function(sel) {
-            // لا نعيد تعيين القيم المختارة لأنها قد تحتوي على قيم افتراضية
-            // لكن نضبطها على الخيار الأول
             sel.selectedIndex = 0;
         });
 
-        // إضافة الصف
         tbody.appendChild(newRow);
 
         // تطبيق الرؤية بناءً على النوع الافتراضي (إيداع)
         var customers = [];
         var suppliers = [];
-        // نجلب أسماء العملاء والموردين من القوائم الموجودة في الصف الأول (أو من المتغيرات العامة)
         var firstFromSelect = firstRow.querySelector('.from-select');
         var firstToSelect = firstRow.querySelector('.to-select');
         if (firstFromSelect) {
@@ -315,37 +286,37 @@
             toggleRowVisibility(row, customers, suppliers);
         }
 
-        // === إظهار حقل النص عند اختيار "جديد" في المصدر ===
-        if (e.target.classList.contains('source-select') && e.target.value === 'new') {
+        // === إظهار حقل النص عند اختيار "جديد" في المصدر (name="new_parties[]") ===
+        if (e.target.classList.contains('source-select')) {
             var row = e.target.closest('tr');
-            var newInput = row.querySelector('input[name="new_source[]"]');
-            if (newInput) newInput.classList.remove('d-none');
-        } else if (e.target.classList.contains('source-select')) {
-            var row = e.target.closest('tr');
-            var newInput = row.querySelector('input[name="new_source[]"]');
-            if (newInput) newInput.classList.add('d-none');
+            var newInput = row.querySelector('input[name="new_parties[]"]');
+            if (e.target.value === 'new') {
+                if (newInput) newInput.classList.remove('d-none');
+            } else {
+                if (newInput) newInput.classList.add('d-none');
+            }
         }
 
         // === إظهار حقل النص عند اختيار "جديد" في "من" (للتحويل) ===
-        if (e.target.classList.contains('from-select') && e.target.value === 'new') {
+        if (e.target.classList.contains('from-select')) {
             var row = e.target.closest('tr');
             var newInput = row.querySelector('input[name="new_customer_name[]"]');
-            if (newInput) newInput.classList.remove('d-none');
-        } else if (e.target.classList.contains('from-select')) {
-            var row = e.target.closest('tr');
-            var newInput = row.querySelector('input[name="new_customer_name[]"]');
-            if (newInput) newInput.classList.add('d-none');
+            if (e.target.value === 'new') {
+                if (newInput) newInput.classList.remove('d-none');
+            } else {
+                if (newInput) newInput.classList.add('d-none');
+            }
         }
 
         // === إظهار حقل النص عند اختيار "جديد" في "إلى" (للتحويل) ===
-        if (e.target.classList.contains('to-select') && e.target.value === 'new') {
+        if (e.target.classList.contains('to-select')) {
             var row = e.target.closest('tr');
             var newInput = row.querySelector('input[name="new_supplier_name[]"]');
-            if (newInput) newInput.classList.remove('d-none');
-        } else if (e.target.classList.contains('to-select')) {
-            var row = e.target.closest('tr');
-            var newInput = row.querySelector('input[name="new_supplier_name[]"]');
-            if (newInput) newInput.classList.add('d-none');
+            if (e.target.value === 'new') {
+                if (newInput) newInput.classList.remove('d-none');
+            } else {
+                if (newInput) newInput.classList.add('d-none');
+            }
         }
     });
 
@@ -366,7 +337,6 @@
     document.addEventListener('DOMContentLoaded', function() {
         var firstRow = document.querySelector('#financialRows tbody tr');
         if (firstRow) {
-            // نجلب العملاء والموردين من القوائم الموجودة
             var customers = [];
             var suppliers = [];
             var fromSelect = firstRow.querySelector('.from-select');
