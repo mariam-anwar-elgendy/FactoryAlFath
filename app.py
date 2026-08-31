@@ -1297,18 +1297,40 @@ def financial_transactions():
 
                 # حالة "من عميل لمورد"
                 if txn_type == 'transfer_customer_supplier':
-                    customer_name = source
-                    supplier_name = source
-                    new_party = new_parties[i] if i < len(new_parties) else ''
-                    # نستخدم new_party فقط إذا كان source == new
-                    if source == 'new' and new_party:
-                        source = new_party
-                        # إنشاء عميل/مورد جديد
-                        if not Customer.query.filter_by(name=new_party).first():
-                            db.session.add(Customer(name=new_party))
+                    # في هذه الحالة source سيحتوي على اسم العميل والمورد معاً
+                    # سنفترض أنه تم اختيار العميل والمورد من قوائم منسدلة مختلفة في النموذج
+                    # وسنستقبلهم من حقول إضافية في النموذج
+                    customer_name = request.form.getlist('from_customer[]')[i] if i < len(request.form.getlist('from_customer[]')) else ''
+                    supplier_name = request.form.getlist('to_supplier[]')[i] if i < len(request.form.getlist('to_supplier[]')) else ''
+                    new_customer = request.form.getlist('new_customer_name[]')[i] if i < len(request.form.getlist('new_customer_name[]')) else ''
+                    new_supplier = request.form.getlist('new_supplier_name[]')[i] if i < len(request.form.getlist('new_supplier_name[]')) else ''
+                    # إضافة جديد إذا لزم
+                    if customer_name == 'new' and new_customer:
+                        if not Customer.query.filter_by(name=new_customer).first():
+                            db.session.add(Customer(name=new_customer))
                             db.session.commit()
-                    txn_type = 'withdrawal'
-                    source = f"تحويل من {source} إلى {source}"
+                        customer_name = new_customer
+                    if supplier_name == 'new' and new_supplier:
+                        if not Supplier.query.filter_by(name=new_supplier).first():
+                            db.session.add(Supplier(name=new_supplier))
+                            db.session.commit()
+                        supplier_name = new_supplier
+                    source = f"من {customer_name} إلى {supplier_name}"
+                    txn_type = 'withdrawal'  # معاملة سحب من حساب معين، ويمكن لاحقاً تحسينها
+                else:
+                    # معاملة عادية
+                    new_party = new_parties[i] if i < len(new_parties) else ''
+                    if source == 'new' and new_party:
+                        # إنشاء عميل أو مورد حسب نوع المعاملة (إيداع = عميل، سحب = مورد)
+                        if txn_type == 'deposit':
+                            if not Customer.query.filter_by(name=new_party).first():
+                                db.session.add(Customer(name=new_party))
+                                db.session.commit()
+                        else:
+                            if not Supplier.query.filter_by(name=new_party).first():
+                                db.session.add(Supplier(name=new_party))
+                                db.session.commit()
+                        source = new_party
 
                 account_id = int(accounts[i]) if i < len(accounts) else 1
                 account = TreasuryAccount.query.get(account_id)
@@ -1378,8 +1400,17 @@ def reports_custom():
     report_type = request.args.get('report_type', 'all')
 
     if not from_date_str or not to_date_str:
-        flash('يرجى تحديد التاريخين', 'warning')
-        return redirect(url_for('reports_index'))
+        # إذا لم تكن التواريخ محددة، اعرض الصفحة فارغة مع النموذج
+        return render_template('reports/custom.html',
+                               from_date=None,
+                               to_date=None,
+                               report_type=report_type,
+                               combined_diary=[],
+                               raw_materials=[],
+                               production=[],
+                               sales=[],
+                               purchases=[],
+                               transactions=[])
 
     from_date = datetime.strptime(from_date_str, '%Y-%m-%d').date()
     to_date = datetime.strptime(to_date_str, '%Y-%m-%d').date()
