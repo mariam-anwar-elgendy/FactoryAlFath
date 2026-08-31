@@ -53,7 +53,7 @@
                                 <td>{{ item.unit_price }}</td>
                                 <td>{{ item.total }}</td>
                                 <td><span class="badge bg-{{ 'success' if s.payment_type == 'نقدي' else 'warning' }}">{{ s.payment_type }}</span></td>
-                                <td>{{ s.created_by }}</td>
+                                <td>{{ get_user_name(s.created_by) }}</td>
                                 <td>
                                     {% if loop.first %}
                                     <button class="btn btn-sm btn-info" data-bs-toggle="modal" data-bs-target="#itemsSale{{ s.id }}">📋</button>
@@ -75,14 +75,9 @@
                             <tr>
                                 <td>{{ s.date.strftime('%Y-%m-%d') }}</td>
                                 <td>{{ s.customer_name }}</td>
-                                <td>{{ s.product_type or '-' }}</td>
-                                <td>{{ s.product_size or '-' }}</td>
-                                <td>{{ s.product_spec or '-' }}</td>
-                                <td>{{ s.quantity if s.quantity is not none else '-' }}</td>
-                                <td>{{ s.unit_price if s.unit_price is not none else '-' }}</td>
-                                <td>{{ s.total }}</td>
+                                <td colspan="7" class="text-center text-muted">لا توجد بنود</td>
                                 <td><span class="badge bg-{{ 'success' if s.payment_type == 'نقدي' else 'warning' }}">{{ s.payment_type }}</span></td>
-                                <td>{{ s.created_by }}</td>
+                                <td>{{ get_user_name(s.created_by) }}</td>
                                 <td>
                                     <button class="btn btn-sm btn-info" data-bs-toggle="modal" data-bs-target="#itemsSale{{ s.id }}">📋</button>
                                     {% if current_user.role in ['meg','admin','mariam'] or (current_user.role == 'rehab' and (now.date() - s.date).days <= 7) or (current_user.role == 'ahmed' and s.created_by == current_user.id and (now.date() - s.date).days <= 1) %}
@@ -139,7 +134,7 @@
                                 <td>{{ item.unit_price }}</td>
                                 <td>{{ item.total }}</td>
                                 <td><span class="badge bg-{{ 'success' if p.payment_type == 'نقدي' else 'warning' }}">{{ p.payment_type }}</span></td>
-                                <td>{{ p.created_by }}</td>
+                                <td>{{ get_user_name(p.created_by) }}</td>
                                 <td>
                                     {% if loop.first %}
                                     <button class="btn btn-sm btn-info" data-bs-toggle="modal" data-bs-target="#itemsPurchase{{ p.id }}">📋</button>
@@ -161,14 +156,9 @@
                             <tr>
                                 <td>{{ p.date.strftime('%Y-%m-%d') }}</td>
                                 <td>{{ p.supplier_name }}</td>
-                                <td>{{ p.product_type or '-' }}</td>
-                                <td>{{ p.product_size or '-' }}</td>
-                                <td>{{ p.product_spec or '-' }}</td>
-                                <td>{{ p.quantity if p.quantity is not none else '-' }}</td>
-                                <td>{{ p.unit_price if p.unit_price is not none else '-' }}</td>
-                                <td>{{ p.total }}</td>
+                                <td colspan="7" class="text-center text-muted">لا توجد بنود</td>
                                 <td><span class="badge bg-{{ 'success' if p.payment_type == 'نقدي' else 'warning' }}">{{ p.payment_type }}</span></td>
-                                <td>{{ p.created_by }}</td>
+                                <td>{{ get_user_name(p.created_by) }}</td>
                                 <td>
                                     <button class="btn btn-sm btn-info" data-bs-toggle="modal" data-bs-target="#itemsPurchase{{ p.id }}">📋</button>
                                     {% if current_user.role in ['meg','admin','mariam'] or (current_user.role == 'rehab' and (now.date() - p.date).days <= 7) or (current_user.role == 'ahmed' and p.created_by == current_user.id and (now.date() - p.date).days <= 1) %}
@@ -216,14 +206,7 @@
               <td>{{ item.total }}</td>
             </tr>
             {% else %}
-            <tr>
-              <td>{{ s.product_type or '-' }}</td>
-              <td>{{ s.product_size or '-' }}</td>
-              <td>{{ s.product_spec or '-' }}</td>
-              <td>{{ s.quantity if s.quantity is not none else '-' }}</td>
-              <td>{{ s.unit_price if s.unit_price is not none else '-' }}</td>
-              <td>{{ s.total }}</td>
-            </tr>
+            <tr><td colspan="6" class="text-center">لا توجد بنود</td></tr>
             {% endfor %}
           </tbody>
         </table>
@@ -393,14 +376,7 @@
               <td>{{ item.total }}</td>
             </tr>
             {% else %}
-            <tr>
-              <td>{{ p.product_type or '-' }}</td>
-              <td>{{ p.product_size or '-' }}</td>
-              <td>{{ p.product_spec or '-' }}</td>
-              <td>{{ p.quantity if p.quantity is not none else '-' }}</td>
-              <td>{{ p.unit_price if p.unit_price is not none else '-' }}</td>
-              <td>{{ p.total }}</td>
-            </tr>
+            <tr><td colspan="6" class="text-center">لا توجد بنود</td></tr>
             {% endfor %}
           </tbody>
         </table>
@@ -581,7 +557,6 @@
           <div class="row">
             <div class="col-md-6 mb-3">
               <label class="form-label fw-bold">اسم الطرف</label>
-              <!-- ✅ التعديل الأول: إضافة datalist لربط العملاء والموردين -->
               <input type="text" name="party_name" class="form-control" placeholder="اسم العميل / المورد" list="party_list" required>
               <datalist id="party_list">
                 {% for customer in customers %}
@@ -602,7 +577,6 @@
           <div class="card">
             <div class="card-header bg-light fw-bold">📦 البنود</div>
             <div class="card-body">
-              <!-- ✅ التعديل الثاني: إضافة table-layout:fixed و min-width للأعمدة -->
               <table class="table" id="itemsTable" style="table-layout: fixed;">
                 <thead>
                   <tr>
@@ -669,7 +643,6 @@
 
 <!-- ==================== JavaScript المُعدل ==================== -->
 <script>
-// (أ) دالة إضافة صف جديد بطريقة صحيحة (بدون اختفاء الأعمدة)
 document.getElementById('addRow').addEventListener('click', function() {
     var tbody = document.getElementById('itemsTable').getElementsByTagName('tbody')[0];
     var newRow = document.createElement('tr');
@@ -713,7 +686,6 @@ document.getElementById('addRow').addEventListener('click', function() {
     tbody.appendChild(newRow);
 });
 
-// (ب) Event Delegation لحساب الإجمالي مع الصفوف الجديدة
 document.getElementById('itemsTable').addEventListener('input', function(e) {
     var target = e.target;
     if (target.name === 'quantity' || target.name === 'unit_price') {
@@ -725,7 +697,6 @@ document.getElementById('itemsTable').addEventListener('input', function(e) {
     }
 });
 
-// (ج) إظهار/إخفاء الحقول الجديدة عند اختيار "جديد"
 document.addEventListener('change', function(e) {
     if (e.target.name === 'product_type' && e.target.value === 'new') {
         var parent = e.target.parentElement;
@@ -753,7 +724,6 @@ document.addEventListener('change', function(e) {
     }
 });
 
-// (د) حذف الصف (مع الاحتفاظ بصف واحد على الأقل)
 document.addEventListener('click', function(e) {
     if (e.target.classList.contains('remove-row')) {
         var row = e.target.closest('tr');
@@ -766,18 +736,15 @@ document.addEventListener('click', function(e) {
     }
 });
 
-// (هـ) إضافة صفوف التعديل (نفس المنطق مع edit)
 document.querySelectorAll('.add-edit-row').forEach(function(btn) {
     btn.addEventListener('click', function() {
         var tableId = btn.getAttribute('data-table');
         var tbody = document.getElementById(tableId).getElementsByTagName('tbody')[0];
         var newRow = document.createElement('tr');
         newRow.className = 'edit-item-row';
-        // ننسخ محتوى الصف الأول مع تغيير القيم الفارغة
         var firstRow = tbody.querySelector('tr');
         if (!firstRow) return;
         var clone = firstRow.cloneNode(true);
-        // نضبط الحقول الفارغة
         clone.querySelectorAll('input').forEach(function(inp) { inp.value = ''; });
         clone.querySelectorAll('select').forEach(function(sel) { sel.value = ''; });
         var totalSpan = clone.querySelector('.edit-item-total');
@@ -786,7 +753,6 @@ document.querySelectorAll('.add-edit-row').forEach(function(btn) {
     });
 });
 
-// (و) حذف صف التعديل
 document.addEventListener('click', function(e) {
     if (e.target.classList.contains('remove-edit-row')) {
         var row = e.target.closest('tr');
@@ -799,7 +765,6 @@ document.addEventListener('click', function(e) {
     }
 });
 
-// (ز) حساب الإجمالي في صفوف التعديل أيضاً (event delegation)
 document.addEventListener('input', function(e) {
     if (e.target.name === 'quantity' || e.target.name === 'unit_price') {
         var row = e.target.closest('tr');
