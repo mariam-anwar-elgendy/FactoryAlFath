@@ -20,12 +20,12 @@
     </div>
 </div>
 
-<div class="row mt-4">
+<div class="row g-3 mt-2">  <!-- غيرت الـ mt-4 لـ g-3 عشان المسافات تبقى زي الفوق -->
     <div class="col-md-6">
-        <a href="{{ url_for('reports_customers') }}" class="btn btn-outline-purple w-100 mb-2">👥 تقرير العملاء</a>
+        <a href="{{ url_for('reports_customers') }}" class="btn btn-purple w-100 py-3">👥 تقرير العملاء</a>
     </div>
     <div class="col-md-6">
-        <a href="{{ url_for('reports_suppliers') }}" class="btn btn-outline-purple w-100 mb-2">🏢 تقرير الموردين</a>
+        <a href="{{ url_for('reports_suppliers') }}" class="btn btn-purple w-100 py-3">🏢 تقرير الموردين</a>
     </div>
 </div>
 {% endblock %}
