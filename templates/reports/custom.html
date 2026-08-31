@@ -4,130 +4,160 @@
 
 {% block content %}
 <div class="d-flex justify-content-between align-items-center mb-4">
-    <h2 class="fw-bold text-purple-dark">📊 تقرير من {{ from_date }} إلى {{ to_date }}</h2>
+    <h2 class="fw-bold text-purple-dark">
+        {% if report_type == 'diary' %}📔 تقرير اليوميات
+        {% elif report_type == 'factory' %}🏭 تقرير المصنع
+        {% elif report_type == 'store' %}🏪 تقرير المحل
+        {% elif report_type == 'treasury' %}💰 تقرير الخزينة
+        {% else %}📊 تقرير شامل{% endif %}
+    </h2>
     <button onclick="window.print()" class="btn btn-purple no-print">🖨️ طباعة</button>
 </div>
 
-<!-- سجل اليوميات (المصنع والمحل) -->
-<div class="card border-0 shadow-sm mb-4">
-    <div class="card-header bg-purple text-white fw-bold">📔 سجل اليوميات (المصنع والمحل)</div>
+<!-- نموذج اختيار الفترة (داخل الصفحة) -->
+<div class="card border-0 shadow-sm mb-4 no-print">
     <div class="card-body">
-        <div class="table-responsive">
-            <table class="table table-sm">
-                <thead>
-                    <tr>
-                        <th>التاريخ</th>
-                        <th>النوع</th>
-                        <th>الوصف</th>
-                        <th>المبلغ</th>
-                        <th>المسؤول</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    {% for d in combined_diary %}
-                    <tr>
-                        <td>{{ d.date.strftime('%Y-%m-%d') }}</td>
-                        <td>{{ d.type }}</td>
-                        <td>{{ d.description }}</td>
-                        <td>{{ d.amount }}</td>
-                        <td>{{ d.created_by }}</td>
-                    </tr>
-                    {% else %}
-                    <tr><td colspan="5" class="text-center">لا توجد يوميات</td></tr>
-                    {% endfor %}
-                </tbody>
-            </table>
-        </div>
+        <form method="GET" action="{{ url_for('reports_custom') }}">
+            <input type="hidden" name="report_type" value="{{ report_type }}">
+            <div class="row">
+                <div class="col-md-4 mb-2">
+                    <label class="form-label fw-bold">من تاريخ</label>
+                    <input type="date" name="from_date" class="form-control" value="{{ from_date or '' }}" required>
+                </div>
+                <div class="col-md-4 mb-2">
+                    <label class="form-label fw-bold">إلى تاريخ</label>
+                    <input type="date" name="to_date" class="form-control" value="{{ to_date or '' }}" required>
+                </div>
+                <div class="col-md-4 mb-2 d-flex align-items-end">
+                    <button type="submit" class="btn btn-purple w-100">عرض</button>
+                </div>
+            </div>
+        </form>
     </div>
 </div>
 
-{% if report_type == 'all' or report_type == 'factory' %}
-<div class="card border-0 shadow-sm mb-4">
-    <div class="card-header bg-purple text-white fw-bold">🏭 المصنع</div>
-    <div class="card-body">
-        <h6 class="fw-bold">وارد المواسير</h6>
-        <div class="table-responsive">
-            <table class="table table-sm">
-                <thead><tr><th>التاريخ</th><th>المقاس</th><th>السماكة</th><th>الكمية</th><th>المورد</th></tr></thead>
-                <tbody>
-                    {% for m in raw_materials %}
-                    <tr><td>{{ m.date.strftime('%Y-%m-%d') }}</td><td>{{ m.pipe_size }}</td><td>{{ m.pipe_thickness or '-' }}</td><td>{{ m.quantity }}</td><td>{{ m.supplier or '-' }}</td></tr>
-                    {% else %}
-                    <tr><td colspan="5" class="text-center">لا يوجد</td></tr>
-                    {% endfor %}
-                </tbody>
-            </table>
-        </div>
+<!-- عرض البيانات حسب النوع -->
+{% if from_date and to_date %}
 
-        <h6 class="fw-bold mt-3">الإنتاج</h6>
-        <div class="table-responsive">
-            <table class="table table-sm">
-                <thead><tr><th>التاريخ</th><th>المقاس</th><th>السماكة</th><th>الكمية</th></tr></thead>
-                <tbody>
-                    {% for p in production %}
-                    <tr><td>{{ p.date.strftime('%Y-%m-%d') }}</td><td>{{ p.elbow_size }}</td><td>{{ p.elbow_thickness or '-' }}</td><td>{{ p.quantity }}</td></tr>
-                    {% else %}
-                    <tr><td colspan="4" class="text-center">لا يوجد</td></tr>
-                    {% endfor %}
-                </tbody>
-            </table>
+    {% if report_type == 'diary' or report_type == 'all' %}
+    <div class="card border-0 shadow-sm mb-4">
+        <div class="card-header bg-purple text-white fw-bold">📔 سجل اليوميات (المصنع والمحل)</div>
+        <div class="card-body">
+            <div class="table-responsive">
+                <table class="table table-sm table-striped">
+                    <thead>
+                        <tr><th>التاريخ</th><th>النوع</th><th>الوصف</th><th>المبلغ</th><th>المسؤول</th></tr>
+                    </thead>
+                    <tbody>
+                        {% for d in combined_diary %}
+                        <tr>
+                            <td>{{ d.date.strftime('%Y-%m-%d') }}</td>
+                            <td>{{ d.type }}</td>
+                            <td>{{ d.description }}</td>
+                            <td>{{ d.amount }}</td>
+                            <td>{{ get_user_name(d.created_by) }}</td>
+                        </tr>
+                        {% else %}
+                        <tr><td colspan="5" class="text-center">لا توجد يوميات</td></tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
         </div>
     </div>
-</div>
-{% endif %}
+    {% endif %}
 
-{% if report_type == 'all' or report_type == 'store' %}
-<div class="card border-0 shadow-sm mb-4">
-    <div class="card-header bg-purple text-white fw-bold">🏪 المحل</div>
-    <div class="card-body">
-        <h6 class="fw-bold">المبيعات</h6>
-        <div class="table-responsive">
-            <table class="table table-sm">
-                <thead><tr><th>التاريخ</th><th>العميل</th><th>الصنف</th><th>الكمية</th><th>الإجمالي</th></tr></thead>
-                <tbody>
-                    {% for s in sales %}
-                    <tr><td>{{ s.date.strftime('%Y-%m-%d') }}</td><td>{{ s.customer_name }}</td><td>{{ s.product_type or '-' }}</td><td>{{ s.quantity if s.quantity is not none else sum(item.quantity for item in s.items) }}</td><td>{{ s.total }}</td></tr>
-                    {% else %}
-                    <tr><td colspan="5" class="text-center">لا يوجد</td></tr>
-                    {% endfor %}
-                </tbody>
-            </table>
-        </div>
+    {% if report_type == 'factory' or report_type == 'all' %}
+    <div class="card border-0 shadow-sm mb-4">
+        <div class="card-header bg-purple text-white fw-bold">🏭 المصنع</div>
+        <div class="card-body">
+            <h6 class="fw-bold">وارد المواسير</h6>
+            <div class="table-responsive">
+                <table class="table table-sm">
+                    <thead><tr><th>التاريخ</th><th>المقاس</th><th>السماكة</th><th>الكمية</th><th>المورد</th></tr></thead>
+                    <tbody>
+                        {% for m in raw_materials %}
+                        <tr><td>{{ m.date.strftime('%Y-%m-%d') }}</td><td>{{ m.pipe_size }}</td><td>{{ m.pipe_thickness or '-' }}</td><td>{{ m.quantity }}</td><td>{{ m.supplier or '-' }}</td></tr>
+                        {% else %}
+                        <tr><td colspan="5" class="text-center">لا يوجد</td></tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
 
-        <h6 class="fw-bold mt-3">المشتريات</h6>
-        <div class="table-responsive">
-            <table class="table table-sm">
-                <thead><tr><th>التاريخ</th><th>المورد</th><th>الصنف</th><th>الكمية</th><th>الإجمالي</th></tr></thead>
-                <tbody>
-                    {% for p in purchases %}
-                    <tr><td>{{ p.date.strftime('%Y-%m-%d') }}</td><td>{{ p.supplier_name }}</td><td>{{ p.product_type or '-' }}</td><td>{{ p.quantity if p.quantity is not none else sum(item.quantity for item in p.items) }}</td><td>{{ p.total }}</td></tr>
-                    {% else %}
-                    <tr><td colspan="5" class="text-center">لا يوجد</td></tr>
-                    {% endfor %}
-                </tbody>
-            </table>
-        </div>
-    </div>
-</div>
-{% endif %}
-
-{% if report_type == 'all' or report_type == 'treasury' %}
-<div class="card border-0 shadow-sm mb-4">
-    <div class="card-header bg-purple text-white fw-bold">💰 الخزينة</div>
-    <div class="card-body">
-        <div class="table-responsive">
-            <table class="table table-sm">
-                <thead><tr><th>التاريخ</th><th>الشخص</th><th>النوع</th><th>المبلغ</th><th>الطريقة</th></tr></thead>
-                <tbody>
-                    {% for t in transactions %}
-                    <tr><td>{{ t.date.strftime('%Y-%m-%d') }}</td><td>{{ t.account.person_name if t.account else '' }}</td><td>{% if t.transaction_type == 'deposit' %}إيداع{% else %}سحب{% endif %}</td><td>{{ t.amount }}</td><td>{{ t.payment_method }}</td></tr>
-                    {% else %}
-                    <tr><td colspan="5" class="text-center">لا يوجد</td></tr>
-                    {% endfor %}
-                </tbody>
-            </table>
+            <h6 class="fw-bold mt-3">الإنتاج</h6>
+            <div class="table-responsive">
+                <table class="table table-sm">
+                    <thead><tr><th>التاريخ</th><th>المقاس</th><th>السماكة</th><th>الكمية</th></tr></thead>
+                    <tbody>
+                        {% for p in production %}
+                        <tr><td>{{ p.date.strftime('%Y-%m-%d') }}</td><td>{{ p.elbow_size }}</td><td>{{ p.elbow_thickness or '-' }}</td><td>{{ p.quantity }}</td></tr>
+                        {% else %}
+                        <tr><td colspan="4" class="text-center">لا يوجد</td></tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
         </div>
     </div>
-</div>
+    {% endif %}
+
+    {% if report_type == 'store' or report_type == 'all' %}
+    <div class="card border-0 shadow-sm mb-4">
+        <div class="card-header bg-purple text-white fw-bold">🏪 المحل</div>
+        <div class="card-body">
+            <h6 class="fw-bold">المبيعات</h6>
+            <div class="table-responsive">
+                <table class="table table-sm">
+                    <thead><tr><th>التاريخ</th><th>العميل</th><th>الصنف</th><th>الكمية</th><th>الإجمالي</th></tr></thead>
+                    <tbody>
+                        {% for s in sales %}
+                        <tr><td>{{ s.date.strftime('%Y-%m-%d') }}</td><td>{{ s.customer_name }}</td><td>{{ s.product_type or '-' }}</td><td>{{ s.quantity if s.quantity is not none else sum(item.quantity for item in s.items) }}</td><td>{{ s.total }}</td></tr>
+                        {% else %}
+                        <tr><td colspan="5" class="text-center">لا يوجد</td></tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+
+            <h6 class="fw-bold mt-3">المشتريات</h6>
+            <div class="table-responsive">
+                <table class="table table-sm">
+                    <thead><tr><th>التاريخ</th><th>المورد</th><th>الصنف</th><th>الكمية</th><th>الإجمالي</th></tr></thead>
+                    <tbody>
+                        {% for p in purchases %}
+                        <tr><td>{{ p.date.strftime('%Y-%m-%d') }}</td><td>{{ p.supplier_name }}</td><td>{{ p.product_type or '-' }}</td><td>{{ p.quantity if p.quantity is not none else sum(item.quantity for item in p.items) }}</td><td>{{ p.total }}</td></tr>
+                        {% else %}
+                        <tr><td colspan="5" class="text-center">لا يوجد</td></tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+
+    {% if report_type == 'treasury' or report_type == 'all' %}
+    <div class="card border-0 shadow-sm mb-4">
+        <div class="card-header bg-purple text-white fw-bold">💰 الخزينة</div>
+        <div class="card-body">
+            <div class="table-responsive">
+                <table class="table table-sm">
+                    <thead><tr><th>التاريخ</th><th>الشخص</th><th>النوع</th><th>المبلغ</th><th>الطريقة</th></tr></thead>
+                    <tbody>
+                        {% for t in transactions %}
+                        <tr><td>{{ t.date.strftime('%Y-%m-%d') }}</td><td>{{ t.account.person_name if t.account else '' }}</td><td>{% if t.transaction_type == 'deposit' %}إيداع{% else %}سحب{% endif %}</td><td>{{ t.amount }}</td><td>{{ t.payment_method }}</td></tr>
+                        {% else %}
+                        <tr><td colspan="5" class="text-center">لا يوجد</td></tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+
+{% else %}
+<div class="alert alert-info">يرجى تحديد الفترة الزمنية ثم الضغط على "عرض".</div>
 {% endif %}
 {% endblock %}
