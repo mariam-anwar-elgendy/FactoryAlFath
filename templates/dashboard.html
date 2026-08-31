@@ -12,8 +12,8 @@
 </div>
 {% endif %}
 
-{% if current_user.role in ['meg', 'admin', 'mariam', 'rehab', 'mohamed', 'ahmed'] %}
-    <!-- محتوى المديرين والمشرفين -->
+{% if current_user.role in ['meg', 'admin', 'mariam'] %}
+    <!-- المديرون: كل الإحصائيات -->
     <div class="row g-3 mb-4">
         <div class="col-6 col-md-4 col-lg-2">
             <div class="card stat-card border-0 shadow-sm">
@@ -92,7 +92,7 @@
         </div>
     </div>
 
-    {% if stats.low_inventory_count > 0 and current_user.role in ['meg','admin','mariam','rehab','ahmed'] %}
+    {% if stats.low_inventory_count > 0 %}
     <div class="alert alert-warning">
         ⚠️ يوجد {{ stats.low_inventory_count }} صنف وصل للحد الأدنى في المخزون.
     </div>
@@ -128,7 +128,131 @@
                 <div class="card-header bg-purple text-white fw-bold">💰 أحدث حركات الخزينة</div>
                 <div class="card-body">
                     {% for t in recent_transactions %}
-                    <p class="mb-1"><small>{{ t.date.strftime('%Y-%m-%d') }} - {{ t.transaction_type }} ({{ t.amount }})</small></p>
+                    <p class="mb-1"><small>{{ t.date.strftime('%Y-%m-%d') }} - {% if t.transaction_type == 'deposit' %}إيداع{% else %}سحب{% endif %} ({{ t.amount }})</small></p>
+                    {% else %}
+                    <p class="text-muted">لا توجد حركات</p>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+    </div>
+
+{% elif current_user.role in ['rehab', 'mohamed'] %}
+    <!-- رحاب ومحمد: مصنع ومحل فقط بدون خزينة -->
+    <div class="row g-3 mb-4">
+        <div class="col-6 col-md-4">
+            <div class="card stat-card border-0 shadow-sm">
+                <div class="card-body text-center">
+                    <h5 class="fw-bold text-purple">{{ stats.raw_materials_count }}</h5>
+                    <p class="mb-0">وارد مصنع</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-6 col-md-4">
+            <div class="card stat-card border-0 shadow-sm">
+                <div class="card-body text-center">
+                    <h5 class="fw-bold text-purple">{{ stats.production_count }}</h5>
+                    <p class="mb-0">إنتاج</p>
+                </div>
+            </div>
+        </div>
+        {% if current_user.role == 'rehab' %}
+        <div class="col-6 col-md-4">
+            <div class="card stat-card border-0 shadow-sm">
+                <div class="card-body text-center">
+                    <h5 class="fw-bold text-purple">{{ stats.sales_count }}</h5>
+                    <p class="mb-0">مبيعات</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-6 col-md-4">
+            <div class="card stat-card border-0 shadow-sm">
+                <div class="card-body text-center">
+                    <h5 class="fw-bold text-purple">{{ stats.purchases_count }}</h5>
+                    <p class="mb-0">مشتريات</p>
+                </div>
+            </div>
+        </div>
+        {% endif %}
+    </div>
+
+    <div class="row">
+        <div class="col-lg-6 mb-3">
+            <div class="card border-0 shadow-sm">
+                <div class="card-header bg-purple text-white fw-bold">🏭 أحدث الإنتاج</div>
+                <div class="card-body">
+                    {% for p in recent_production %}
+                    <p class="mb-1"><small>{{ p.date.strftime('%Y-%m-%d') }} - {{ p.elbow_size }} ({{ p.quantity }})</small></p>
+                    {% else %}
+                    <p class="text-muted">لا يوجد إنتاج حديث</p>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+        {% if current_user.role == 'rehab' %}
+        <div class="col-lg-6 mb-3">
+            <div class="card border-0 shadow-sm">
+                <div class="card-header bg-purple text-white fw-bold">🏪 أحدث المبيعات</div>
+                <div class="card-body">
+                    {% for s in recent_sales %}
+                    <p class="mb-1"><small>{{ s.date.strftime('%Y-%m-%d') }} - {{ s.customer_name }} ({{ s.total }})</small></p>
+                    {% else %}
+                    <p class="text-muted">لا توجد مبيعات حديثة</p>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+        {% endif %}
+    </div>
+
+{% elif current_user.role == 'ahmed' %}
+    <!-- الحاج أحمد: محل + خزينته فقط -->
+    <div class="row g-3 mb-4">
+        <div class="col-6 col-md-4">
+            <div class="card stat-card border-0 shadow-sm">
+                <div class="card-body text-center">
+                    <h5 class="fw-bold text-purple">{{ stats.sales_count }}</h5>
+                    <p class="mb-0">مبيعات</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-6 col-md-4">
+            <div class="card stat-card border-0 shadow-sm">
+                <div class="card-body text-center">
+                    <h5 class="fw-bold text-purple">{{ stats.purchases_count }}</h5>
+                    <p class="mb-0">مشتريات</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-6 col-md-4">
+            <div class="card stat-card border-0 shadow-sm">
+                <div class="card-body text-center">
+                    <h5 class="fw-bold text-purple">{{ stats.treasury_balance }}</h5>
+                    <p class="mb-0">رصيدك</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="col-lg-6 mb-3">
+            <div class="card border-0 shadow-sm">
+                <div class="card-header bg-purple text-white fw-bold">🏪 أحدث المبيعات</div>
+                <div class="card-body">
+                    {% for s in recent_sales %}
+                    <p class="mb-1"><small>{{ s.date.strftime('%Y-%m-%d') }} - {{ s.customer_name }} ({{ s.total }})</small></p>
+                    {% else %}
+                    <p class="text-muted">لا توجد مبيعات حديثة</p>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+        <div class="col-lg-6 mb-3">
+            <div class="card border-0 shadow-sm">
+                <div class="card-header bg-purple text-white fw-bold">💰 أحدث حركاتك</div>
+                <div class="card-body">
+                    {% for t in recent_transactions %}
+                    <p class="mb-1"><small>{{ t.date.strftime('%Y-%m-%d') }} - {% if t.transaction_type == 'deposit' %}إيداع{% else %}سحب{% endif %} ({{ t.amount }})</small></p>
                     {% else %}
                     <p class="text-muted">لا توجد حركات</p>
                     {% endfor %}
@@ -138,7 +262,7 @@
     </div>
 
 {% elif current_user.role in ['eid', 'abdo'] %}
-    <!-- محتوى عيد وعبدالله -->
+    <!-- عيد وعبدالله: خزينة فقط -->
     <div class="row g-3 mb-4">
         <div class="col-md-6">
             <div class="card border-0 shadow-sm bg-light-purple">
@@ -169,7 +293,7 @@
                     {% for t in recent_transactions %}
                     <tr>
                         <td>{{ t.date.strftime('%Y-%m-%d') }}</td>
-                        <td>{{ 'إيداع' if t.transaction_type == 'deposit' else 'سحب' }}</td>
+                        <td>{% if t.transaction_type == 'deposit' %}إيداع{% else %}سحب{% endif %}</td>
                         <td>{{ t.amount }}</td>
                         <td>{{ t.payment_method }}</td>
                     </tr>
