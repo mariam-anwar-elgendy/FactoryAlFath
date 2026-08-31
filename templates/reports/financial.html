@@ -59,7 +59,7 @@
     </table>
 </div>
 
-<!-- Modal إضافة معاملة مالية متعددة -->
+<!-- ========== MODAL إضافة معاملة مالية (مُعدَّل) ========== -->
 <div class="modal fade" id="addFinancialModal" tabindex="-1">
     <div class="modal-dialog modal-xl">
         <div class="modal-content">
@@ -70,18 +70,20 @@
                 </div>
                 <div class="modal-body">
                     <div class="table-responsive">
-                        <table class="table" id="financialRows">
+                        <!-- ✅ إضافة table-layout:fixed و عرض محدد لكل عمود -->
+                        <table class="table" id="financialRows" style="table-layout: fixed;">
                             <thead>
                                 <tr>
-                                    <th>التاريخ</th>
-                                    <th>النوع</th>
-                                    <th>العميل (من)</th>
-                                    <th>المورد (إلى)</th>
-                                    <th>الحساب</th>
-                                    <th>المبلغ</th>
-                                    <th>طريقة الدفع</th>
-                                    <th>ملاحظات</th>
-                                    <th></th>
+                                    <th style="width: 10%;">التاريخ</th>
+                                    <th style="width: 12%;">النوع</th>
+                                    <th style="width: 15%;" class="source-header">المصدر</th>
+                                    <th style="width: 15%;" class="from-header">من</th>
+                                    <th style="width: 15%;" class="to-header">إلى</th>
+                                    <th style="width: 15%;" class="account-header">الحساب</th>
+                                    <th style="width: 10%;">المبلغ</th>
+                                    <th style="width: 12%;">طريقة الدفع</th>
+                                    <th style="width: 15%;">ملاحظات</th>
+                                    <th style="width: 5%;"></th>
                                 </tr>
                             </thead>
                             <tbody>
@@ -91,11 +93,20 @@
                                         <select name="transaction_type[]" class="form-select type-select">
                                             <option value="deposit">إيداع</option>
                                             <option value="withdrawal">سحب</option>
-                                            <option value="transfer_customer_supplier">من عميل لمورد</option>
+                                            <option value="transfer_customer_supplier">تحويل (من عميل لمورد)</option>
                                         </select>
                                     </td>
-                                    <td class="customer-cell">
-                                        <select name="from_customer[]" class="form-select customer-select">
+                                    <!-- عمود المصدر (للإيداع/السحب) -->
+                                    <td class="source-cell">
+                                        <select name="source[]" class="form-select source-select">
+                                            <option value="">اختر الطرف...</option>
+                                            <!-- سيتم ملؤه بواسطة JavaScript حسب النوع -->
+                                        </select>
+                                        <input type="text" name="new_source[]" class="form-control mt-1 d-none" placeholder="اسم جديد">
+                                    </td>
+                                    <!-- عمود "من" (للتحويل) -->
+                                    <td class="from-cell">
+                                        <select name="from_customer[]" class="form-select from-select">
                                             <option value="">اختر العميل...</option>
                                             {% for c in customers %}
                                             <option value="{{ c.name }}">{{ c.name }}</option>
@@ -104,8 +115,9 @@
                                         </select>
                                         <input type="text" name="new_customer_name[]" class="form-control mt-1 d-none" placeholder="اسم العميل الجديد">
                                     </td>
-                                    <td class="supplier-cell">
-                                        <select name="to_supplier[]" class="form-select supplier-select">
+                                    <!-- عمود "إلى" (للتحويل) -->
+                                    <td class="to-cell">
+                                        <select name="to_supplier[]" class="form-select to-select">
                                             <option value="">اختر المورد...</option>
                                             {% for s in suppliers %}
                                             <option value="{{ s.name }}">{{ s.name }}</option>
@@ -114,6 +126,7 @@
                                         </select>
                                         <input type="text" name="new_supplier_name[]" class="form-control mt-1 d-none" placeholder="اسم المورد الجديد">
                                     </td>
+                                    <!-- عمود الحساب (للإيداع/السحب) -->
                                     <td class="account-cell">
                                         <select name="account_id[]" class="form-select account-select">
                                             {% for account in accounts %}
@@ -146,54 +159,230 @@
     </div>
 </div>
 
+<!-- ========== JavaScript المُعدَّل ========== -->
 <script>
-document.getElementById('addFinancialRow').addEventListener('click', function() {
-    var table = document.getElementById('financialRows').getElementsByTagName('tbody')[0];
-    var newRow = table.rows[0].cloneNode(true);
-    newRow.querySelectorAll('input').forEach(function(input) { input.value = ''; input.classList.add('d-none'); });
-    newRow.querySelectorAll('select').forEach(function(select) { select.value = ''; });
-    table.appendChild(newRow);
-    toggleRowVisibility(newRow);
-});
-
-document.addEventListener('click', function(e) {
-    if (e.target.classList.contains('remove-financial-row')) {
-        var row = e.target.closest('tr');
-        if (document.querySelectorAll('#financialRows tbody tr').length > 1) {
-            row.remove();
+    // دالة لملء قائمة المصدر حسب النوع
+    function populateSourceSelect(selectElement, type, customers, suppliers) {
+        selectElement.innerHTML = '<option value="">اختر الطرف...</option>';
+        if (type === 'deposit') {
+            // إيداع: نعرض العملاء
+            customers.forEach(function(c) {
+                var opt = document.createElement('option');
+                opt.value = c;
+                opt.textContent = c;
+                selectElement.appendChild(opt);
+            });
+            var optNew = document.createElement('option');
+            optNew.value = 'new';
+            optNew.textContent = '➕ عميل جديد...';
+            selectElement.appendChild(optNew);
+        } else if (type === 'withdrawal') {
+            // سحب: نعرض الموردين
+            suppliers.forEach(function(s) {
+                var opt = document.createElement('option');
+                opt.value = s;
+                opt.textContent = s;
+                selectElement.appendChild(opt);
+            });
+            var optNew = document.createElement('option');
+            optNew.value = 'new';
+            optNew.textContent = '➕ مورد جديد...';
+            selectElement.appendChild(optNew);
+        } else {
+            // تحويل: لا نستخدم المصدر
+            var opt = document.createElement('option');
+            opt.value = '';
+            opt.textContent = 'غير مستخدم';
+            selectElement.appendChild(opt);
         }
     }
-});
 
-document.addEventListener('change', function(e) {
-    if (e.target.classList.contains('type-select')) {
-        toggleRowVisibility(e.target.closest('tr'));
-    }
-    if (e.target.classList.contains('customer-select') && e.target.value === 'new') {
-        e.target.parentElement.querySelector('input[name="new_customer_name[]"]').classList.remove('d-none');
-    }
-    if (e.target.classList.contains('supplier-select') && e.target.value === 'new') {
-        e.target.parentElement.querySelector('input[name="new_supplier_name[]"]').classList.remove('d-none');
-    }
-});
+    // دالة لإظهار/إخفاء الأعمدة حسب النوع
+    function toggleRowVisibility(row, customers, suppliers) {
+        var type = row.querySelector('.type-select').value;
+        var sourceCell = row.querySelector('.source-cell');
+        var fromCell = row.querySelector('.from-cell');
+        var toCell = row.querySelector('.to-cell');
+        var accountCell = row.querySelector('.account-cell');
 
-function toggleRowVisibility(row) {
-    var type = row.querySelector('.type-select').value;
-    var customerCell = row.querySelector('.customer-cell');
-    var supplierCell = row.querySelector('.supplier-cell');
-    var accountCell = row.querySelector('.account-cell');
-    if (type === 'transfer_customer_supplier') {
-        customerCell.style.display = '';
-        supplierCell.style.display = '';
-        accountCell.style.display = 'none'; // إخفاء الحساب الداخلي
-    } else {
-        customerCell.style.display = 'none';
-        supplierCell.style.display = 'none';
-        accountCell.style.display = '';
-    }
-}
+        // إخفاء الكل أولاً
+        sourceCell.style.display = 'none';
+        fromCell.style.display = 'none';
+        toCell.style.display = 'none';
+        accountCell.style.display = 'none';
 
-// استدعاء عند التحميل للصف الأول
-toggleRowVisibility(document.querySelector('#financialRows tbody tr'));
+        // مصفوفة أسماء العملاء والموردين من data attributes أو من المتغيرات العامة
+        var customerNames = [];
+        var supplierNames = [];
+        // نجلبهم من الـ selects الموجودة في الصف (لكن الأفضل من المتغيرات العامة)
+        // سنستخدم المتغيرات الممررة من Flask
+        var customerSelect = row.querySelector('.from-select');
+        var supplierSelect = row.querySelector('.to-select');
+        if (customerSelect) {
+            customerSelect.querySelectorAll('option').forEach(function(opt) {
+                if (opt.value && opt.value !== 'new') customerNames.push(opt.value);
+            });
+        }
+        if (supplierSelect) {
+            supplierSelect.querySelectorAll('option').forEach(function(opt) {
+                if (opt.value && opt.value !== 'new') supplierNames.push(opt.value);
+            });
+        }
+
+        if (type === 'deposit') {
+            sourceCell.style.display = '';
+            accountCell.style.display = '';
+            // ملء قائمة المصدر بالعملاء
+            var sourceSelect = row.querySelector('.source-select');
+            populateSourceSelect(sourceSelect, 'deposit', customerNames, []);
+            // إخفاء الحقل النصي الجديد للمصدر
+            var newSourceInput = row.querySelector('input[name="new_source[]"]');
+            if (newSourceInput) newSourceInput.classList.add('d-none');
+        } else if (type === 'withdrawal') {
+            sourceCell.style.display = '';
+            accountCell.style.display = '';
+            var sourceSelect = row.querySelector('.source-select');
+            populateSourceSelect(sourceSelect, 'withdrawal', [], supplierNames);
+            var newSourceInput = row.querySelector('input[name="new_source[]"]');
+            if (newSourceInput) newSourceInput.classList.add('d-none');
+        } else if (type === 'transfer_customer_supplier') {
+            fromCell.style.display = '';
+            toCell.style.display = '';
+            // accountCell مخفى
+            // إخفاء أي حقول جديدة
+        }
+    }
+
+    // === إضافة صف جديد ===
+    document.getElementById('addFinancialRow').addEventListener('click', function() {
+        var tbody = document.querySelector('#financialRows tbody');
+        var firstRow = tbody.querySelector('tr');
+        var newRow = firstRow.cloneNode(true);
+
+        // إعادة تعيين القيم
+        newRow.querySelectorAll('input').forEach(function(inp) {
+            inp.value = '';
+            if (inp.name && inp.name.includes('new_')) {
+                inp.classList.add('d-none');
+            }
+        });
+        newRow.querySelectorAll('select').forEach(function(sel) {
+            // لا نعيد تعيين القيم المختارة لأنها قد تحتوي على قيم افتراضية
+            // لكن نضبطها على الخيار الأول
+            sel.selectedIndex = 0;
+        });
+
+        // إضافة الصف
+        tbody.appendChild(newRow);
+
+        // تطبيق الرؤية بناءً على النوع الافتراضي (إيداع)
+        var customers = [];
+        var suppliers = [];
+        // نجلب أسماء العملاء والموردين من القوائم الموجودة في الصف الأول (أو من المتغيرات العامة)
+        var firstFromSelect = firstRow.querySelector('.from-select');
+        var firstToSelect = firstRow.querySelector('.to-select');
+        if (firstFromSelect) {
+            firstFromSelect.querySelectorAll('option').forEach(function(opt) {
+                if (opt.value && opt.value !== 'new') customers.push(opt.value);
+            });
+        }
+        if (firstToSelect) {
+            firstToSelect.querySelectorAll('option').forEach(function(opt) {
+                if (opt.value && opt.value !== 'new') suppliers.push(opt.value);
+            });
+        }
+        toggleRowVisibility(newRow, customers, suppliers);
+    });
+
+    // === تغيير النوع ===
+    document.addEventListener('change', function(e) {
+        if (e.target.classList.contains('type-select')) {
+            var row = e.target.closest('tr');
+            var customers = [];
+            var suppliers = [];
+            var fromSelect = row.querySelector('.from-select');
+            var toSelect = row.querySelector('.to-select');
+            if (fromSelect) {
+                fromSelect.querySelectorAll('option').forEach(function(opt) {
+                    if (opt.value && opt.value !== 'new') customers.push(opt.value);
+                });
+            }
+            if (toSelect) {
+                toSelect.querySelectorAll('option').forEach(function(opt) {
+                    if (opt.value && opt.value !== 'new') suppliers.push(opt.value);
+                });
+            }
+            toggleRowVisibility(row, customers, suppliers);
+        }
+
+        // === إظهار حقل النص عند اختيار "جديد" في المصدر ===
+        if (e.target.classList.contains('source-select') && e.target.value === 'new') {
+            var row = e.target.closest('tr');
+            var newInput = row.querySelector('input[name="new_source[]"]');
+            if (newInput) newInput.classList.remove('d-none');
+        } else if (e.target.classList.contains('source-select')) {
+            var row = e.target.closest('tr');
+            var newInput = row.querySelector('input[name="new_source[]"]');
+            if (newInput) newInput.classList.add('d-none');
+        }
+
+        // === إظهار حقل النص عند اختيار "جديد" في "من" (للتحويل) ===
+        if (e.target.classList.contains('from-select') && e.target.value === 'new') {
+            var row = e.target.closest('tr');
+            var newInput = row.querySelector('input[name="new_customer_name[]"]');
+            if (newInput) newInput.classList.remove('d-none');
+        } else if (e.target.classList.contains('from-select')) {
+            var row = e.target.closest('tr');
+            var newInput = row.querySelector('input[name="new_customer_name[]"]');
+            if (newInput) newInput.classList.add('d-none');
+        }
+
+        // === إظهار حقل النص عند اختيار "جديد" في "إلى" (للتحويل) ===
+        if (e.target.classList.contains('to-select') && e.target.value === 'new') {
+            var row = e.target.closest('tr');
+            var newInput = row.querySelector('input[name="new_supplier_name[]"]');
+            if (newInput) newInput.classList.remove('d-none');
+        } else if (e.target.classList.contains('to-select')) {
+            var row = e.target.closest('tr');
+            var newInput = row.querySelector('input[name="new_supplier_name[]"]');
+            if (newInput) newInput.classList.add('d-none');
+        }
+    });
+
+    // === حذف صف ===
+    document.addEventListener('click', function(e) {
+        if (e.target.classList.contains('remove-financial-row')) {
+            var row = e.target.closest('tr');
+            var tbody = row.parentElement;
+            if (tbody.querySelectorAll('tr').length > 1) {
+                row.remove();
+            } else {
+                alert('يجب أن يبقى صف واحد على الأقل.');
+            }
+        }
+    });
+
+    // === تهيئة الصف الأول عند تحميل الصفحة ===
+    document.addEventListener('DOMContentLoaded', function() {
+        var firstRow = document.querySelector('#financialRows tbody tr');
+        if (firstRow) {
+            // نجلب العملاء والموردين من القوائم الموجودة
+            var customers = [];
+            var suppliers = [];
+            var fromSelect = firstRow.querySelector('.from-select');
+            var toSelect = firstRow.querySelector('.to-select');
+            if (fromSelect) {
+                fromSelect.querySelectorAll('option').forEach(function(opt) {
+                    if (opt.value && opt.value !== 'new') customers.push(opt.value);
+                });
+            }
+            if (toSelect) {
+                toSelect.querySelectorAll('option').forEach(function(opt) {
+                    if (opt.value && opt.value !== 'new') suppliers.push(opt.value);
+                });
+            }
+            toggleRowVisibility(firstRow, customers, suppliers);
+        }
+    });
 </script>
 {% endblock %}
