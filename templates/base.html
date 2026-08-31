@@ -8,18 +8,49 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
     {% block extra_css %}{% endblock %}
+    <style>
+        /* تظبيط الـ Sidebar للموبايل */
+        @media (max-width: 991.98px) {
+            .sidebar {
+                width: 280px !important;
+                min-height: 100vh;
+                position: fixed;
+                top: 0;
+                right: 0;
+                z-index: 1045;
+                transform: translateX(100%);
+                transition: transform 0.3s ease-in-out;
+            }
+            .sidebar.show {
+                transform: translateX(0) !important;
+            }
+            .sidebar-backdrop {
+                position: fixed;
+                top: 0;
+                left: 0;
+                width: 100%;
+                height: 100%;
+                background: rgba(0,0,0,0.5);
+                z-index: 1040;
+                display: none;
+            }
+            .sidebar-backdrop.show {
+                display: block;
+            }
+        }
+    </style>
 </head>
 <body>
     <nav class="navbar navbar-dark bg-purple-dark sticky-top">
         <div class="container-fluid">
-            <button class="btn btn-outline-light d-lg-none" type="button" data-bs-toggle="offcanvas" data-bs-target="#sidebar">
+            <button class="btn btn-outline-light d-lg-none" type="button" id="sidebarToggle">
                 <i class="fas fa-bars"></i>
             </button>
             <a class="navbar-brand fw-bold" href="{{ url_for('dashboard') }}">
                 🏭 مصنع الفتح
             </a>
             <div class="d-flex align-items-center text-white">
-                <span class="me-3"><i class="fas fa-user"></i> {{ current_user.full_name }}</span>
+                <span class="me-3 d-none d-md-inline"><i class="fas fa-user"></i> {{ current_user.full_name }}</span>
                 <a href="{{ url_for('logout') }}" class="btn btn-outline-light btn-sm">
                     <i class="fas fa-sign-out-alt"></i> خروج
                 </a>
@@ -29,8 +60,17 @@
 
     <div class="container-fluid">
         <div class="row">
-            <div class="col-lg-2 col-md-3 sidebar bg-purple p-0 offcanvas-lg offcanvas-start" id="sidebar">
+            <!-- Backdrop للموبايل -->
+            <div class="sidebar-backdrop" id="sidebarBackdrop"></div>
+            
+            <div class="col-lg-2 col-md-3 sidebar bg-purple p-0" id="sidebar">
                 <div class="p-3">
+                    <div class="d-flex justify-content-between align-items-center mb-3 d-lg-none">
+                        <h5 class="text-white mb-0">القائمة</h5>
+                        <button class="btn btn-outline-light btn-sm" id="sidebarClose">
+                            <i class="fas fa-times"></i>
+                        </button>
+                    </div>
                     <ul class="nav flex-column">
                         <li class="nav-item">
                             <a class="nav-link text-white" href="{{ url_for('dashboard') }}">
@@ -138,6 +178,31 @@
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
     <script src="{{ url_for('static', filename='script.js') }}"></script>
+    <script>
+        // فتح وإغلاق الـ Sidebar على الموبايل
+        document.getElementById('sidebarToggle').addEventListener('click', function() {
+            document.getElementById('sidebar').classList.add('show');
+            document.getElementById('sidebarBackdrop').classList.add('show');
+        });
+
+        document.getElementById('sidebarClose').addEventListener('click', function() {
+            document.getElementById('sidebar').classList.remove('show');
+            document.getElementById('sidebarBackdrop').classList.remove('show');
+        });
+
+        document.getElementById('sidebarBackdrop').addEventListener('click', function() {
+            document.getElementById('sidebar').classList.remove('show');
+            document.getElementById('sidebarBackdrop').classList.remove('show');
+        });
+
+        // إغلاق الـ Sidebar عند الضغط على أي رابط
+        document.querySelectorAll('#sidebar .nav-link').forEach(function(link) {
+            link.addEventListener('click', function() {
+                document.getElementById('sidebar').classList.remove('show');
+                document.getElementById('sidebarBackdrop').classList.remove('show');
+            });
+        });
+    </script>
     {% block extra_js %}{% endblock %}
 </body>
 </html>
