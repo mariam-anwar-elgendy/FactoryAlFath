@@ -49,7 +49,12 @@
                             <div class="modal-body">
                                 <div class="mb-3">
                                     <label class="form-label fw-bold">الشخص</label>
-                                    <input type="text" name="person_name" class="form-control" value="{{ account.person_name }}" required>
+                                    <select name="person_name" class="form-select" required>
+                                        <option value="الحاج أحمد" {% if account.person_name == 'الحاج أحمد' %}selected{% endif %}>الحاج أحمد</option>
+                                        <option value="عيد" {% if account.person_name == 'عيد' %}selected{% endif %}>عيد</option>
+                                        <option value="عبدالله" {% if account.person_name == 'عبدالله' %}selected{% endif %}>عبدالله</option>
+                                        <option value="الحاج فتحي" {% if account.person_name == 'الحاج فتحي' %}selected{% endif %}>الحاج فتحي</option>
+                                    </select>
                                 </div>
                                 <div class="mb-3">
                                     <label class="form-label fw-bold">نوع الحساب</label>
@@ -57,6 +62,7 @@
                                         <option value="كاش" {% if account.account_type == 'كاش' %}selected{% endif %}>كاش</option>
                                         <option value="فودافون كاش" {% if account.account_type == 'فودافون كاش' %}selected{% endif %}>فودافون كاش</option>
                                         <option value="انستا باي" {% if account.account_type == 'انستا باي' %}selected{% endif %}>انستا باي</option>
+                                        <option value="شيك" {% if account.account_type == 'شيك' %}selected{% endif %}>شيك</option>
                                     </select>
                                 </div>
                                 <div class="mb-3">
@@ -91,7 +97,13 @@
                 <div class="modal-body">
                     <div class="mb-3">
                         <label class="form-label fw-bold">الشخص</label>
-                        <input type="text" name="person_name" class="form-control" required>
+                        <select name="person_name" class="form-select" required>
+                            <option value="">اختر الشخص...</option>
+                            <option value="الحاج أحمد">الحاج أحمد</option>
+                            <option value="عيد">عيد</option>
+                            <option value="عبدالله">عبدالله</option>
+                            <option value="الحاج فتحي">الحاج فتحي</option>
+                        </select>
                     </div>
                     <div class="mb-3">
                         <label class="form-label fw-bold">نوع الحساب</label>
@@ -99,6 +111,7 @@
                             <option value="كاش">كاش</option>
                             <option value="فودافون كاش">فودافون كاش</option>
                             <option value="انستا باي">انستا باي</option>
+                            <option value="شيك">شيك</option>
                         </select>
                     </div>
                     <div class="mb-3">
