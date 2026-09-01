@@ -33,7 +33,7 @@
                 <td>{{ m.quantity }}</td>
                 <td>{{ m.supplier or '-' }}</td>
                 <td>{{ m.notes or '-' }}</td>
-                <td>{{ m.created_by }}</td>
+                <td>{{ get_user_name(m.created_by) }}</td>
                 <td>
                     {% if current_user.role in ['meg','admin','mariam'] or (current_user.role == 'rehab' and (now.date() - m.date).days <= 7) or (current_user.role == 'mohamed' and m.created_by == current_user.id and (now.date() - m.date).days <= 1) %}
                     <button class="btn btn-sm btn-warning" data-bs-toggle="modal" data-bs-target="#editRawMaterialModal{{ m.id }}">✏️</button>
@@ -81,7 +81,13 @@
                     </div>
                     <div class="mb-3">
                         <label class="form-label fw-bold">المورد</label>
-                        <input type="text" name="supplier" class="form-control">
+                        <input type="text" name="supplier" class="form-control" list="suppliers_list">
+                        <datalist id="suppliers_list">
+                            {% for s in suppliers %}
+                            <option value="{{ s.name }}">{{ s.name }}</option>
+                            {% endfor %}
+                        </datalist>
+                        <small class="text-muted">اكتب اسم المورد وسيظهر لك اقتراحات، أو اكتب اسم جديد.</small>
                     </div>
                     <div class="mb-3">
                         <label class="form-label fw-bold">ملاحظات</label>
@@ -127,7 +133,12 @@
                     </div>
                     <div class="mb-3">
                         <label class="form-label fw-bold">المورد</label>
-                        <input type="text" name="supplier" class="form-control" value="{{ m.supplier or '' }}">
+                        <input type="text" name="supplier" class="form-control" value="{{ m.supplier or '' }}" list="suppliers_list_edit{{ m.id }}">
+                        <datalist id="suppliers_list_edit{{ m.id }}">
+                            {% for s in suppliers %}
+                            <option value="{{ s.name }}">{{ s.name }}</option>
+                            {% endfor %}
+                        </datalist>
                     </div>
                     <div class="mb-3">
                         <label class="form-label fw-bold">ملاحظات</label>
