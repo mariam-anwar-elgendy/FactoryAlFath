@@ -32,8 +32,10 @@
                 <td>
                     {% if t.transaction_type == 'deposit' %}
                         <span class="badge bg-success">إيداع</span>
-                    {% else %}
+                    {% elif t.transaction_type == 'withdrawal' %}
                         <span class="badge bg-danger">سحب</span>
+                    {% else %}
+                        <span class="badge bg-info">تحويل</span>
                     {% endif %}
                 </td>
                 <td>{{ t.amount }}</td>
@@ -52,6 +54,69 @@
                     {% endif %}
                 </td>
             </tr>
+
+            <!-- Modal تعديل معاملة -->
+            <div class="modal fade" id="editTransactionModal{{ t.id }}" tabindex="-1">
+                <div class="modal-dialog">
+                    <div class="modal-content">
+                        <form method="POST" action="{{ url_for('treasury_transactions') }}">
+                            <input type="hidden" name="edit_id" value="{{ t.id }}">
+                            <div class="modal-header bg-warning text-dark">
+                                <h5 class="modal-title">✏️ تعديل معاملة</h5>
+                                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                            </div>
+                            <div class="modal-body">
+                                <div class="mb-3">
+                                    <label class="form-label fw-bold">التاريخ</label>
+                                    <input type="date" name="date" class="form-control" value="{{ t.date.strftime('%Y-%m-%d') }}" required>
+                                </div>
+                                <div class="mb-3">
+                                    <label class="form-label fw-bold">الحساب</label>
+                                    <select name="account_id" class="form-select" required>
+                                        {% for account in accounts %}
+                                        <option value="{{ account.id }}" {% if account.id == t.account_id %}selected{% endif %}>
+                                            {{ account.person_name }} - {{ account.account_type }}
+                                        </option>
+                                        {% endfor %}
+                                    </select>
+                                </div>
+                                <div class="mb-3">
+                                    <label class="form-label fw-bold">النوع</label>
+                                    <select name="transaction_type" class="form-select" required>
+                                        <option value="deposit" {% if t.transaction_type == 'deposit' %}selected{% endif %}>إيداع</option>
+                                        <option value="withdrawal" {% if t.transaction_type == 'withdrawal' %}selected{% endif %}>سحب</option>
+                                    </select>
+                                </div>
+                                <div class="mb-3">
+                                    <label class="form-label fw-bold">المبلغ</label>
+                                    <input type="number" step="0.01" name="amount" class="form-control" value="{{ t.amount }}" required>
+                                </div>
+                                <div class="mb-3">
+                                    <label class="form-label fw-bold">الطرف</label>
+                                    <input type="text" name="source" class="form-control" value="{{ t.source or '' }}">
+                                </div>
+                                <div class="mb-3">
+                                    <label class="form-label fw-bold">طريقة الدفع</label>
+                                    <select name="payment_method" class="form-select">
+                                        <option value="كاش" {% if t.payment_method == 'كاش' %}selected{% endif %}>كاش</option>
+                                        <option value="فودافون كاش" {% if t.payment_method == 'فودافون كاش' %}selected{% endif %}>فودافون كاش</option>
+                                        <option value="انستا باي" {% if t.payment_method == 'انستا باي' %}selected{% endif %}>انستا باي</option>
+                                        <option value="شيك" {% if t.payment_method == 'شيك' %}selected{% endif %}>شيك</option>
+                                    </select>
+                                </div>
+                                <div class="mb-3">
+                                    <label class="form-label fw-bold">ملاحظات</label>
+                                    <input type="text" name="notes" class="form-control" value="{{ t.notes or '' }}">
+                                </div>
+                            </div>
+                            <div class="modal-footer">
+                                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">إلغاء</button>
+                                <button type="submit" class="btn btn-warning">حفظ التعديل</button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            </div>
             {% else %}
             <tr><td colspan="9" class="text-center text-muted">لا توجد معاملات</td></tr>
             {% endfor %}
@@ -93,14 +158,12 @@
                                             <option value="transfer_customer_supplier">تحويل (من عميل لمورد)</option>
                                         </select>
                                     </td>
-                                    <!-- عمود "من" -->
                                     <td class="from-cell">
                                         <select name="from_party[]" class="form-select from-select">
                                             <option value="">اختر الطرف...</option>
                                         </select>
                                         <input type="text" name="new_from_party[]" class="form-control mt-1 d-none" placeholder="اسم جديد (عميل/مورد)">
                                     </td>
-                                    <!-- عمود "إلى" -->
                                     <td class="to-cell">
                                         <select name="to_party[]" class="form-select to-select">
                                             <option value="">اختر الطرف...</option>
@@ -113,6 +176,7 @@
                                             <option value="كاش">كاش</option>
                                             <option value="فودافون كاش">فودافون كاش</option>
                                             <option value="انستا باي">انستا باي</option>
+                                            <option value="شيك">شيك</option>
                                         </select>
                                     </td>
                                     <td><input type="text" name="notes[]" class="form-control"></td>
@@ -133,7 +197,6 @@
 </div>
 
 <script>
-    // 1. قوائم العملاء والموردين وحساباتنا
     var customersList = [
         {% for c in customers %}
             "{{ c.name }}",
@@ -151,7 +214,6 @@
     ];
     treasuryPersons = [...new Set(treasuryPersons)];
 
-    // 2. دالة لتعبئة قائمة "من" و "إلى"
     function populatePartySelect(selectElement, type, isFrom) {
         selectElement.innerHTML = '<option value="">اختر الطرف...</option>';
         var list = [];
@@ -189,7 +251,6 @@
         selectElement.appendChild(optNew);
     }
 
-    // 3. دالة إظهار/إخفاء الأعمدة
     function toggleRowVisibility(row) {
         var type = row.querySelector('.type-select').value;
         var fromCell = row.querySelector('.from-cell');
@@ -206,7 +267,6 @@
         if (newToInput) newToInput.classList.add('d-none');
     }
 
-    // 4. إضافة صف جديد
     document.getElementById('addFinancialRow').addEventListener('click', function() {
         var tbody = document.querySelector('#financialRows tbody');
         var firstRow = tbody.querySelector('tr');
@@ -226,7 +286,6 @@
         toggleRowVisibility(newRow);
     });
 
-    // 5. تغيير النوع
     document.addEventListener('change', function(e) {
         if (e.target.classList.contains('type-select')) {
             var row = e.target.closest('tr');
@@ -254,7 +313,6 @@
         }
     });
 
-    // 6. حذف صف
     document.addEventListener('click', function(e) {
         if (e.target.classList.contains('remove-financial-row')) {
             var row = e.target.closest('tr');
@@ -267,7 +325,6 @@
         }
     });
 
-    // 7. تهيئة الصف الأول
     document.addEventListener('DOMContentLoaded', function() {
         var firstRow = document.querySelector('#financialRows tbody tr');
         if (firstRow) {
