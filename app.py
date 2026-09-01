@@ -216,7 +216,7 @@ def init_db():
         print("✅ تم تهيئة قاعدة البيانات وإنشاء المستخدمين")
 
         treasury_persons = ['الحاج أحمد', 'عيد', 'عبدالله', 'الحاج فتحي']
-        account_types = ['كاش', 'فودافون كاش', 'انستا باي']
+        account_types = ['كاش', 'فودافون كاش', 'انستا باي', 'شيك']
         for person in treasury_persons:
             for acc_type in account_types:
                 get_or_create_treasury_account(person, acc_type)
@@ -244,6 +244,7 @@ def init_db():
             db.session.commit()
 
 init_db()
+
 @app.context_processor
 def inject_globals():
     unread_notifications = 0
@@ -405,6 +406,12 @@ def factory_raw_materials():
         quantity = float(request.form.get('quantity', 0))
         supplier = request.form.get('supplier')
         notes = request.form.get('notes')
+        
+        # ✅ إضافة المورد تلقائياً إذا كان جديد
+        if supplier and not Supplier.query.filter_by(name=supplier).first():
+            db.session.add(Supplier(name=supplier))
+            print(f"✅ تم إضافة مورد جديد: {supplier}")
+        
         new_record = FactoryRawMaterial(date=record_date, pipe_size=pipe_size, pipe_thickness=pipe_thickness,
                                         quantity=quantity, supplier=supplier, notes=notes,
                                         created_by=current_user.id, created_at=datetime.utcnow())
@@ -417,7 +424,8 @@ def factory_raw_materials():
         flash('تم إضافة وارد المواسير بنجاح', 'success')
         return redirect(url_for('factory_raw_materials'))
     materials = FactoryRawMaterial.query.order_by(FactoryRawMaterial.date.asc(), FactoryRawMaterial.id.asc()).all()
-    return render_template('factory/raw_materials.html', materials=materials)
+    suppliers = Supplier.query.order_by(Supplier.name.asc()).all()
+    return render_template('factory/raw_materials.html', materials=materials, suppliers=suppliers)
 
 @app.route('/factory/production', methods=['GET', 'POST'])
 @custom_login_required
@@ -545,7 +553,6 @@ def store_transactions():
                                                              product_spec=item.product_spec).first()
                         if inv:
                             inv.current_quantity += item.quantity
-                            db.session.commit()
                     db.session.delete(record)
                     db.session.commit()
                     log_activity(current_user.id, 'delete', f"حذف بيع {record.customer_name}")
@@ -557,7 +564,6 @@ def store_transactions():
                                                              product_spec=item.product_spec).first()
                         if inv:
                             inv.current_quantity -= item.quantity
-                            db.session.commit()
                     db.session.delete(record)
                     db.session.commit()
                     log_activity(current_user.id, 'delete', f"حذف شراء {record.supplier_name}")
@@ -577,16 +583,13 @@ def store_transactions():
                     record.customer_phone = request.form.get('party_phone')
                     record.payment_type = request.form.get('payment_type', 'آجل')
 
-                    # حذف البنود القديمة وإعادة إنشائها
                     for item in record.items:
                         inv = StoreInventory.query.filter_by(product_type=item.product_type,
                                                              product_size=item.product_size,
                                                              product_spec=item.product_spec).first()
                         if inv:
                             inv.current_quantity += item.quantity
-                            db.session.commit()
                         db.session.delete(item)
-                    db.session.commit()
 
                     product_types = request.form.getlist('product_type')
                     product_sizes = request.form.getlist('product_size')
@@ -606,21 +609,18 @@ def store_transactions():
                             product_type = new_product_types[i] if i < len(new_product_types) else ''
                             if product_type and not Category.query.filter_by(name=product_type).first():
                                 db.session.add(Category(name=product_type))
-                                db.session.commit()
                         
                         product_size = product_sizes[i] if i < len(product_sizes) else ''
                         if product_size == 'new':
                             product_size = new_product_sizes[i] if i < len(new_product_sizes) else ''
                             if product_size and not Size.query.filter_by(value=product_size).first():
                                 db.session.add(Size(value=product_size))
-                                db.session.commit()
                         
                         product_spec = product_specs[i] if i < len(product_specs) else ''
                         if product_spec == 'new':
                             product_spec = new_product_specs[i] if i < len(new_product_specs) else ''
                             if product_spec and not Thickness.query.filter_by(value=product_spec).first():
                                 db.session.add(Thickness(value=product_spec))
-                                db.session.commit()
 
                         item = StoreSaleItem(
                             sale_id=record.id,
@@ -664,9 +664,7 @@ def store_transactions():
                                                              product_spec=item.product_spec).first()
                         if inv:
                             inv.current_quantity -= item.quantity
-                            db.session.commit()
                         db.session.delete(item)
-                    db.session.commit()
 
                     product_types = request.form.getlist('product_type')
                     product_sizes = request.form.getlist('product_size')
@@ -686,21 +684,18 @@ def store_transactions():
                             product_type = new_product_types[i] if i < len(new_product_types) else ''
                             if product_type and not Category.query.filter_by(name=product_type).first():
                                 db.session.add(Category(name=product_type))
-                                db.session.commit()
                         
                         product_size = product_sizes[i] if i < len(product_sizes) else ''
                         if product_size == 'new':
                             product_size = new_product_sizes[i] if i < len(new_product_sizes) else ''
                             if product_size and not Size.query.filter_by(value=product_size).first():
                                 db.session.add(Size(value=product_size))
-                                db.session.commit()
                         
                         product_spec = product_specs[i] if i < len(product_specs) else ''
                         if product_spec == 'new':
                             product_spec = new_product_specs[i] if i < len(new_product_specs) else ''
                             if product_spec and not Thickness.query.filter_by(value=product_spec).first():
                                 db.session.add(Thickness(value=product_spec))
-                                db.session.commit()
 
                         item = StorePurchaseItem(
                             purchase_id=record.id,
@@ -748,7 +743,6 @@ def store_transactions():
         new_product_sizes = request.form.getlist('new_product_size')
         new_product_specs = request.form.getlist('new_product_spec')
 
-        # ✅ التحقق من وجود بنود
         has_items = False
         for i in range(len(product_types)):
             if product_types[i].strip() and quantities[i].strip():
@@ -760,6 +754,11 @@ def store_transactions():
             return redirect(url_for('store_transactions'))
 
         if transaction_type == 'sale':
+            # ✅ إضافة العميل تلقائياً إذا كان جديد
+            if party_name and not Customer.query.filter_by(name=party_name).first():
+                db.session.add(Customer(name=party_name, phone=party_phone))
+                print(f"✅ تم إضافة عميل جديد: {party_name}")
+            
             new_sale = StoreSale(
                 invoice_number=f"INV-{datetime.now().strftime('%Y%m%d%H%M%S')}",
                 customer_name=party_name,
@@ -770,7 +769,6 @@ def store_transactions():
                 created_at=datetime.utcnow()
             )
             db.session.add(new_sale)
-            db.session.commit()
 
             for i in range(len(product_types)):
                 if not product_types[i].strip() or not quantities[i].strip():
@@ -781,21 +779,18 @@ def store_transactions():
                     product_type = new_product_types[i] if i < len(new_product_types) else ''
                     if product_type and not Category.query.filter_by(name=product_type).first():
                         db.session.add(Category(name=product_type))
-                        db.session.commit()
                 
                 product_size = product_sizes[i] if i < len(product_sizes) else ''
                 if product_size == 'new':
                     product_size = new_product_sizes[i] if i < len(new_product_sizes) else ''
                     if product_size and not Size.query.filter_by(value=product_size).first():
                         db.session.add(Size(value=product_size))
-                        db.session.commit()
                 
                 product_spec = product_specs[i] if i < len(product_specs) else ''
                 if product_spec == 'new':
                     product_spec = new_product_specs[i] if i < len(new_product_specs) else ''
                     if product_spec and not Thickness.query.filter_by(value=product_spec).first():
                         db.session.add(Thickness(value=product_spec))
-                        db.session.commit()
 
                 item = StoreSaleItem(
                     sale_id=new_sale.id,
@@ -841,6 +836,11 @@ def store_transactions():
             flash('تم تسجيل البيع بنجاح', 'success')
 
         else:  # شراء
+            # ✅ إضافة المورد تلقائياً إذا كان جديد
+            if party_name and not Supplier.query.filter_by(name=party_name).first():
+                db.session.add(Supplier(name=party_name, phone=party_phone))
+                print(f"✅ تم إضافة مورد جديد: {party_name}")
+            
             new_purchase = StorePurchase(
                 invoice_number=f"PUR-{datetime.now().strftime('%Y%m%d%H%M%S')}",
                 supplier_name=party_name,
@@ -851,7 +851,6 @@ def store_transactions():
                 created_at=datetime.utcnow()
             )
             db.session.add(new_purchase)
-            db.session.commit()
 
             for i in range(len(product_types)):
                 if not product_types[i].strip() or not quantities[i].strip():
@@ -862,21 +861,18 @@ def store_transactions():
                     product_type = new_product_types[i] if i < len(new_product_types) else ''
                     if product_type and not Category.query.filter_by(name=product_type).first():
                         db.session.add(Category(name=product_type))
-                        db.session.commit()
                 
                 product_size = product_sizes[i] if i < len(product_sizes) else ''
                 if product_size == 'new':
                     product_size = new_product_sizes[i] if i < len(new_product_sizes) else ''
                     if product_size and not Size.query.filter_by(value=product_size).first():
                         db.session.add(Size(value=product_size))
-                        db.session.commit()
                 
                 product_spec = product_specs[i] if i < len(product_specs) else ''
                 if product_spec == 'new':
                     product_spec = new_product_specs[i] if i < len(new_product_specs) else ''
                     if product_spec and not Thickness.query.filter_by(value=product_spec).first():
                         db.session.add(Thickness(value=product_spec))
-                        db.session.commit()
 
                 item = StorePurchaseItem(
                     purchase_id=new_purchase.id,
@@ -1109,11 +1105,11 @@ def treasury_index():
     if current_user.role in ['meg', 'admin', 'mariam']:
         persons = ['الحاج أحمد', 'عيد', 'عبدالله', 'الحاج فتحي']
         for person in persons:
-            for acc_type in ['كاش', 'فودافون كاش', 'انستا باي']:
+            for acc_type in ['كاش', 'فودافون كاش', 'انستا باي', 'شيك']:
                 get_or_create_treasury_account(person, acc_type)
     else:
         person_name = current_user.full_name
-        for acc_type in ['كاش', 'فودافون كاش', 'انستا باي']:
+        for acc_type in ['كاش', 'فودافون كاش', 'انستا باي', 'شيك']:
             get_or_create_treasury_account(person_name, acc_type)
 
     accounts = get_visible_accounts_for_current_user()
@@ -1131,11 +1127,11 @@ def treasury_transactions():
     if current_user.role in ['meg', 'admin', 'mariam']:
         persons = ['الحاج أحمد', 'عيد', 'عبدالله', 'الحاج فتحي']
         for person in persons:
-            for acc_type in ['كاش', 'فودافون كاش', 'انستا باي']:
+            for acc_type in ['كاش', 'فودافون كاش', 'انستا باي', 'شيك']:
                 get_or_create_treasury_account(person, acc_type)
     else:
         person_name = current_user.full_name
-        for acc_type in ['كاش', 'فودافون كاش', 'انستا باي']:
+        for acc_type in ['كاش', 'فودافون كاش', 'انستا باي', 'شيك']:
             get_or_create_treasury_account(person_name, acc_type)
 
     if request.method == 'POST':
@@ -1149,7 +1145,6 @@ def treasury_transactions():
                         account.balance -= record.amount
                     else:
                         account.balance += record.amount
-                    db.session.commit()
                 db.session.delete(record)
                 db.session.commit()
                 log_activity(current_user.id, 'delete', f"حذف حركة خزينة {record.amount}")
@@ -1168,7 +1163,6 @@ def treasury_transactions():
                         old_account.balance -= record.amount
                     else:
                         old_account.balance += record.amount
-                    db.session.commit()
 
                 record.date = datetime.strptime(request.form.get('date'), '%Y-%m-%d').date()
                 new_account_id = int(request.form.get('account_id'))
@@ -1185,7 +1179,6 @@ def treasury_transactions():
                         new_account.balance += record.amount
                     else:
                         new_account.balance -= record.amount
-                    db.session.commit()
                 db.session.commit()
                 log_activity(current_user.id, 'edit', f"تعديل حركة خزينة {record.amount}")
                 flash('تم تحديث الحركة بنجاح', 'success')
@@ -1207,7 +1200,6 @@ def treasury_transactions():
                 account.balance += amount
             elif transaction_type == 'withdrawal':
                 account.balance -= amount
-            db.session.commit()
 
         new_transaction = TreasuryTransaction(
             account_id=account_id,
@@ -1385,22 +1377,18 @@ def financial_transactions():
                     if txn_type == 'deposit':
                         if not Customer.query.filter_by(name=new_from_party).first():
                             db.session.add(Customer(name=new_from_party))
-                            db.session.commit()
                     elif txn_type == 'transfer_customer_supplier':
                         if not Customer.query.filter_by(name=new_from_party).first():
                             db.session.add(Customer(name=new_from_party))
-                            db.session.commit()
                     from_party = new_from_party
 
                 if to_party == 'new' and new_to_party:
                     if txn_type == 'withdrawal':
                         if not Supplier.query.filter_by(name=new_to_party).first():
                             db.session.add(Supplier(name=new_to_party))
-                            db.session.commit()
                     elif txn_type == 'transfer_customer_supplier':
                         if not Supplier.query.filter_by(name=new_to_party).first():
                             db.session.add(Supplier(name=new_to_party))
-                            db.session.commit()
                     to_party = new_to_party
 
                 account = None
@@ -1417,9 +1405,7 @@ def financial_transactions():
                             balance=0
                         )
                         db.session.add(account)
-                        db.session.commit()
                     account.balance += amount
-                    db.session.commit()
                     source = from_party
                     txn_type_db = 'deposit'
 
@@ -1436,9 +1422,7 @@ def financial_transactions():
                             balance=0
                         )
                         db.session.add(account)
-                        db.session.commit()
                     account.balance -= amount
-                    db.session.commit()
                     source = to_party
                     txn_type_db = 'withdrawal'
 
@@ -1454,7 +1438,6 @@ def financial_transactions():
                             balance=0
                         )
                         db.session.add(account)
-                        db.session.commit()
                     source = f"من {from_party} إلى {to_party}"
                     txn_type_db = 'transfer'
 
@@ -1470,13 +1453,13 @@ def financial_transactions():
                     created_at=datetime.utcnow()
                 )
                 db.session.add(new_txn)
-                db.session.commit()
 
             except Exception as e:
                 print(f"❌ Error adding financial transaction: {e}")
                 flash(f'خطأ في إضافة المعاملة: {str(e)}', 'danger')
                 continue
 
+        db.session.commit()
         flash('✅ تم تسجيل المعاملات المالية بنجاح', 'success')
         return redirect(url_for('financial_transactions'))
 
