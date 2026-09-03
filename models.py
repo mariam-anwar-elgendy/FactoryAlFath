@@ -234,7 +234,7 @@ class TreasuryAccount(db.Model):
     __tablename__ = 'treasury_accounts'
     id = db.Column(db.Integer, primary_key=True)
     person_name = db.Column(db.String(100), nullable=False)
-    account_type = db.Column(db.String(20), default='نقدي')
+    account_type = db.Column(db.String(50), default='نقدي')  # ✅ توسيع ليشمل "شيك"
     balance = db.Column(db.Float, default=0)
     transactions = db.relationship('TreasuryTransaction', backref='account', lazy=True)
 
@@ -245,7 +245,7 @@ class TreasuryTransaction(db.Model):
     transaction_type = db.Column(db.String(20), nullable=False)  # deposit / withdrawal
     amount = db.Column(db.Float, nullable=False)
     source = db.Column(db.String(150))
-    payment_method = db.Column(db.String(20))
+    payment_method = db.Column(db.String(50))  # ✅ توسيع ليشمل "شيك"
     date = db.Column(db.Date, nullable=False)
     notes = db.Column(db.Text)
     created_by = db.Column(db.Integer, db.ForeignKey('users.id'))
@@ -257,7 +257,7 @@ class TreasuryTransfer(db.Model):
     from_person = db.Column(db.String(100), nullable=False)
     to_person = db.Column(db.String(100), nullable=False)
     amount = db.Column(db.Float, nullable=False)
-    payment_method = db.Column(db.String(20))
+    payment_method = db.Column(db.String(50))  # ✅ توسيع ليشمل "شيك"
     date = db.Column(db.Date, nullable=False)
     notes = db.Column(db.Text)
     created_by = db.Column(db.Integer, db.ForeignKey('users.id'))
