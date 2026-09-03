@@ -69,11 +69,29 @@
                     </div>
                     <div class="mb-3">
                         <label class="form-label fw-bold">المقاس</label>
-                        <input type="text" name="pipe_size" class="form-control" placeholder="مثال: 6&quot;" required>
+                        <input type="text" name="pipe_size" class="form-control" list="pipe_sizes_list" placeholder="مثال: 6&quot;" required>
+                        <datalist id="pipe_sizes_list">
+                            <option value="1/2&quot;">
+                            <option value="3/4&quot;">
+                            <option value="1&quot;">
+                            <option value="1.5&quot;">
+                            <option value="2&quot;">
+                            <option value="3&quot;">
+                            <option value="4&quot;">
+                            <option value="6&quot;">
+                            <option value="8&quot;">
+                        </datalist>
                     </div>
                     <div class="mb-3">
                         <label class="form-label fw-bold">السماكة</label>
-                        <input type="text" name="pipe_thickness" class="form-control" placeholder="مثال: 5مم أو جدول 40">
+                        <input type="text" name="pipe_thickness" class="form-control" list="thickness_list" placeholder="مثال: 5مم أو جدول 40">
+                        <datalist id="thickness_list">
+                            <option value="2مم">
+                            <option value="3مم">
+                            <option value="5مم">
+                            <option value="جدول 40">
+                            <option value="جدول 80">
+                        </datalist>
                     </div>
                     <div class="mb-3">
                         <label class="form-label fw-bold">الكمية (عدد المواسير)</label>
@@ -121,11 +139,29 @@
                     </div>
                     <div class="mb-3">
                         <label class="form-label fw-bold">المقاس</label>
-                        <input type="text" name="pipe_size" class="form-control" value="{{ m.pipe_size }}" required>
+                        <input type="text" name="pipe_size" class="form-control" list="pipe_sizes_edit{{ m.id }}" value="{{ m.pipe_size }}" required>
+                        <datalist id="pipe_sizes_edit{{ m.id }}">
+                            <option value="1/2&quot;">
+                            <option value="3/4&quot;">
+                            <option value="1&quot;">
+                            <option value="1.5&quot;">
+                            <option value="2&quot;">
+                            <option value="3&quot;">
+                            <option value="4&quot;">
+                            <option value="6&quot;">
+                            <option value="8&quot;">
+                        </datalist>
                     </div>
                     <div class="mb-3">
                         <label class="form-label fw-bold">السماكة</label>
-                        <input type="text" name="pipe_thickness" class="form-control" value="{{ m.pipe_thickness or '' }}">
+                        <input type="text" name="pipe_thickness" class="form-control" list="thickness_edit{{ m.id }}" value="{{ m.pipe_thickness or '' }}">
+                        <datalist id="thickness_edit{{ m.id }}">
+                            <option value="2مم">
+                            <option value="3مم">
+                            <option value="5مم">
+                            <option value="جدول 40">
+                            <option value="جدول 80">
+                        </datalist>
                     </div>
                     <div class="mb-3">
                         <label class="form-label fw-bold">الكمية</label>
