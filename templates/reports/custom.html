@@ -14,7 +14,6 @@
     <button onclick="window.print()" class="btn btn-purple no-print">🖨️ طباعة</button>
 </div>
 
-<!-- نموذج اختيار الفترة (داخل الصفحة) -->
 <div class="card border-0 shadow-sm mb-4 no-print">
     <div class="card-body">
         <form method="GET" action="{{ url_for('reports_custom') }}">
@@ -36,12 +35,11 @@
     </div>
 </div>
 
-<!-- عرض البيانات حسب النوع -->
 {% if from_date and to_date %}
 
     {% if report_type == 'diary' or report_type == 'all' %}
     <div class="card border-0 shadow-sm mb-4">
-        <div class="card-header bg-purple text-white fw-bold">📔 سجل اليوميات (المصنع والمحل)</div>
+        <div class="card-header bg-purple text-white fw-bold">📔 سجل اليوميات</div>
         <div class="card-body">
             <div class="table-responsive">
                 <table class="table table-sm table-striped">
@@ -109,10 +107,22 @@
             <h6 class="fw-bold">المبيعات</h6>
             <div class="table-responsive">
                 <table class="table table-sm">
-                    <thead><tr><th>التاريخ</th><th>العميل</th><th>الصنف</th><th>الكمية</th><th>الإجمالي</th></tr></thead>
+                    <thead><tr><th>التاريخ</th><th>العميل</th><th>الأصناف</th><th>الكمية الإجمالية</th><th>الإجمالي</th></tr></thead>
                     <tbody>
                         {% for s in sales %}
-                        <tr><td>{{ s.date.strftime('%Y-%m-%d') }}</td><td>{{ s.customer_name }}</td><td>{{ s.product_type or '-' }}</td><td>{{ s.quantity if s.quantity is not none else sum(item.quantity for item in s.items) }}</td><td>{{ s.total }}</td></tr>
+                        <tr>
+                            <td>{{ s.date.strftime('%Y-%m-%d') }}</td>
+                            <td>{{ s.customer_name }}</td>
+                            <td>
+                                {% for item in s.items %}
+                                    {{ item.product_type }}{% if not loop.last %}, {% endif %}
+                                {% else %}
+                                    -
+                                {% endfor %}
+                            </td>
+                            <td>{{ s.items|sum(attribute='quantity') }}</td>
+                            <td>{{ s.total }}</td>
+                        </tr>
                         {% else %}
                         <tr><td colspan="5" class="text-center">لا يوجد</td></tr>
                         {% endfor %}
@@ -123,10 +133,22 @@
             <h6 class="fw-bold mt-3">المشتريات</h6>
             <div class="table-responsive">
                 <table class="table table-sm">
-                    <thead><tr><th>التاريخ</th><th>المورد</th><th>الصنف</th><th>الكمية</th><th>الإجمالي</th></tr></thead>
+                    <thead><tr><th>التاريخ</th><th>المورد</th><th>الأصناف</th><th>الكمية الإجمالية</th><th>الإجمالي</th></tr></thead>
                     <tbody>
                         {% for p in purchases %}
-                        <tr><td>{{ p.date.strftime('%Y-%m-%d') }}</td><td>{{ p.supplier_name }}</td><td>{{ p.product_type or '-' }}</td><td>{{ p.quantity if p.quantity is not none else sum(item.quantity for item in p.items) }}</td><td>{{ p.total }}</td></tr>
+                        <tr>
+                            <td>{{ p.date.strftime('%Y-%m-%d') }}</td>
+                            <td>{{ p.supplier_name }}</td>
+                            <td>
+                                {% for item in p.items %}
+                                    {{ item.product_type }}{% if not loop.last %}, {% endif %}
+                                {% else %}
+                                    -
+                                {% endfor %}
+                            </td>
+                            <td>{{ p.items|sum(attribute='quantity') }}</td>
+                            <td>{{ p.total }}</td>
+                        </tr>
                         {% else %}
                         <tr><td colspan="5" class="text-center">لا يوجد</td></tr>
                         {% endfor %}
@@ -146,7 +168,13 @@
                     <thead><tr><th>التاريخ</th><th>الشخص</th><th>النوع</th><th>المبلغ</th><th>الطريقة</th></tr></thead>
                     <tbody>
                         {% for t in transactions %}
-                        <tr><td>{{ t.date.strftime('%Y-%m-%d') }}</td><td>{{ t.account.person_name if t.account else '' }}</td><td>{% if t.transaction_type == 'deposit' %}إيداع{% else %}سحب{% endif %}</td><td>{{ t.amount }}</td><td>{{ t.payment_method }}</td></tr>
+                        <tr>
+                            <td>{{ t.date.strftime('%Y-%m-%d') }}</td>
+                            <td>{{ t.account.person_name if t.account else '' }}</td>
+                            <td>{% if t.transaction_type == 'deposit' %}إيداع{% elif t.transaction_type == 'withdrawal' %}سحب{% else %}تحويل{% endif %}</td>
+                            <td>{{ t.amount }}</td>
+                            <td>{{ t.payment_method }}</td>
+                        </tr>
                         {% else %}
                         <tr><td colspan="5" class="text-center">لا يوجد</td></tr>
                         {% endfor %}
