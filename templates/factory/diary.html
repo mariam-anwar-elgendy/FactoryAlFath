@@ -19,7 +19,7 @@
                 <td>{{ d.date.strftime('%Y-%m-%d') }}</td>
                 <td>{{ d.description }}</td>
                 <td>{{ d.amount }}</td>
-                <td>{{ d.created_by }}</td>
+                <td>{{ get_user_name(d.created_by) }}</td>
                 <td>
                     {% if current_user.role in ['meg','admin','mariam'] or (current_user.role == 'rehab' and (now.date() - d.date).days <= 7) or (current_user.role == 'mohamed' and d.created_by == current_user.id and (now.date() - d.date).days <= 1) %}
                     <button class="btn btn-sm btn-warning" data-bs-toggle="modal" data-bs-target="#editDiaryModal{{ d.id }}">✏️ تعديل</button>
@@ -40,13 +40,13 @@
     </table>
 </div>
 
-<!-- Modal إضافة يومية -->
+<!-- Modal إضافة يومية متعددة البنود -->
 <div class="modal fade" id="addDiaryModal" tabindex="-1">
-  <div class="modal-dialog">
+  <div class="modal-dialog modal-lg">
     <div class="modal-content">
       <form method="POST" action="{{ url_for('factory_diary') }}">
         <div class="modal-header bg-purple text-white">
-          <h5 class="modal-title">➕ إضافة يومية</h5>
+          <h5 class="modal-title">➕ إضافة يومية متعددة</h5>
           <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
         </div>
         <div class="modal-body">
@@ -54,18 +54,33 @@
             <label class="form-label fw-bold">التاريخ</label>
             <input type="date" name="date" class="form-control" value="{{ now.strftime('%Y-%m-%d') }}" required>
           </div>
-          <div class="mb-3">
-            <label class="form-label fw-bold">الوصف</label>
-            <input type="text" name="description" class="form-control" required>
-          </div>
-          <div class="mb-3">
-            <label class="form-label fw-bold">المبلغ (اختياري)</label>
-            <input type="number" step="0.01" name="amount" class="form-control" value="0">
+          
+          <div class="card">
+            <div class="card-header bg-light fw-bold">📦 البنود</div>
+            <div class="card-body">
+              <table class="table" id="diaryItemsTable">
+                <thead>
+                  <tr>
+                    <th style="width: 60%;">الوصف / الصنف</th>
+                    <th style="width: 30%;">المبلغ</th>
+                    <th style="width: 10%;"></th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr class="diary-item-row">
+                    <td><input type="text" name="description[]" class="form-control" placeholder="الصنف/الوصف" required></td>
+                    <td><input type="number" step="0.01" name="amount[]" class="form-control" value="0" required></td>
+                    <td><button type="button" class="btn btn-sm btn-danger remove-diary-row">🗑️</button></td>
+                  </tr>
+                </tbody>
+              </table>
+              <button type="button" class="btn btn-sm btn-outline-purple" id="addDiaryRow">➕ إضافة صف</button>
+            </div>
           </div>
         </div>
         <div class="modal-footer">
           <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">إلغاء</button>
-          <button type="submit" class="btn btn-purple">حفظ</button>
+          <button type="submit" class="btn btn-purple">حفظ الكل</button>
         </div>
       </form>
     </div>
@@ -106,4 +121,33 @@
   </div>
 </div>
 {% endfor %}
+
+<script>
+// إضافة صف جديد في اليومية
+document.getElementById('addDiaryRow').addEventListener('click', function() {
+    var tbody = document.querySelector('#diaryItemsTable tbody');
+    var firstRow = tbody.querySelector('tr');
+    var newRow = firstRow.cloneNode(true);
+    newRow.querySelectorAll('input').forEach(function(inp) {
+        inp.value = '';
+        if (inp.name === 'amount[]') {
+            inp.value = '0';
+        }
+    });
+    tbody.appendChild(newRow);
+});
+
+// حذف صف من اليومية
+document.addEventListener('click', function(e) {
+    if (e.target.classList.contains('remove-diary-row')) {
+        var row = e.target.closest('tr');
+        var tbody = row.parentElement;
+        if (tbody.querySelectorAll('tr').length > 1) {
+            row.remove();
+        } else {
+            alert('يجب أن يبقى صف واحد على الأقل.');
+        }
+    }
+});
+</script>
 {% endblock %}
