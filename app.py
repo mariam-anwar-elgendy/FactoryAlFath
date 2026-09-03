@@ -124,7 +124,7 @@ def init_db():
         except:
             pass
         
-        # ✅ حذف الأعمدة القديمة من store_sales
+        # حذف الأعمدة القديمة من store_sales
         try:
             db.session.execute(db.text('ALTER TABLE store_sales DROP COLUMN IF EXISTS product_type CASCADE'))
             db.session.execute(db.text('ALTER TABLE store_sales DROP COLUMN IF EXISTS product_size CASCADE'))
@@ -140,7 +140,7 @@ def init_db():
             db.session.rollback()
             print(f"⚠️ ملاحظة store_sales: {e}")
         
-        # ✅ حذف الأعمدة القديمة من store_purchases
+        # حذف الأعمدة القديمة من store_purchases
         try:
             db.session.execute(db.text('ALTER TABLE store_purchases DROP COLUMN IF EXISTS product_type CASCADE'))
             db.session.execute(db.text('ALTER TABLE store_purchases DROP COLUMN IF EXISTS product_size CASCADE'))
@@ -407,7 +407,7 @@ def factory_raw_materials():
         supplier = request.form.get('supplier')
         notes = request.form.get('notes')
         
-        # ✅ إضافة المورد تلقائياً إذا كان جديد
+        # إضافة المورد تلقائياً إذا كان جديد
         if supplier and not Supplier.query.filter_by(name=supplier).first():
             db.session.add(Supplier(name=supplier))
             print(f"✅ تم إضافة مورد جديد: {supplier}")
@@ -509,16 +509,24 @@ def factory_diary():
                 flash('غير مصرح لك بالتعديل أو انتهت صلاحية التعديل', 'danger')
             return redirect(url_for('factory_diary'))
         record_date = datetime.strptime(request.form.get('date'), '%Y-%m-%d').date()
-        description = request.form.get('description')
-        amount = float(request.form.get('amount', 0))
-        new_record = FactoryDiary(date=record_date, description=description, amount=amount,
-                                  created_by=current_user.id, created_at=datetime.utcnow())
-        db.session.add(new_record)
+        
+        # استقبال البنود المتعددة
+        descriptions = request.form.getlist('description[]')
+        amounts = request.form.getlist('amount[]')
+        
+        for i in range(len(descriptions)):
+            if descriptions[i].strip():
+                new_record = FactoryDiary(
+                    date=record_date,
+                    description=descriptions[i],
+                    amount=float(amounts[i]) if i < len(amounts) and amounts[i] else 0,
+                    created_by=current_user.id,
+                    created_at=datetime.utcnow()
+                )
+                db.session.add(new_record)
+        
         db.session.commit()
-        log_activity(current_user.id, 'create', f"إضافة يومية مصنع: {description[:50]}")
-        row_data = [record_date.strftime('%Y-%m-%d'), description, amount, current_user.full_name]
-        excel_path = add_row_to_excel('يوميات المصنع.xlsx', ['التاريخ', 'الوصف', 'المبلغ', 'المسؤول'], row_data)
-        if excel_path: drive_service.upload_file(excel_path, 'يوميات المصنع.xlsx')
+        log_activity(current_user.id, 'create', f"إضافة يومية مصنع متعددة")
         flash('تم تسجيل اليومية بنجاح', 'success')
         return redirect(url_for('factory_diary'))
     diary = FactoryDiary.query.order_by(FactoryDiary.date.asc(), FactoryDiary.id.asc()).all()
@@ -754,7 +762,7 @@ def store_transactions():
             return redirect(url_for('store_transactions'))
 
         if transaction_type == 'sale':
-            # ✅ إضافة العميل تلقائياً إذا كان جديد
+            # إضافة العميل تلقائياً إذا كان جديد
             if party_name and not Customer.query.filter_by(name=party_name).first():
                 db.session.add(Customer(name=party_name, phone=party_phone))
                 print(f"✅ تم إضافة عميل جديد: {party_name}")
@@ -836,7 +844,7 @@ def store_transactions():
             flash('تم تسجيل البيع بنجاح', 'success')
 
         else:  # شراء
-            # ✅ إضافة المورد تلقائياً إذا كان جديد
+            # إضافة المورد تلقائياً إذا كان جديد
             if party_name and not Supplier.query.filter_by(name=party_name).first():
                 db.session.add(Supplier(name=party_name, phone=party_phone))
                 print(f"✅ تم إضافة مورد جديد: {party_name}")
