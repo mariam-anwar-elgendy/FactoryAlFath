@@ -22,7 +22,7 @@
                 <td>{{ p.quantity }}</td>
                 <td>{{ p.raw_material_used or '-' }}</td>
                 <td>{{ p.notes or '-' }}</td>
-                <td>{{ p.created_by }}</td>
+                <td>{{ get_user_name(p.created_by) }}</td>
                 <td>
                     {% if current_user.role in ['meg','admin','mariam'] or (current_user.role == 'rehab' and (now.date() - p.date).days <= 7) or (current_user.role == 'mohamed' and p.created_by == current_user.id and (now.date() - p.date).days <= 1) %}
                     <button class="btn btn-sm btn-warning" data-bs-toggle="modal" data-bs-target="#editProductionModal{{ p.id }}">✏️ تعديل</button>
@@ -59,11 +59,29 @@
           </div>
           <div class="mb-3">
             <label class="form-label fw-bold">مقاس الكوع</label>
-            <input type="text" name="elbow_size" class="form-control" placeholder="مثال: 6&quot;" required>
+            <input type="text" name="elbow_size" class="form-control" list="elbow_sizes_list" placeholder="مثال: 6&quot;" required>
+            <datalist id="elbow_sizes_list">
+                <option value="1/2&quot;">
+                <option value="3/4&quot;">
+                <option value="1&quot;">
+                <option value="1.5&quot;">
+                <option value="2&quot;">
+                <option value="3&quot;">
+                <option value="4&quot;">
+                <option value="6&quot;">
+                <option value="8&quot;">
+            </datalist>
           </div>
           <div class="mb-3">
             <label class="form-label fw-bold">السماكة</label>
-            <input type="text" name="elbow_thickness" class="form-control" placeholder="مثال: جدول 40">
+            <input type="text" name="elbow_thickness" class="form-control" list="elbow_thickness_list" placeholder="مثال: جدول 40">
+            <datalist id="elbow_thickness_list">
+                <option value="2مم">
+                <option value="3مم">
+                <option value="5مم">
+                <option value="جدول 40">
+                <option value="جدول 80">
+            </datalist>
           </div>
           <div class="mb-3">
             <label class="form-label fw-bold">الكمية (عدد الأكواع)</label>
@@ -105,11 +123,29 @@
           </div>
           <div class="mb-3">
             <label class="form-label fw-bold">مقاس الكوع</label>
-            <input type="text" name="elbow_size" class="form-control" value="{{ p.elbow_size }}" required>
+            <input type="text" name="elbow_size" class="form-control" list="elbow_sizes_edit{{ p.id }}" value="{{ p.elbow_size }}" required>
+            <datalist id="elbow_sizes_edit{{ p.id }}">
+                <option value="1/2&quot;">
+                <option value="3/4&quot;">
+                <option value="1&quot;">
+                <option value="1.5&quot;">
+                <option value="2&quot;">
+                <option value="3&quot;">
+                <option value="4&quot;">
+                <option value="6&quot;">
+                <option value="8&quot;">
+            </datalist>
           </div>
           <div class="mb-3">
             <label class="form-label fw-bold">السماكة</label>
-            <input type="text" name="elbow_thickness" class="form-control" value="{{ p.elbow_thickness or '' }}">
+            <input type="text" name="elbow_thickness" class="form-control" list="elbow_thickness_edit{{ p.id }}" value="{{ p.elbow_thickness or '' }}">
+            <datalist id="elbow_thickness_edit{{ p.id }}">
+                <option value="2مم">
+                <option value="3مم">
+                <option value="5مم">
+                <option value="جدول 40">
+                <option value="جدول 80">
+            </datalist>
           </div>
           <div class="mb-3">
             <label class="form-label fw-bold">الكمية</label>
