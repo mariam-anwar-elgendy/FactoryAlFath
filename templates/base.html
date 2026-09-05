@@ -9,7 +9,6 @@
     <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
     {% block extra_css %}{% endblock %}
     <style>
-        /* تظبيط الـ Sidebar للموبايل */
         @media (max-width: 991.98px) {
             .sidebar {
                 width: 280px !important;
@@ -38,8 +37,6 @@
                 display: block;
             }
         }
-        
-        /* للشاشات الكبيرة */
         @media (min-width: 992px) {
             .sidebar {
                 position: sticky;
@@ -70,7 +67,6 @@
 
     <div class="container-fluid">
         <div class="row">
-            <!-- Backdrop للموبايل -->
             <div class="sidebar-backdrop" id="sidebarBackdrop"></div>
             
             <div class="col-lg-2 col-md-3 sidebar bg-purple p-0" id="sidebar">
@@ -205,7 +201,14 @@
             document.getElementById('sidebarBackdrop').classList.remove('show');
         });
         
-        // ملاحظة: مفيش preventDefault هنا - الروابط هتشتغل عادي
+        // إصلاح عام للـ Modals
+        document.addEventListener('hidden.bs.modal', function() {
+            var backdrops = document.querySelectorAll('.modal-backdrop');
+            backdrops.forEach(function(b) { b.remove(); });
+            document.body.classList.remove('modal-open');
+            document.body.style.overflow = '';
+            document.body.style.paddingRight = '';
+        });
     </script>
     {% block extra_js %}{% endblock %}
 </body>
