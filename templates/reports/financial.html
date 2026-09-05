@@ -44,7 +44,7 @@
                 <td>{{ get_user_name(t.created_by) }}</td>
                 <td>
                     {% if current_user.role in ['meg','admin','mariam'] %}
-                    <button class="btn btn-sm btn-warning" data-bs-toggle="modal" data-bs-target="#editTransactionModal{{ t.id }}">✏️</button>
+                    <button type="button" class="btn btn-sm btn-warning" onclick="openEditModal({{ t.id }})">✏️</button>
                     {% endif %}
                     {% if current_user.role in ['meg','admin'] %}
                     <form action="{{ url_for('treasury_transactions') }}" method="POST" class="d-inline" onsubmit="return confirm('حذف هذه الحركة؟');">
@@ -70,7 +70,7 @@
                 <input type="hidden" name="edit_id" value="{{ t.id }}">
                 <div class="modal-header bg-warning text-dark">
                     <h5 class="modal-title">✏️ تعديل معاملة</h5>
-                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                    <button type="button" class="btn-close" onclick="closeEditModal({{ t.id }})"></button>
                 </div>
                 <div class="modal-body">
                     <div class="mb-3">
@@ -117,7 +117,7 @@
                     </div>
                 </div>
                 <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">إلغاء</button>
+                    <button type="button" class="btn btn-secondary" onclick="closeEditModal({{ t.id }})">إلغاء</button>
                     <button type="submit" class="btn btn-warning">حفظ التعديل</button>
                 </div>
             </form>
@@ -199,139 +199,175 @@
 </div>
 
 <script>
-    var customersList = [
-        {% for c in customers %}
-            "{{ c.name }}",
-        {% endfor %}
-    ];
-    var suppliersList = [
-        {% for s in suppliers %}
-            "{{ s.name }}",
-        {% endfor %}
-    ];
-    var treasuryPersons = [
-        {% for account in accounts %}
-            "{{ account.person_name }}",
-        {% endfor %}
-    ];
-    treasuryPersons = [...new Set(treasuryPersons)];
-
-    function populatePartySelect(selectElement, type, isFrom) {
-        selectElement.innerHTML = '<option value="">اختر الطرف...</option>';
-        var list = [];
+// ==================== دوال فتح وإغلاق الـ Modal ====================
+function openEditModal(id) {
+    // تنظيف أي backdrops قديمة
+    var backdrops = document.querySelectorAll('.modal-backdrop');
+    backdrops.forEach(function(b) { b.remove(); });
+    document.body.classList.remove('modal-open');
+    document.body.style.overflow = '';
+    
+    // فتح الـ Modal
+    var modal = document.getElementById('editTransactionModal' + id);
+    if (modal) {
+        modal.style.display = 'block';
+        modal.classList.add('show');
+        document.body.classList.add('modal-open');
+        document.body.style.overflow = 'hidden';
         
-        if (type === 'deposit') {
-            if (isFrom) {
-                list = [...customersList, ...suppliersList];
-            } else {
-                list = treasuryPersons;
-            }
-        } else if (type === 'withdrawal') {
-            if (isFrom) {
-                list = treasuryPersons;
-            } else {
-                list = [...customersList, ...suppliersList];
-            }
-        } else if (type === 'transfer_customer_supplier') {
-            if (isFrom) {
-                list = customersList;
-            } else {
-                list = suppliersList;
-            }
+        var backdrop = document.createElement('div');
+        backdrop.className = 'modal-backdrop fade show';
+        document.body.appendChild(backdrop);
+    }
+}
+
+function closeEditModal(id) {
+    var modal = document.getElementById('editTransactionModal' + id);
+    if (modal) {
+        modal.style.display = 'none';
+        modal.classList.remove('show');
+        document.body.classList.remove('modal-open');
+        document.body.style.overflow = '';
+        
+        var backdrops = document.querySelectorAll('.modal-backdrop');
+        backdrops.forEach(function(b) { b.remove(); });
+    }
+}
+
+// ==================== باقي الأكواد ====================
+var customersList = [
+    {% for c in customers %}
+        "{{ c.name }}",
+    {% endfor %}
+];
+var suppliersList = [
+    {% for s in suppliers %}
+        "{{ s.name }}",
+    {% endfor %}
+];
+var treasuryPersons = [
+    {% for account in accounts %}
+        "{{ account.person_name }}",
+    {% endfor %}
+];
+treasuryPersons = [...new Set(treasuryPersons)];
+
+function populatePartySelect(selectElement, type, isFrom) {
+    selectElement.innerHTML = '<option value="">اختر الطرف...</option>';
+    var list = [];
+    
+    if (type === 'deposit') {
+        if (isFrom) {
+            list = [...customersList, ...suppliersList];
+        } else {
+            list = treasuryPersons;
         }
-
-        list.forEach(function(item) {
-            var opt = document.createElement('option');
-            opt.value = item;
-            opt.textContent = item;
-            selectElement.appendChild(opt);
-        });
-
-        var optNew = document.createElement('option');
-        optNew.value = 'new';
-        optNew.textContent = '➕ جديد...';
-        selectElement.appendChild(optNew);
+    } else if (type === 'withdrawal') {
+        if (isFrom) {
+            list = treasuryPersons;
+        } else {
+            list = [...customersList, ...suppliersList];
+        }
+    } else if (type === 'transfer_customer_supplier') {
+        if (isFrom) {
+            list = customersList;
+        } else {
+            list = suppliersList;
+        }
     }
 
-    function toggleRowVisibility(row) {
-        var type = row.querySelector('.type-select').value;
-        var fromCell = row.querySelector('.from-cell');
-        var toCell = row.querySelector('.to-cell');
+    list.forEach(function(item) {
+        var opt = document.createElement('option');
+        opt.value = item;
+        opt.textContent = item;
+        selectElement.appendChild(opt);
+    });
 
-        var fromSelect = row.querySelector('.from-select');
-        var toSelect = row.querySelector('.to-select');
-        populatePartySelect(fromSelect, type, true);
-        populatePartySelect(toSelect, type, false);
+    var optNew = document.createElement('option');
+    optNew.value = 'new';
+    optNew.textContent = '➕ جديد...';
+    selectElement.appendChild(optNew);
+}
 
-        var newFromInput = row.querySelector('input[name="new_from_party[]"]');
-        var newToInput = row.querySelector('input[name="new_to_party[]"]');
-        if (newFromInput) newFromInput.classList.add('d-none');
-        if (newToInput) newToInput.classList.add('d-none');
+function toggleRowVisibility(row) {
+    var type = row.querySelector('.type-select').value;
+    var fromCell = row.querySelector('.from-cell');
+    var toCell = row.querySelector('.to-cell');
+
+    var fromSelect = row.querySelector('.from-select');
+    var toSelect = row.querySelector('.to-select');
+    populatePartySelect(fromSelect, type, true);
+    populatePartySelect(toSelect, type, false);
+
+    var newFromInput = row.querySelector('input[name="new_from_party[]"]');
+    var newToInput = row.querySelector('input[name="new_to_party[]"]');
+    if (newFromInput) newFromInput.classList.add('d-none');
+    if (newToInput) newToInput.classList.add('d-none');
+}
+
+document.getElementById('addFinancialRow').addEventListener('click', function() {
+    var tbody = document.querySelector('#financialRows tbody');
+    var firstRow = tbody.querySelector('tr');
+    var newRow = firstRow.cloneNode(true);
+
+    newRow.querySelectorAll('input').forEach(function(inp) {
+        inp.value = '';
+        if (inp.name && (inp.name.includes('new_'))) {
+            inp.classList.add('d-none');
+        }
+    });
+    newRow.querySelectorAll('select').forEach(function(sel) {
+        sel.selectedIndex = 0;
+    });
+
+    tbody.appendChild(newRow);
+    toggleRowVisibility(newRow);
+});
+
+document.addEventListener('change', function(e) {
+    if (e.target.classList.contains('type-select')) {
+        var row = e.target.closest('tr');
+        toggleRowVisibility(row);
     }
 
-    document.getElementById('addFinancialRow').addEventListener('click', function() {
-        var tbody = document.querySelector('#financialRows tbody');
-        var firstRow = tbody.querySelector('tr');
-        var newRow = firstRow.cloneNode(true);
-
-        newRow.querySelectorAll('input').forEach(function(inp) {
-            inp.value = '';
-            if (inp.name && (inp.name.includes('new_'))) {
-                inp.classList.add('d-none');
-            }
-        });
-        newRow.querySelectorAll('select').forEach(function(sel) {
-            sel.selectedIndex = 0;
-        });
-
-        tbody.appendChild(newRow);
-        toggleRowVisibility(newRow);
-    });
-
-    document.addEventListener('change', function(e) {
-        if (e.target.classList.contains('type-select')) {
-            var row = e.target.closest('tr');
-            toggleRowVisibility(row);
+    if (e.target.classList.contains('from-select')) {
+        var row = e.target.closest('tr');
+        var newInput = row.querySelector('input[name="new_from_party[]"]');
+        if (e.target.value === 'new') {
+            if (newInput) newInput.classList.remove('d-none');
+        } else {
+            if (newInput) newInput.classList.add('d-none');
         }
+    }
 
-        if (e.target.classList.contains('from-select')) {
-            var row = e.target.closest('tr');
-            var newInput = row.querySelector('input[name="new_from_party[]"]');
-            if (e.target.value === 'new') {
-                if (newInput) newInput.classList.remove('d-none');
-            } else {
-                if (newInput) newInput.classList.add('d-none');
-            }
+    if (e.target.classList.contains('to-select')) {
+        var row = e.target.closest('tr');
+        var newInput = row.querySelector('input[name="new_to_party[]"]');
+        if (e.target.value === 'new') {
+            if (newInput) newInput.classList.remove('d-none');
+        } else {
+            if (newInput) newInput.classList.add('d-none');
         }
+    }
+});
 
-        if (e.target.classList.contains('to-select')) {
-            var row = e.target.closest('tr');
-            var newInput = row.querySelector('input[name="new_to_party[]"]');
-            if (e.target.value === 'new') {
-                if (newInput) newInput.classList.remove('d-none');
-            } else {
-                if (newInput) newInput.classList.add('d-none');
-            }
+document.addEventListener('click', function(e) {
+    if (e.target.classList.contains('remove-financial-row')) {
+        var row = e.target.closest('tr');
+        var tbody = row.parentElement;
+        if (tbody.querySelectorAll('tr').length > 1) {
+            row.remove();
+        } else {
+            alert('يجب أن يبقى صف واحد على الأقل.');
         }
-    });
+    }
+});
 
-    document.addEventListener('click', function(e) {
-        if (e.target.classList.contains('remove-financial-row')) {
-            var row = e.target.closest('tr');
-            var tbody = row.parentElement;
-            if (tbody.querySelectorAll('tr').length > 1) {
-                row.remove();
-            } else {
-                alert('يجب أن يبقى صف واحد على الأقل.');
-            }
-        }
-    });
-
-    document.addEventListener('DOMContentLoaded', function() {
-        var firstRow = document.querySelector('#financialRows tbody tr');
-        if (firstRow) {
-            toggleRowVisibility(firstRow);
-        }
-    });
+document.addEventListener('DOMContentLoaded', function() {
+    var firstRow = document.querySelector('#financialRows tbody tr');
+    if (firstRow) {
+        toggleRowVisibility(firstRow);
+    }
+});
 </script>
 {% endblock %}
