@@ -5,7 +5,7 @@
 {% block content %}
 <div class="d-flex justify-content-between align-items-center mb-4">
     <h2 class="fw-bold text-purple-dark">💰 معاملات مالية</h2>
-    <button class="btn btn-purple" data-bs-toggle="modal" data-bs-target="#addFinancialModal">➕ معاملة جديدة</button>
+    <button class="btn btn-purple" onclick="openAddModal()">➕ معاملة جديدة</button>
 </div>
 
 <div class="table-responsive">
@@ -44,15 +44,8 @@
                 <td>{{ get_user_name(t.created_by) }}</td>
                 <td>
                     {% if current_user.role in ['meg','admin','mariam'] %}
-                    <button type="button" class="btn btn-sm btn-warning edit-transaction-btn" 
-                            data-id="{{ t.id }}"
-                            data-date="{{ t.date.strftime('%Y-%m-%d') }}"
-                            data-account-id="{{ t.account_id }}"
-                            data-type="{{ t.transaction_type }}"
-                            data-amount="{{ t.amount }}"
-                            data-source="{{ t.source or '' }}"
-                            data-payment="{{ t.payment_method }}"
-                            data-notes="{{ t.notes or '' }}">
+                    <button type="button" class="btn btn-sm btn-warning" 
+                            onclick="openEditModal({{ t.id }}, '{{ t.date.strftime('%Y-%m-%d') }}', '{{ t.account_id }}', '{{ t.transaction_type }}', '{{ t.amount }}', '{{ t.source or '' }}', '{{ t.payment_method }}', '{{ t.notes or '' }}')">
                         ✏️
                     </button>
                     {% endif %}
@@ -71,15 +64,15 @@
     </table>
 </div>
 
-<!-- ========== Modal واحد للتعديل ========== -->
-<div class="modal fade" id="editTransactionModal" tabindex="-1" aria-hidden="true">
+<!-- ========== Modal التعديل ========== -->
+<div class="modal fade" id="editTransactionModal" tabindex="-1" style="display:none;">
     <div class="modal-dialog">
         <div class="modal-content">
             <form method="POST" action="{{ url_for('treasury_transactions') }}">
                 <input type="hidden" name="edit_id" id="edit_transaction_id" value="">
                 <div class="modal-header bg-warning text-dark">
                     <h5 class="modal-title">✏️ تعديل معاملة</h5>
-                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                    <button type="button" class="btn-close" onclick="closeEditModal()"></button>
                 </div>
                 <div class="modal-body">
                     <div class="mb-3">
@@ -124,7 +117,7 @@
                     </div>
                 </div>
                 <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">إلغاء</button>
+                    <button type="button" class="btn btn-secondary" onclick="closeEditModal()">إلغاء</button>
                     <button type="submit" class="btn btn-warning">حفظ التعديل</button>
                 </div>
             </form>
@@ -132,14 +125,14 @@
     </div>
 </div>
 
-<!-- ========== MODAL إضافة معاملة مالية ========== -->
-<div class="modal fade" id="addFinancialModal" tabindex="-1" aria-hidden="true">
+<!-- ========== Modal الإضافة ========== -->
+<div class="modal fade" id="addFinancialModal" tabindex="-1" style="display:none;">
     <div class="modal-dialog modal-xl">
         <div class="modal-content">
             <form method="POST" action="{{ url_for('financial_transactions') }}">
                 <div class="modal-header bg-purple text-white">
                     <h5 class="modal-title">➕ إضافة معاملات مالية</h5>
-                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                    <button type="button" class="btn-close btn-close-white" onclick="closeAddModal()"></button>
                 </div>
                 <div class="modal-body">
                     <div class="table-responsive">
@@ -196,7 +189,7 @@
                     </div>
                 </div>
                 <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">إلغاء</button>
+                    <button type="button" class="btn btn-secondary" onclick="closeAddModal()">إلغاء</button>
                     <button type="submit" class="btn btn-purple">حفظ</button>
                 </div>
             </form>
@@ -204,44 +197,72 @@
     </div>
 </div>
 
-<script>
-// ==================== فتح Modal التعديل ====================
-var editModal;
+<!-- Backdrop -->
+<div id="modalBackdrop" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.5); z-index:9998;"></div>
 
-document.addEventListener('DOMContentLoaded', function() {
-    // تهيئة Modal التعديل
-    var editModalElement = document.getElementById('editTransactionModal');
-    if (editModalElement) {
-        editModal = new bootstrap.Modal(editModalElement);
-    }
+<script>
+// ==================== دوال فتح وإغلاق الـ Modals ====================
+function showBackdrop() {
+    document.getElementById('modalBackdrop').style.display = 'block';
+    document.body.style.overflow = 'hidden';
+}
+
+function hideBackdrop() {
+    document.getElementById('modalBackdrop').style.display = 'none';
+    document.body.style.overflow = '';
+}
+
+function openEditModal(id, date, accountId, type, amount, source, payment, notes) {
+    // تعبئة البيانات
+    document.getElementById('edit_transaction_id').value = id;
+    document.getElementById('edit_date').value = date;
+    document.getElementById('edit_account_id').value = accountId;
+    document.getElementById('edit_transaction_type').value = type;
+    document.getElementById('edit_amount').value = amount;
+    document.getElementById('edit_source').value = source;
+    document.getElementById('edit_payment_method').value = payment;
+    document.getElementById('edit_notes').value = notes;
     
-    // تهيئة الصف الأول في الإضافة
+    // فتح الـ Modal
+    var modal = document.getElementById('editTransactionModal');
+    modal.style.display = 'block';
+    modal.classList.add('show');
+    modal.style.zIndex = '9999';
+    showBackdrop();
+}
+
+function closeEditModal() {
+    var modal = document.getElementById('editTransactionModal');
+    modal.style.display = 'none';
+    modal.classList.remove('show');
+    hideBackdrop();
+}
+
+function openAddModal() {
+    var modal = document.getElementById('addFinancialModal');
+    modal.style.display = 'block';
+    modal.classList.add('show');
+    modal.style.zIndex = '9999';
+    showBackdrop();
+    
+    // تهيئة الصف الأول
     var firstRow = document.querySelector('#financialRows tbody tr');
     if (firstRow) {
         toggleRowVisibility(firstRow);
     }
-});
+}
 
-// ربط أزرار التعديل
-document.addEventListener('click', function(e) {
-    if (e.target.closest('.edit-transaction-btn')) {
-        var btn = e.target.closest('.edit-transaction-btn');
-        
-        // تعبئة البيانات
-        document.getElementById('edit_transaction_id').value = btn.getAttribute('data-id');
-        document.getElementById('edit_date').value = btn.getAttribute('data-date');
-        document.getElementById('edit_account_id').value = btn.getAttribute('data-account-id');
-        document.getElementById('edit_transaction_type').value = btn.getAttribute('data-type');
-        document.getElementById('edit_amount').value = btn.getAttribute('data-amount');
-        document.getElementById('edit_source').value = btn.getAttribute('data-source');
-        document.getElementById('edit_payment_method').value = btn.getAttribute('data-payment');
-        document.getElementById('edit_notes').value = btn.getAttribute('data-notes');
-        
-        // فتح الـ Modal
-        if (editModal) {
-            editModal.show();
-        }
-    }
+function closeAddModal() {
+    var modal = document.getElementById('addFinancialModal');
+    modal.style.display = 'none';
+    modal.classList.remove('show');
+    hideBackdrop();
+}
+
+// إغلاق الـ Modal عند الضغط على الـ Backdrop
+document.getElementById('modalBackdrop').addEventListener('click', function() {
+    closeEditModal();
+    closeAddModal();
 });
 
 // ==================== باقي الأكواد ====================
