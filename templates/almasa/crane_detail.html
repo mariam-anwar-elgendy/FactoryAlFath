@@ -1,1 +1,248 @@
+{% extends "base.html" %}
 
+{% block title %}{{ crane.name }}{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h2 class="fw-bold text-purple-dark">🏗️ {{ crane.name }}</h2>
+    <a href="{{ url_for('almasa_index') }}" class="btn btn-outline-purple">↩️ رجوع</a>
+</div>
+
+<!-- الشركاء -->
+<div class="card border-0 shadow-sm mb-4">
+    <div class="card-header bg-purple text-white fw-bold">👥 الشركاء</div>
+    <div class="card-body">
+        <div class="row">
+            {% for p in partners %}
+            <div class="col-md-3 mb-2">
+                <div class="border rounded p-2 text-center">
+                    <strong>{{ p.name }}</strong><br>
+                    <span class="badge bg-info">{{ p.percentage }}%</span>
+                    {% if p.is_basic %}<span class="badge bg-success">أساسي</span>{% endif %}
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+</div>
+
+<!-- العمليات -->
+<div class="card border-0 shadow-sm mb-4">
+    <div class="card-header bg-purple text-white fw-bold d-flex justify-content-between">
+        <span>📋 العمليات</span>
+        <button class="btn btn-sm btn-light" data-bs-toggle="modal" data-bs-target="#addOperationModal">➕</button>
+    </div>
+    <div class="card-body">
+        <div class="table-responsive">
+            <table class="table table-sm table-striped">
+                <thead>
+                    <tr>
+                        <th>من</th><th>إلى</th><th>الأيام</th>
+                        <th>اليومي الفعلي</th><th>اليومي الافتراضي</th>
+                        <th>الإجمالي الفعلي</th><th>الإجمالي الافتراضي</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for o in operations %}
+                    <tr>
+                        <td>{{ o.start_date.strftime('%Y-%m-%d') }}</td>
+                        <td>{{ o.end_date.strftime('%Y-%m-%d') if o.end_date else '-' }}</td>
+                        <td>{{ o.days_count }}</td>
+                        <td>{{ o.actual_daily_value }}</td>
+                        <td>{{ o.default_daily_value }}</td>
+                        <td>{{ o.actual_total }}</td>
+                        <td>{{ o.default_total }}</td>
+                    </tr>
+                    {% else %}
+                    <tr><td colspan="7" class="text-center">لا توجد عمليات</td></tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<!-- المصاريف -->
+<div class="card border-0 shadow-sm mb-4">
+    <div class="card-header bg-purple text-white fw-bold d-flex justify-content-between">
+        <span>💰 المصاريف</span>
+        <button class="btn btn-sm btn-light" data-bs-toggle="modal" data-bs-target="#addExpenseModal">➕</button>
+    </div>
+    <div class="card-body">
+        <div class="table-responsive">
+            <table class="table table-sm table-striped">
+                <thead>
+                    <tr><th>التاريخ</th><th>النوع</th><th>المبلغ</th><th>ملاحظات</th></tr>
+                </thead>
+                <tbody>
+                    {% for e in expenses %}
+                    <tr>
+                        <td>{{ e.date.strftime('%Y-%m-%d') }}</td>
+                        <td>{{ e.expense_type }}</td>
+                        <td>{{ e.amount }}</td>
+                        <td>{{ e.notes or '-' }}</td>
+                    </tr>
+                    {% else %}
+                    <tr><td colspan="4" class="text-center">لا توجد مصاريف</td></tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<!-- الشيكات -->
+<div class="card border-0 shadow-sm mb-4">
+    <div class="card-header bg-purple text-white fw-bold d-flex justify-content-between">
+        <span>💵 الشيكات</span>
+        <button class="btn btn-sm btn-light" data-bs-toggle="modal" data-bs-target="#addCheckModal">➕</button>
+    </div>
+    <div class="card-body">
+        <div class="table-responsive">
+            <table class="table table-sm table-striped">
+                <thead>
+                    <tr>
+                        <th>رقم الشيك</th><th>الشركة</th><th>المبلغ</th><th>معاد الصرف</th><th>الحالة</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for c in checks %}
+                    <tr>
+                        <td>{{ c.check_number }}</td>
+                        <td>{{ c.company_name }}</td>
+                        <td>{{ c.amount }}</td>
+                        <td>{{ c.due_date.strftime('%Y-%m-%d') if c.due_date else '-' }}</td>
+                        <td>
+                            <span class="badge bg-{{ 'success' if c.status == 'تم صرفه' else 'warning' }}">{{ c.status }}</span>
+                        </td>
+                    </tr>
+                    {% else %}
+                    <tr><td colspan="5" class="text-center">لا توجد شيكات</td></tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<!-- Modal إضافة عملية -->
+<div class="modal fade" id="addOperationModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <form method="POST" action="{{ url_for('almasa_add_operation') }}">
+                <input type="hidden" name="crane_id" value="{{ crane.id }}">
+                <div class="modal-header bg-purple text-white">
+                    <h5 class="modal-title">➕ إضافة عملية</h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label class="form-label fw-bold">تاريخ البداية</label>
+                        <input type="date" name="start_date" class="form-control" required>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label fw-bold">تاريخ النهاية</label>
+                        <input type="date" name="end_date" class="form-control">
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label fw-bold">عدد الأيام</label>
+                        <input type="number" name="days_count" class="form-control" required>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label fw-bold">القيمة الفعلية لليوم</label>
+                        <input type="number" step="0.01" name="actual_daily_value" class="form-control" required>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label fw-bold">القيمة الافتراضية لليوم</label>
+                        <input type="number" step="0.01" name="default_daily_value" class="form-control" required>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">إلغاء</button>
+                    <button type="submit" class="btn btn-purple">حفظ</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Modal إضافة مصروف -->
+<div class="modal fade" id="addExpenseModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <form method="POST" action="{{ url_for('almasa_add_expense') }}">
+                <input type="hidden" name="crane_id" value="{{ crane.id }}">
+                <div class="modal-header bg-purple text-white">
+                    <h5 class="modal-title">➕ إضافة مصروف</h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label class="form-label fw-bold">التاريخ</label>
+                        <input type="date" name="date" class="form-control" value="{{ now.strftime('%Y-%m-%d') }}" required>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label fw-bold">النوع</label>
+                        <select name="expense_type" class="form-select" required>
+                            <option value="سائق">سائق</option>
+                            <option value="أكل">أكل</option>
+                            <option value="بنزين">بنزين</option>
+                            <option value="صيانة">صيانة</option>
+                            <option value="أخرى">أخرى</option>
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label fw-bold">المبلغ</label>
+                        <input type="number" step="0.01" name="amount" class="form-control" required>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label fw-bold">ملاحظات</label>
+                        <input type="text" name="notes" class="form-control">
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">إلغاء</button>
+                    <button type="submit" class="btn btn-purple">حفظ</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Modal إضافة شيك -->
+<div class="modal fade" id="addCheckModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <form method="POST" action="{{ url_for('almasa_add_check') }}">
+                <input type="hidden" name="crane_id" value="{{ crane.id }}">
+                <div class="modal-header bg-purple text-white">
+                    <h5 class="modal-title">➕ إضافة شيك</h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label class="form-label fw-bold">رقم الشيك</label>
+                        <input type="text" name="check_number" class="form-control">
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label fw-bold">الشركة</label>
+                        <input type="text" name="company_name" class="form-control" required>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label fw-bold">المبلغ</label>
+                        <input type="number" step="0.01" name="amount" class="form-control" required>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label fw-bold">معاد الصرف</label>
+                        <input type="date" name="due_date" class="form-control" required>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">إلغاء</button>
+                    <button type="submit" class="btn btn-purple">حفظ</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}
