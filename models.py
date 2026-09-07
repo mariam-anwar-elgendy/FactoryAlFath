@@ -6,14 +6,13 @@ from werkzeug.security import generate_password_hash, check_password_hash
 
 db = SQLAlchemy()
 
-# ==================== جدول المستخدمين ====================
 class User(UserMixin, db.Model):
     __tablename__ = 'users'
     id = db.Column(db.Integer, primary_key=True)
     username = db.Column(db.String(50), unique=True, nullable=False)
     password_hash = db.Column(db.String(200), nullable=False)
     full_name = db.Column(db.String(100))
-    role = db.Column(db.String(50), nullable=False)  # meg, admin, mariam, rehab, mohamed, ahmed, eid, abdo, sayed, dina
+    role = db.Column(db.String(50), nullable=False)
     phone = db.Column(db.String(20))
     is_hidden = db.Column(db.Boolean, default=False)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
@@ -26,8 +25,6 @@ class User(UserMixin, db.Model):
     def check_password(self, password):
         return check_password_hash(self.password_hash, password)
 
-
-# ==================== الفئات والأصناف ====================
 class Category(db.Model):
     __tablename__ = 'categories'
     id = db.Column(db.Integer, primary_key=True)
@@ -57,8 +54,6 @@ class Customer(db.Model):
     phone = db.Column(db.String(20))
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
 
-
-# ==================== المصنع ====================
 class FactoryRawMaterial(db.Model):
     __tablename__ = 'factory_raw_materials'
     id = db.Column(db.Integer, primary_key=True)
@@ -92,8 +87,6 @@ class FactoryDiary(db.Model):
     created_by = db.Column(db.Integer, db.ForeignKey('users.id'))
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
 
-
-# ==================== المحل ====================
 class StoreSale(db.Model):
     __tablename__ = 'store_sales'
     id = db.Column(db.Integer, primary_key=True)
@@ -228,8 +221,6 @@ class StoreDiary(db.Model):
     created_by = db.Column(db.Integer, db.ForeignKey('users.id'))
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
 
-
-# ==================== الخزينة ====================
 class TreasuryAccount(db.Model):
     __tablename__ = 'treasury_accounts'
     id = db.Column(db.Integer, primary_key=True)
@@ -262,7 +253,6 @@ class TreasuryTransfer(db.Model):
     notes = db.Column(db.Text)
     created_by = db.Column(db.Integer, db.ForeignKey('users.id'))
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
-
 
 # ==================== شركة الماسة ====================
 class AlMasaCrane(db.Model):
@@ -323,8 +313,6 @@ class AlMasaExpense(db.Model):
     created_by = db.Column(db.Integer, db.ForeignKey('users.id'))
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
 
-
-# ==================== سجلات التعديل ====================
 class EditLog(db.Model):
     __tablename__ = 'edit_logs'
     id = db.Column(db.Integer, primary_key=True)
