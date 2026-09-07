@@ -1,1 +1,133 @@
+{% extends "base.html" %}
 
+{% block title %}إدارة الأوناش{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h2 class="fw-bold text-purple-dark">🏗️ إدارة الأوناش</h2>
+    <a href="{{ url_for('almasa_index') }}" class="btn btn-outline-purple">↩️ رجوع</a>
+</div>
+
+<div class="table-responsive">
+    <table class="table table-striped table-hover align-middle">
+        <thead class="bg-purple text-white">
+            <tr>
+                <th>الاسم</th>
+                <th>الشركاء</th>
+                <th>ملاحظات</th>
+                <th>إجراءات</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for crane in cranes %}
+            <tr>
+                <td>{{ crane.name }}</td>
+                <td>
+                    {% for p in crane.partners %}
+                        <span class="badge bg-info">{{ p.name }} - {{ p.percentage }}%</span>
+                    {% endfor %}
+                </td>
+                <td>{{ crane.notes or '-' }}</td>
+                <td>
+                    <a href="{{ url_for('almasa_crane_detail', crane_id=crane.id) }}" class="btn btn-sm btn-info">👁️</a>
+                    <a href="{{ url_for('almasa_crane_report', crane_id=crane.id) }}" class="btn btn-sm btn-warning">📊</a>
+                </td>
+            </tr>
+            {% else %}
+            <tr><td colspan="4" class="text-center">لا توجد أوناش</td></tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+
+<!-- Modal إضافة ونش -->
+<div class="modal fade" id="addCraneModal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <form method="POST" action="{{ url_for('almasa_cranes') }}">
+                <div class="modal-header bg-purple text-white">
+                    <h5 class="modal-title">➕ إضافة ونش جديد</h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label class="form-label fw-bold">اسم الونش</label>
+                        <input type="text" name="name" class="form-control" required>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label fw-bold">ملاحظات</label>
+                        <textarea name="notes" class="form-control"></textarea>
+                    </div>
+                    
+                    <div class="card">
+                        <div class="card-header bg-light fw-bold">👥 الشركاء والنسب</div>
+                        <div class="card-body">
+                            <table class="table" id="partnersTable">
+                                <thead>
+                                    <tr>
+                                        <th>اسم الشريك</th>
+                                        <th>النسبة %</th>
+                                        <th>شريك أساسي (الفتح/أحمد)</th>
+                                        <th></th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr class="partner-row">
+                                        <td><input type="text" name="partner_name[]" class="form-control" placeholder="اسم الشريك"></td>
+                                        <td><input type="number" step="0.01" name="partner_percentage[]" class="form-control" value="0"></td>
+                                        <td><input type="checkbox" name="is_basic[]" value="1" class="form-check-input"></td>
+                                        <td><button type="button" class="btn btn-sm btn-danger remove-partner-row">🗑️</button></td>
+                                    </tr>
+                                    <tr class="partner-row">
+                                        <td><input type="text" name="partner_name[]" class="form-control" value="الفتح"></td>
+                                        <td><input type="number" step="0.01" name="partner_percentage[]" class="form-control" value="50"></td>
+                                        <td><input type="checkbox" name="is_basic[]" value="1" class="form-check-input" checked></td>
+                                        <td><button type="button" class="btn btn-sm btn-danger remove-partner-row">🗑️</button></td>
+                                    </tr>
+                                    <tr class="partner-row">
+                                        <td><input type="text" name="partner_name[]" class="form-control" value="أحمد"></td>
+                                        <td><input type="number" step="0.01" name="partner_percentage[]" class="form-control" value="50"></td>
+                                        <td><input type="checkbox" name="is_basic[]" value="1" class="form-check-input" checked></td>
+                                        <td><button type="button" class="btn btn-sm btn-danger remove-partner-row">🗑️</button></td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                            <button type="button" class="btn btn-sm btn-outline-purple" id="addPartnerRow">➕ إضافة شريك</button>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">إلغاء</button>
+                    <button type="submit" class="btn btn-purple">حفظ</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<script>
+document.getElementById('addPartnerRow').addEventListener('click', function() {
+    var tbody = document.querySelector('#partnersTable tbody');
+    var firstRow = tbody.querySelector('.partner-row');
+    var newRow = firstRow.cloneNode(true);
+    newRow.querySelectorAll('input').forEach(function(inp) {
+        if (inp.type === 'checkbox') {
+            inp.checked = false;
+        } else {
+            inp.value = '';
+        }
+    });
+    tbody.appendChild(newRow);
+});
+
+document.addEventListener('click', function(e) {
+    if (e.target.classList.contains('remove-partner-row')) {
+        var row = e.target.closest('tr');
+        var tbody = row.parentElement;
+        if (tbody.querySelectorAll('tr').length > 1) {
+            row.remove();
+        }
+    }
+});
+</script>
+{% endblock %}
