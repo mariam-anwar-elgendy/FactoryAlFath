@@ -13,7 +13,7 @@ class User(UserMixin, db.Model):
     username = db.Column(db.String(50), unique=True, nullable=False)
     password_hash = db.Column(db.String(200), nullable=False)
     full_name = db.Column(db.String(100))
-    role = db.Column(db.String(20), nullable=False)  # meg, admin, mariam, rehab, mohamed, ahmed, eid, abdo
+    role = db.Column(db.String(50), nullable=False)  # meg, admin, mariam, rehab, mohamed, ahmed, eid, abdo, sayed, dina
     phone = db.Column(db.String(20))
     is_hidden = db.Column(db.Boolean, default=False)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
@@ -234,7 +234,7 @@ class TreasuryAccount(db.Model):
     __tablename__ = 'treasury_accounts'
     id = db.Column(db.Integer, primary_key=True)
     person_name = db.Column(db.String(100), nullable=False)
-    account_type = db.Column(db.String(50), default='نقدي')  # ✅ توسيع ليشمل "شيك"
+    account_type = db.Column(db.String(50), default='نقدي')
     balance = db.Column(db.Float, default=0)
     transactions = db.relationship('TreasuryTransaction', backref='account', lazy=True)
 
@@ -242,10 +242,10 @@ class TreasuryTransaction(db.Model):
     __tablename__ = 'treasury_transactions'
     id = db.Column(db.Integer, primary_key=True)
     account_id = db.Column(db.Integer, db.ForeignKey('treasury_accounts.id'))
-    transaction_type = db.Column(db.String(20), nullable=False)  # deposit / withdrawal
+    transaction_type = db.Column(db.String(20), nullable=False)
     amount = db.Column(db.Float, nullable=False)
     source = db.Column(db.String(150))
-    payment_method = db.Column(db.String(50))  # ✅ توسيع ليشمل "شيك"
+    payment_method = db.Column(db.String(50))
     date = db.Column(db.Date, nullable=False)
     notes = db.Column(db.Text)
     created_by = db.Column(db.Integer, db.ForeignKey('users.id'))
@@ -257,8 +257,68 @@ class TreasuryTransfer(db.Model):
     from_person = db.Column(db.String(100), nullable=False)
     to_person = db.Column(db.String(100), nullable=False)
     amount = db.Column(db.Float, nullable=False)
-    payment_method = db.Column(db.String(50))  # ✅ توسيع ليشمل "شيك"
+    payment_method = db.Column(db.String(50))
     date = db.Column(db.Date, nullable=False)
+    notes = db.Column(db.Text)
+    created_by = db.Column(db.Integer, db.ForeignKey('users.id'))
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+
+
+# ==================== شركة الماسة ====================
+class AlMasaCrane(db.Model):
+    __tablename__ = 'almasa_cranes'
+    id = db.Column(db.Integer, primary_key=True)
+    name = db.Column(db.String(100), nullable=False)
+    notes = db.Column(db.Text)
+    partners = db.relationship('AlMasaPartner', backref='crane', lazy=True, cascade="all, delete-orphan")
+    operations = db.relationship('AlMasaOperation', backref='crane', lazy=True, cascade="all, delete-orphan")
+    checks = db.relationship('AlMasaCheck', backref='crane', lazy=True, cascade="all, delete-orphan")
+    expenses = db.relationship('AlMasaExpense', backref='crane', lazy=True, cascade="all, delete-orphan")
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+
+class AlMasaPartner(db.Model):
+    __tablename__ = 'almasa_partners'
+    id = db.Column(db.Integer, primary_key=True)
+    crane_id = db.Column(db.Integer, db.ForeignKey('almasa_cranes.id'), nullable=False)
+    name = db.Column(db.String(100), nullable=False)
+    percentage = db.Column(db.Float, default=0)
+    is_basic = db.Column(db.Boolean, default=False)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+
+class AlMasaOperation(db.Model):
+    __tablename__ = 'almasa_operations'
+    id = db.Column(db.Integer, primary_key=True)
+    crane_id = db.Column(db.Integer, db.ForeignKey('almasa_cranes.id'), nullable=False)
+    start_date = db.Column(db.Date, nullable=False)
+    end_date = db.Column(db.Date)
+    actual_daily_value = db.Column(db.Float, default=0)
+    default_daily_value = db.Column(db.Float, default=0)
+    days_count = db.Column(db.Integer, default=0)
+    actual_total = db.Column(db.Float, default=0)
+    default_total = db.Column(db.Float, default=0)
+    created_by = db.Column(db.Integer, db.ForeignKey('users.id'))
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+
+class AlMasaCheck(db.Model):
+    __tablename__ = 'almasa_checks'
+    id = db.Column(db.Integer, primary_key=True)
+    crane_id = db.Column(db.Integer, db.ForeignKey('almasa_cranes.id'), nullable=False)
+    operation_id = db.Column(db.Integer, db.ForeignKey('almasa_operations.id'))
+    check_number = db.Column(db.String(50))
+    company_name = db.Column(db.String(150))
+    amount = db.Column(db.Float, default=0)
+    due_date = db.Column(db.Date)
+    status = db.Column(db.String(20), default='معلق')
+    created_by = db.Column(db.Integer, db.ForeignKey('users.id'))
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+
+class AlMasaExpense(db.Model):
+    __tablename__ = 'almasa_expenses'
+    id = db.Column(db.Integer, primary_key=True)
+    crane_id = db.Column(db.Integer, db.ForeignKey('almasa_cranes.id'), nullable=False)
+    date = db.Column(db.Date, nullable=False)
+    expense_type = db.Column(db.String(50))
+    amount = db.Column(db.Float, default=0)
     notes = db.Column(db.Text)
     created_by = db.Column(db.Integer, db.ForeignKey('users.id'))
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
@@ -276,7 +336,6 @@ class EditLog(db.Model):
     new_data = db.Column(db.Text)
     notes = db.Column(db.Text)
 
-# ==================== التنبيهات ====================
 class Notification(db.Model):
     __tablename__ = 'notifications'
     id = db.Column(db.Integer, primary_key=True)
@@ -285,7 +344,6 @@ class Notification(db.Model):
     is_read = db.Column(db.Boolean, default=False)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
 
-# ==================== سجل النشاط ====================
 class ActivityLog(db.Model):
     __tablename__ = 'activity_logs'
     id = db.Column(db.Integer, primary_key=True)
