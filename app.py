@@ -265,16 +265,12 @@ def health():
 @app.route('/')
 def index():
     if current_user.is_authenticated:
-        if current_user.role == 'sayed':
-            return redirect(url_for('choose_company'))
         return redirect(url_for('dashboard'))
     return redirect(url_for('login'))
 
 @app.route('/login', methods=['GET', 'POST'])
 def login():
     if current_user.is_authenticated:
-        if current_user.role == 'sayed':
-            return redirect(url_for('choose_company'))
         return redirect(url_for('dashboard'))
     if request.method == 'POST':
         username = request.form.get('username')
@@ -294,8 +290,6 @@ def login():
                     db.session.add(notification)
                     db.session.commit()
             flash(f'مرحباً {user.full_name} 👋', 'success')
-            if user.role == 'sayed':
-                return redirect(url_for('choose_company'))
             return redirect(url_for('dashboard'))
         else:
             flash('اسم المستخدم أو كلمة المرور غير صحيحة', 'danger')
@@ -320,9 +314,10 @@ def logout():
 @app.route('/dashboard')
 @custom_login_required
 def dashboard():
-    if current_user.role == 'sayed':
-        return redirect(url_for('choose_company'))
     role = current_user.role
+    if role == 'dina':
+        return redirect(url_for('almasa_index'))
+    
     stats = {
         'raw_materials_count': FactoryRawMaterial.query.count() if role in ['meg','admin','mariam','rehab','mohamed','sayed'] else 0,
         'production_count': FactoryProduction.query.count() if role in ['meg','admin','mariam','rehab','mohamed','sayed'] else 0,
@@ -356,8 +351,6 @@ def dashboard():
         recent_sales = StoreSale.query.order_by(StoreSale.date.desc()).limit(5).all()
         recent_production = []
         recent_transactions = TreasuryTransaction.query.filter_by(created_by=current_user.id).order_by(TreasuryTransaction.date.desc()).limit(5).all()
-    elif role == 'dina':
-        return redirect(url_for('almasa_index'))
     else:
         stats['treasury_balance'] = db.session.query(db.func.sum(TreasuryAccount.balance)).filter(TreasuryAccount.person_name == current_user.full_name).scalar() or 0
         recent_sales = []
@@ -944,6 +937,7 @@ def store_transactions():
                            categories=categories,
                            sizes=sizes,
                            thicknesses=thicknesses)
+
 # ==================== الخزينة ====================
 @app.route('/treasury')
 @custom_login_required
@@ -1855,4 +1849,4 @@ def settings_password():
     return render_template('settings/password.html')
 
 if __name__ == '__main__':
-    app.run(host='0.0.0.0', port=5000, debug=True)    
+    app.run(host='0.0.0.0', port=5000, debug=True)
