@@ -407,10 +407,8 @@ def factory_raw_materials():
         supplier = request.form.get('supplier')
         notes = request.form.get('notes')
         
-        # إضافة المورد تلقائياً إذا كان جديد
         if supplier and not Supplier.query.filter_by(name=supplier).first():
             db.session.add(Supplier(name=supplier))
-            print(f"✅ تم إضافة مورد جديد: {supplier}")
         
         new_record = FactoryRawMaterial(date=record_date, pipe_size=pipe_size, pipe_thickness=pipe_thickness,
                                         quantity=quantity, supplier=supplier, notes=notes,
@@ -418,9 +416,6 @@ def factory_raw_materials():
         db.session.add(new_record)
         db.session.commit()
         log_activity(current_user.id, 'create', f"إضافة وارد ماسورة {pipe_size} {pipe_thickness} كمية {quantity}")
-        row_data = [record_date.strftime('%Y-%m-%d'), 'وارد', pipe_size, pipe_thickness, quantity, supplier, notes, current_user.full_name]
-        excel_path = add_row_to_excel('يوميات المصنع.xlsx', ['التاريخ', 'الوصف', 'المقاس', 'السماكة', 'الكمية', 'المورد', 'ملاحظات', 'المسؤول'], row_data)
-        if excel_path: drive_service.upload_file(excel_path, 'يوميات المصنع.xlsx')
         flash('تم إضافة وارد المواسير بنجاح', 'success')
         return redirect(url_for('factory_raw_materials'))
     materials = FactoryRawMaterial.query.order_by(FactoryRawMaterial.date.asc(), FactoryRawMaterial.id.asc()).all()
@@ -471,9 +466,6 @@ def factory_production():
         db.session.add(new_record)
         db.session.commit()
         log_activity(current_user.id, 'create', f"إضافة إنتاج {elbow_size} كمية {quantity}")
-        row_data = [record_date.strftime('%Y-%m-%d'), 'إنتاج', elbow_size, elbow_thickness, quantity, raw_material_used, notes, current_user.full_name]
-        excel_path = add_row_to_excel('يوميات المصنع.xlsx', ['التاريخ', 'الوصف', 'المقاس', 'السماكة', 'الكمية', 'خام مستخدم', 'ملاحظات', 'المسؤول'], row_data)
-        if excel_path: drive_service.upload_file(excel_path, 'يوميات المصنع.xlsx')
         flash('تم تسجيل الإنتاج بنجاح', 'success')
         return redirect(url_for('factory_production'))
     production = FactoryProduction.query.order_by(FactoryProduction.date.asc(), FactoryProduction.id.asc()).all()
@@ -509,8 +501,6 @@ def factory_diary():
                 flash('غير مصرح لك بالتعديل أو انتهت صلاحية التعديل', 'danger')
             return redirect(url_for('factory_diary'))
         record_date = datetime.strptime(request.form.get('date'), '%Y-%m-%d').date()
-        
-        # استقبال البنود المتعددة
         descriptions = request.form.getlist('description[]')
         amounts = request.form.getlist('amount[]')
         
@@ -762,10 +752,8 @@ def store_transactions():
             return redirect(url_for('store_transactions'))
 
         if transaction_type == 'sale':
-            # إضافة العميل تلقائياً إذا كان جديد
             if party_name and not Customer.query.filter_by(name=party_name).first():
                 db.session.add(Customer(name=party_name, phone=party_phone))
-                print(f"✅ تم إضافة عميل جديد: {party_name}")
             
             new_sale = StoreSale(
                 invoice_number=f"INV-{datetime.now().strftime('%Y%m%d%H%M%S')}",
@@ -843,11 +831,9 @@ def store_transactions():
             log_activity(current_user.id, 'create', f"إضافة بيع لـ {party_name}")
             flash('تم تسجيل البيع بنجاح', 'success')
 
-        else:  # شراء
-            # إضافة المورد تلقائياً إذا كان جديد
+        else:
             if party_name and not Supplier.query.filter_by(name=party_name).first():
                 db.session.add(Supplier(name=party_name, phone=party_phone))
-                print(f"✅ تم إضافة مورد جديد: {party_name}")
             
             new_purchase = StorePurchase(
                 invoice_number=f"PUR-{datetime.now().strftime('%Y%m%d%H%M%S')}",
@@ -927,7 +913,6 @@ def store_transactions():
 
         return redirect(url_for('store_transactions'))
 
-    # GET: عرض الصفحة
     sales = StoreSale.query.order_by(StoreSale.date.asc(), StoreSale.id.asc()).all()
     purchases = StorePurchase.query.order_by(StorePurchase.date.asc(), StorePurchase.id.asc()).all()
     customers = Customer.query.order_by(Customer.name.asc()).all()
@@ -1052,9 +1037,6 @@ def store_returns():
         db.session.add(new_return)
         db.session.commit()
         log_activity(current_user.id, 'create', f"إضافة مرتجع {party_name}")
-        row_data = [record_date.strftime('%Y-%m-%d'), return_type, party_name, product_type, product_size, product_spec, quantity, reason, current_user.full_name]
-        excel_path = add_row_to_excel('يوميات المحل.xlsx', ['التاريخ', 'النوع', 'الطرف', 'الصنف', 'المقاس', 'المواصفات', 'الكمية', 'السبب', 'المسؤول'], row_data)
-        if excel_path: drive_service.upload_file(excel_path, 'يوميات المحل.xlsx')
         flash('تم تسجيل المرتجع بنجاح', 'success')
         return redirect(url_for('store_returns'))
     returns = StoreReturn.query.order_by(StoreReturn.date.asc(), StoreReturn.id.asc()).all()
@@ -1097,9 +1079,6 @@ def store_diary():
         db.session.add(new_record)
         db.session.commit()
         log_activity(current_user.id, 'create', f"إضافة يومية محل: {description[:50]}")
-        row_data = [record_date.strftime('%Y-%m-%d'), description, amount, current_user.full_name]
-        excel_path = add_row_to_excel('يوميات المحل.xlsx', ['التاريخ', 'الوصف', 'المبلغ', 'المسؤول'], row_data)
-        if excel_path: drive_service.upload_file(excel_path, 'يوميات المحل.xlsx')
         flash('تم تسجيل اليومية بنجاح', 'success')
         return redirect(url_for('store_diary'))
     diary = StoreDiary.query.order_by(StoreDiary.date.asc(), StoreDiary.id.asc()).all()
@@ -1241,72 +1220,7 @@ def treasury_transactions():
                            customers=customers,
                            suppliers=suppliers)
 
-# ==================== باقي الملف نفس ما هو بدون تغيير ====================
-# [باقي الأكواد زي ما هي من عند treasury_transfers لحد الآخر]
-
-@app.route('/treasury/transfers', methods=['GET', 'POST'])
-@custom_login_required
-@role_required('meg', 'admin', 'mariam')
-def treasury_transfers():
-    if request.method == 'POST':
-        if request.form.get('delete_id'):
-            record_id = int(request.form.get('delete_id'))
-            record = TreasuryTransfer.query.get_or_404(record_id)
-            if current_user.role in ['meg', 'admin', 'mariam']:
-                db.session.delete(record)
-                db.session.commit()
-                log_activity(current_user.id, 'delete', f"حذف تحويل {record.amount}")
-                flash('تم حذف التحويل بنجاح', 'success')
-            else:
-                flash('غير مصرح لك بالحذف', 'danger')
-            return redirect(url_for('treasury_transfers'))
-        if request.form.get('edit_id'):
-            record_id = int(request.form.get('edit_id'))
-            record = TreasuryTransfer.query.get_or_404(record_id)
-            if current_user.role in ['meg', 'admin', 'mariam']:
-                record.date = datetime.strptime(request.form.get('date'), '%Y-%m-%d').date()
-                record.from_person = request.form.get('from_person')
-                record.to_person = request.form.get('to_person')
-                record.amount = float(request.form.get('amount', 0))
-                record.payment_method = request.form.get('payment_method')
-                record.notes = request.form.get('notes')
-                db.session.commit()
-                log_activity(current_user.id, 'edit', f"تعديل تحويل {record.amount}")
-                flash('تم تحديث التحويل بنجاح', 'success')
-            else:
-                flash('غير مصرح لك بالتعديل', 'danger')
-            return redirect(url_for('treasury_transfers'))
-
-        date_str = request.form.get('date')
-        from_person = request.form.get('from_person')
-        payment_method = request.form.get('payment_method')
-        notes = request.form.get('notes')
-
-        to_persons = request.form.getlist('to_person[]')
-        amounts = request.form.getlist('amount[]')
-
-        for i in range(len(to_persons)):
-            if to_persons[i].strip() and amounts[i].strip():
-                transfer = TreasuryTransfer(
-                    date=datetime.strptime(date_str, '%Y-%m-%d').date(),
-                    from_person=from_person,
-                    to_person=to_persons[i],
-                    amount=float(amounts[i]),
-                    payment_method=payment_method,
-                    notes=notes,
-                    created_by=current_user.id,
-                    created_at=datetime.utcnow()
-                )
-                db.session.add(transfer)
-
-        db.session.commit()
-        log_activity(current_user.id, 'create', f"إضافة تحويلات من {from_person}")
-        flash('تم تسجيل التحويلات بنجاح', 'success')
-        return redirect(url_for('treasury_transfers'))
-
-    transfers = TreasuryTransfer.query.order_by(TreasuryTransfer.date.asc(), TreasuryTransfer.id.asc()).all()
-    return render_template('treasury/transfers.html', transfers=transfers)
-
+# ==================== إدارة حسابات الخزينة ====================
 @app.route('/treasury/accounts', methods=['GET', 'POST'])
 @custom_login_required
 @role_required('meg', 'admin', 'mariam')
@@ -1352,6 +1266,7 @@ def treasury_accounts():
     accounts = TreasuryAccount.query.order_by(TreasuryAccount.person_name.asc(), TreasuryAccount.account_type.asc()).all()
     return render_template('treasury/accounts.html', accounts=accounts)
 
+# ==================== المعاملات المالية ====================
 @app.route('/financial-transactions', methods=['GET', 'POST'])
 @custom_login_required
 @role_required('meg', 'admin', 'mariam', 'rehab', 'ahmed', 'eid', 'abdo')
@@ -1487,8 +1402,62 @@ def financial_transactions():
                            customers=customers,
                            suppliers=suppliers)
 
-# ==================== باقي الملف من غير أي تغيير ====================
-# [كل الأكواد من admin_activity لحد آخر الملف زي ما هي]
+# ==================== التقارير ====================
+@app.route('/reports')
+@custom_login_required
+@role_required('meg', 'admin', 'mariam', 'rehab')
+def reports_index():
+    return render_template('reports/index.html')
+
+@app.route('/reports/custom')
+@custom_login_required
+@role_required('meg', 'admin', 'mariam', 'rehab')
+def reports_custom():
+    from_date_str = request.args.get('from_date')
+    to_date_str = request.args.get('to_date')
+    report_type = request.args.get('report_type', 'all')
+
+    if not from_date_str or not to_date_str:
+        return render_template('reports/custom.html',
+                               from_date=None,
+                               to_date=None,
+                               report_type=report_type,
+                               combined_diary=[],
+                               raw_materials=[],
+                               production=[],
+                               sales=[],
+                               purchases=[],
+                               transactions=[])
+
+    from_date = datetime.strptime(from_date_str, '%Y-%m-%d').date()
+    to_date = datetime.strptime(to_date_str, '%Y-%m-%d').date()
+
+    raw_materials = FactoryRawMaterial.query.filter(FactoryRawMaterial.date >= from_date, FactoryRawMaterial.date <= to_date).order_by(FactoryRawMaterial.date.asc()).all()
+    production = FactoryProduction.query.filter(FactoryProduction.date >= from_date, FactoryProduction.date <= to_date).order_by(FactoryProduction.date.asc()).all()
+    factory_diary = FactoryDiary.query.filter(FactoryDiary.date >= from_date, FactoryDiary.date <= to_date).order_by(FactoryDiary.date.asc()).all()
+    sales = StoreSale.query.filter(StoreSale.date >= from_date, StoreSale.date <= to_date).order_by(StoreSale.date.asc()).all()
+    purchases = StorePurchase.query.filter(StorePurchase.date >= from_date, StorePurchase.date <= to_date).order_by(StorePurchase.date.asc()).all()
+    store_diary = StoreDiary.query.filter(StoreDiary.date >= from_date, StoreDiary.date <= to_date).order_by(StoreDiary.date.asc()).all()
+    transactions = TreasuryTransaction.query.filter(TreasuryTransaction.date >= from_date, TreasuryTransaction.date <= to_date).order_by(TreasuryTransaction.date.asc()).all()
+
+    combined_diary = []
+    for d in factory_diary:
+        combined_diary.append({'date': d.date, 'type': 'مصنع', 'description': d.description, 'amount': d.amount, 'created_by': d.created_by})
+    for d in store_diary:
+        combined_diary.append({'date': d.date, 'type': 'محل', 'description': d.description, 'amount': d.amount, 'created_by': d.created_by})
+    combined_diary.sort(key=lambda x: x['date'])
+
+    return render_template('reports/custom.html',
+                           from_date=from_date_str,
+                           to_date=to_date_str,
+                           report_type=report_type,
+                           raw_materials=raw_materials,
+                           production=production,
+                           factory_diary=factory_diary,
+                           sales=sales,
+                           purchases=purchases,
+                           transactions=transactions,
+                           combined_diary=combined_diary)
 
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=5000, debug=True)
