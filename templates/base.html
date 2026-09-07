@@ -153,16 +153,10 @@
                         </li>
                         {% endif %}
 
-                        <!-- شركة الماسة -->
-                        {% if current_user.role in ['sayed', 'dina', 'admin', 'meg'] %}
+                        {% if current_user.role == 'sayed' %}
                         <li class="nav-item mt-3">
-                            <a class="nav-link text-white" href="{{ url_for('almasa_index') }}" style="background: rgba(255,255,255,0.2); border-radius: 8px;">
-                                <i class="fas fa-building ms-2"></i> 🏗️ شركة الماسة
-                            </a>
-                        </li>
-                        <li class="nav-item">
-                            <a class="nav-link text-white" href="{{ url_for('almasa_reports') }}">
-                                <i class="fas fa-chart-line ms-2"></i> تقارير الماسة
+                            <a class="nav-link text-white" href="{{ url_for('choose_company') }}" style="background: rgba(255,255,255,0.3);">
+                                <i class="fas fa-exchange-alt ms-2"></i> تبديل الشركة
                             </a>
                         </li>
                         {% endif %}
