@@ -17,6 +17,7 @@ from models import StoreSale, StorePurchase, StoreInventory, StoreReceiving, Sto
 from models import StoreSaleItem, StorePurchaseItem, Payment
 from models import TreasuryAccount, TreasuryTransaction, TreasuryTransfer
 from models import EditLog, Notification, ActivityLog
+from models import AlMasaCrane, AlMasaPartner, AlMasaOperation, AlMasaCheck, AlMasaExpense
 from utils import (
     login_required as custom_login_required,
     role_required,
@@ -74,7 +75,7 @@ def get_or_create_treasury_account(person_name, account_type):
     return account
 
 def get_visible_accounts_for_current_user():
-    if current_user.role in ['meg', 'admin', 'mariam']:
+    if current_user.role in ['meg', 'admin', 'mariam', 'sayed']:
         return TreasuryAccount.query.all()
     elif current_user.role == 'ahmed':
         return TreasuryAccount.query.filter_by(person_name='الحاج أحمد').all()
@@ -86,7 +87,7 @@ def get_visible_accounts_for_current_user():
         return []
 
 def can_delete_record(user_role, record_date=None):
-    if user_role in ['meg', 'admin', 'mariam']:
+    if user_role in ['meg', 'admin', 'mariam', 'sayed']:
         return True
     if user_role == 'rehab':
         if record_date:
@@ -187,6 +188,16 @@ def init_db():
              'full_name': 'عبدالله',
              'role': 'abdo',
              'is_hidden': False},
+            {'username': 'sayed',
+             'password': 'sayed1977#',
+             'full_name': 'سيد',
+             'role': 'sayed',
+             'is_hidden': False},
+            {'username': 'dina',
+             'password': 'dina2003',
+             'full_name': 'دينا',
+             'role': 'dina',
+             'is_hidden': False},
         ]
 
         for user_data in users_data:
@@ -254,12 +265,16 @@ def health():
 @app.route('/')
 def index():
     if current_user.is_authenticated:
+        if current_user.role == 'sayed':
+            return redirect(url_for('choose_company'))
         return redirect(url_for('dashboard'))
     return redirect(url_for('login'))
 
 @app.route('/login', methods=['GET', 'POST'])
 def login():
     if current_user.is_authenticated:
+        if current_user.role == 'sayed':
+            return redirect(url_for('choose_company'))
         return redirect(url_for('dashboard'))
     if request.method == 'POST':
         username = request.form.get('username')
@@ -279,10 +294,19 @@ def login():
                     db.session.add(notification)
                     db.session.commit()
             flash(f'مرحباً {user.full_name} 👋', 'success')
+            if user.role == 'sayed':
+                return redirect(url_for('choose_company'))
             return redirect(url_for('dashboard'))
         else:
             flash('اسم المستخدم أو كلمة المرور غير صحيحة', 'danger')
     return render_template('login.html')
+
+@app.route('/choose-company')
+@custom_login_required
+def choose_company():
+    if current_user.role != 'sayed':
+        return redirect(url_for('dashboard'))
+    return render_template('choose_company.html')
 
 @app.route('/logout')
 @login_required
@@ -296,21 +320,23 @@ def logout():
 @app.route('/dashboard')
 @custom_login_required
 def dashboard():
+    if current_user.role == 'sayed':
+        return redirect(url_for('choose_company'))
     role = current_user.role
     stats = {
-        'raw_materials_count': FactoryRawMaterial.query.count() if role in ['meg','admin','mariam','rehab','mohamed'] else 0,
-        'production_count': FactoryProduction.query.count() if role in ['meg','admin','mariam','rehab','mohamed'] else 0,
-        'sales_count': StoreSale.query.count() if role in ['meg','admin','mariam','rehab','ahmed'] else 0,
-        'purchases_count': StorePurchase.query.count() if role in ['meg','admin','mariam','rehab','ahmed'] else 0,
-        'customers_count': Customer.query.count() if role in ['meg','admin','mariam','rehab','ahmed'] else 0,
-        'suppliers_count': Supplier.query.count() if role in ['meg','admin','mariam','rehab','ahmed'] else 0,
+        'raw_materials_count': FactoryRawMaterial.query.count() if role in ['meg','admin','mariam','rehab','mohamed','sayed'] else 0,
+        'production_count': FactoryProduction.query.count() if role in ['meg','admin','mariam','rehab','mohamed','sayed'] else 0,
+        'sales_count': StoreSale.query.count() if role in ['meg','admin','mariam','rehab','ahmed','sayed'] else 0,
+        'purchases_count': StorePurchase.query.count() if role in ['meg','admin','mariam','rehab','ahmed','sayed'] else 0,
+        'customers_count': Customer.query.count() if role in ['meg','admin','mariam','rehab','ahmed','sayed'] else 0,
+        'suppliers_count': Supplier.query.count() if role in ['meg','admin','mariam','rehab','ahmed','sayed'] else 0,
         'treasury_balance': 0,
         'today_sales': db.session.query(db.func.sum(StoreSaleItem.total)).join(StoreSale).filter(StoreSale.date == date.today()).scalar() or 0,
         'today_purchases': db.session.query(db.func.sum(StorePurchaseItem.total)).join(StorePurchase).filter(StorePurchase.date == date.today()).scalar() or 0,
-        'low_inventory_count': StoreInventory.query.filter(StoreInventory.current_quantity <= StoreInventory.min_quantity).count() if role in ['meg','admin','mariam','rehab','ahmed'] else 0,
+        'low_inventory_count': StoreInventory.query.filter(StoreInventory.current_quantity <= StoreInventory.min_quantity).count() if role in ['meg','admin','mariam','rehab','ahmed','sayed'] else 0,
     }
 
-    if role in ['meg', 'admin', 'mariam']:
+    if role in ['meg', 'admin', 'mariam', 'sayed']:
         stats['treasury_balance'] = db.session.query(db.func.sum(TreasuryAccount.balance)).scalar() or 0
         recent_sales = StoreSale.query.order_by(StoreSale.date.desc()).limit(5).all()
         recent_production = FactoryProduction.query.order_by(FactoryProduction.date.desc()).limit(5).all()
@@ -330,6 +356,8 @@ def dashboard():
         recent_sales = StoreSale.query.order_by(StoreSale.date.desc()).limit(5).all()
         recent_production = []
         recent_transactions = TreasuryTransaction.query.filter_by(created_by=current_user.id).order_by(TreasuryTransaction.date.desc()).limit(5).all()
+    elif role == 'dina':
+        return redirect(url_for('almasa_index'))
     else:
         stats['treasury_balance'] = db.session.query(db.func.sum(TreasuryAccount.balance)).filter(TreasuryAccount.person_name == current_user.full_name).scalar() or 0
         recent_sales = []
@@ -349,7 +377,7 @@ def dashboard():
 
 @app.route('/factory')
 @custom_login_required
-@role_required('meg', 'admin', 'mariam', 'rehab', 'mohamed')
+@role_required('meg', 'admin', 'mariam', 'rehab', 'mohamed', 'sayed')
 def factory_index():
     today = date.today()
     raw_materials = FactoryRawMaterial.query.filter_by(date=today).order_by(FactoryRawMaterial.id.asc()).all()
@@ -359,7 +387,7 @@ def factory_index():
 
 @app.route('/factory/raw-materials', methods=['GET', 'POST'])
 @custom_login_required
-@role_required('meg', 'admin', 'mariam', 'rehab', 'mohamed')
+@role_required('meg', 'admin', 'mariam', 'rehab', 'mohamed', 'sayed')
 def factory_raw_materials():
     if request.method == 'POST':
         if request.form.get('delete_id'):
@@ -398,7 +426,6 @@ def factory_raw_materials():
         
         if supplier and not Supplier.query.filter_by(name=supplier).first():
             db.session.add(Supplier(name=supplier))
-            print(f"✅ تم إضافة مورد جديد: {supplier}")
         
         new_record = FactoryRawMaterial(date=record_date, pipe_size=pipe_size, pipe_thickness=pipe_thickness,
                                         quantity=quantity, supplier=supplier, notes=notes,
@@ -414,7 +441,7 @@ def factory_raw_materials():
 
 @app.route('/factory/production', methods=['GET', 'POST'])
 @custom_login_required
-@role_required('meg', 'admin', 'mariam', 'rehab', 'mohamed')
+@role_required('meg', 'admin', 'mariam', 'rehab', 'mohamed', 'sayed')
 def factory_production():
     if request.method == 'POST':
         if request.form.get('delete_id'):
@@ -463,7 +490,7 @@ def factory_production():
 
 @app.route('/factory/diary', methods=['GET', 'POST'])
 @custom_login_required
-@role_required('meg', 'admin', 'mariam', 'rehab', 'mohamed')
+@role_required('meg', 'admin', 'mariam', 'rehab', 'mohamed', 'sayed')
 def factory_diary():
     if request.method == 'POST':
         if request.form.get('delete_id'):
@@ -514,7 +541,7 @@ def factory_diary():
 
 @app.route('/store')
 @custom_login_required
-@role_required('meg', 'admin', 'mariam', 'rehab', 'ahmed')
+@role_required('meg', 'admin', 'mariam', 'rehab', 'ahmed', 'sayed')
 def store_index():
     today = date.today()
     sales = StoreSale.query.filter_by(date=today).order_by(StoreSale.id.asc()).all()
@@ -524,7 +551,7 @@ def store_index():
 
 @app.route('/store/transactions', methods=['GET', 'POST'])
 @custom_login_required
-@role_required('meg', 'admin', 'mariam', 'rehab', 'ahmed')
+@role_required('meg', 'admin', 'mariam', 'rehab', 'ahmed', 'sayed')
 def store_transactions():
     if request.method == 'POST':
         if request.form.get('delete_id'):
@@ -917,164 +944,12 @@ def store_transactions():
                            categories=categories,
                            sizes=sizes,
                            thicknesses=thicknesses)
-
-@app.route('/payment/add', methods=['POST'])
-@custom_login_required
-@role_required('meg', 'admin', 'mariam', 'ahmed')
-def add_payment():
-    sale_id = request.form.get('sale_id')
-    purchase_id = request.form.get('purchase_id')
-    amount = float(request.form.get('amount', 0))
-    payment_date = datetime.strptime(request.form.get('date'), '%Y-%m-%d').date()
-    notes = request.form.get('notes', '')
-
-    if sale_id:
-        sale = StoreSale.query.get_or_404(int(sale_id))
-        if amount > sale.remaining:
-            flash('المبلغ أكبر من المتبقي', 'danger')
-            return redirect(request.referrer)
-        payment = Payment(sale_id=sale.id, amount=amount, date=payment_date, notes=notes, created_by=current_user.id)
-    elif purchase_id:
-        purchase = StorePurchase.query.get_or_404(int(purchase_id))
-        if amount > purchase.remaining:
-            flash('المبلغ أكبر من المتبقي', 'danger')
-            return redirect(request.referrer)
-        payment = Payment(purchase_id=purchase.id, amount=amount, date=payment_date, notes=notes, created_by=current_user.id)
-    else:
-        flash('يجب تحديد الفاتورة', 'danger')
-        return redirect(request.referrer)
-
-    db.session.add(payment)
-    db.session.commit()
-    log_activity(current_user.id, 'create', f"إضافة دفعة بقيمة {amount}")
-    flash('تم تسجيل الدفعة بنجاح', 'success')
-    return redirect(request.referrer)
-
-@app.route('/store/inventory', methods=['GET', 'POST'])
-@custom_login_required
-@role_required('meg', 'admin', 'mariam', 'rehab', 'ahmed')
-def store_inventory():
-    if request.method == 'POST':
-        inventory_id = int(request.form.get('inventory_id'))
-        item = StoreInventory.query.get_or_404(inventory_id)
-        if request.form.get('delete'):
-            if current_user.role in ['meg', 'admin', 'mariam']:
-                db.session.delete(item)
-                db.session.commit()
-                log_activity(current_user.id, 'delete', f"حذف مخزون {item.product_type}")
-                flash('تم حذف عنصر المخزون', 'success')
-            else:
-                flash('غير مصرح لك بالحذف', 'danger')
-        else:
-            item.current_quantity = float(request.form.get('current_quantity', item.current_quantity))
-            item.min_quantity = float(request.form.get('min_quantity', item.min_quantity))
-            db.session.commit()
-            log_activity(current_user.id, 'edit', f"تعديل مخزون {item.product_type}")
-            flash('تم تحديث المخزون', 'success')
-        return redirect(url_for('store_inventory'))
-    inventory = StoreInventory.query.order_by(StoreInventory.product_type.asc(), StoreInventory.product_size.asc()).all()
-    return render_template('store/inventory.html', inventory=inventory)
-
-@app.route('/store/returns', methods=['GET', 'POST'])
-@custom_login_required
-@role_required('meg', 'admin', 'mariam', 'rehab', 'ahmed')
-def store_returns():
-    if request.method == 'POST':
-        if request.form.get('delete_id'):
-            record_id = int(request.form.get('delete_id'))
-            record = StoreReturn.query.get_or_404(record_id)
-            if can_delete_record(current_user.role, record.date):
-                db.session.delete(record)
-                db.session.commit()
-                log_activity(current_user.id, 'delete', f"حذف مرتجع {record.party_name}")
-                flash('تم حذف المرتجع بنجاح', 'success')
-            else:
-                flash('غير مصرح لك بالحذف', 'danger')
-            return redirect(url_for('store_returns'))
-        if request.form.get('edit_id'):
-            record_id = int(request.form.get('edit_id'))
-            record = StoreReturn.query.get_or_404(record_id)
-            if can_edit(current_user.role, record.date, record.created_by, current_user.id):
-                record.date = datetime.strptime(request.form.get('date'), '%Y-%m-%d').date()
-                record.return_type = request.form.get('return_type')
-                record.party_name = request.form.get('party_name')
-                record.product_type = request.form.get('product_type')
-                record.product_size = request.form.get('product_size')
-                record.product_spec = request.form.get('product_spec')
-                record.quantity = float(request.form.get('quantity', 0))
-                record.reason = request.form.get('reason')
-                db.session.commit()
-                log_activity(current_user.id, 'edit', f"تعديل مرتجع {record.party_name}")
-                flash('تم تحديث المرتجع بنجاح', 'success')
-            else:
-                flash('غير مصرح لك بالتعديل أو انتهت صلاحية التعديل', 'danger')
-            return redirect(url_for('store_returns'))
-        record_date = datetime.strptime(request.form.get('date'), '%Y-%m-%d').date()
-        return_type = request.form.get('return_type')
-        party_name = request.form.get('party_name')
-        product_type = request.form.get('product_type')
-        product_size = request.form.get('product_size')
-        product_spec = request.form.get('product_spec')
-        quantity = float(request.form.get('quantity', 0))
-        reason = request.form.get('reason')
-        new_return = StoreReturn(date=record_date, return_type=return_type, party_name=party_name,
-                                 product_type=product_type, product_size=product_size, product_spec=product_spec,
-                                 quantity=quantity, reason=reason, created_by=current_user.id, created_at=datetime.utcnow())
-        db.session.add(new_return)
-        db.session.commit()
-        log_activity(current_user.id, 'create', f"إضافة مرتجع {party_name}")
-        flash('تم تسجيل المرتجع بنجاح', 'success')
-        return redirect(url_for('store_returns'))
-    returns = StoreReturn.query.order_by(StoreReturn.date.asc(), StoreReturn.id.asc()).all()
-    return render_template('store/returns.html', returns=returns)
-
-@app.route('/store/diary', methods=['GET', 'POST'])
-@custom_login_required
-@role_required('meg', 'admin', 'mariam', 'rehab', 'ahmed')
-def store_diary():
-    if request.method == 'POST':
-        if request.form.get('delete_id'):
-            record_id = int(request.form.get('delete_id'))
-            record = StoreDiary.query.get_or_404(record_id)
-            if can_delete_record(current_user.role, record.date):
-                db.session.delete(record)
-                db.session.commit()
-                log_activity(current_user.id, 'delete', f"حذف يومية محل")
-                flash('تم حذف اليومية بنجاح', 'success')
-            else:
-                flash('غير مصرح لك بالحذف', 'danger')
-            return redirect(url_for('store_diary'))
-        if request.form.get('edit_id'):
-            record_id = int(request.form.get('edit_id'))
-            record = StoreDiary.query.get_or_404(record_id)
-            if can_edit(current_user.role, record.date, record.created_by, current_user.id):
-                record.date = datetime.strptime(request.form.get('date'), '%Y-%m-%d').date()
-                record.description = request.form.get('description')
-                record.amount = float(request.form.get('amount', 0))
-                db.session.commit()
-                log_activity(current_user.id, 'edit', f"تعديل يومية محل")
-                flash('تم تحديث اليومية بنجاح', 'success')
-            else:
-                flash('غير مصرح لك بالتعديل أو انتهت صلاحية التعديل', 'danger')
-            return redirect(url_for('store_diary'))
-        record_date = datetime.strptime(request.form.get('date'), '%Y-%m-%d').date()
-        description = request.form.get('description')
-        amount = float(request.form.get('amount', 0))
-        new_record = StoreDiary(date=record_date, description=description, amount=amount,
-                                created_by=current_user.id, created_at=datetime.utcnow())
-        db.session.add(new_record)
-        db.session.commit()
-        log_activity(current_user.id, 'create', f"إضافة يومية محل: {description[:50]}")
-        flash('تم تسجيل اليومية بنجاح', 'success')
-        return redirect(url_for('store_diary'))
-    diary = StoreDiary.query.order_by(StoreDiary.date.asc(), StoreDiary.id.asc()).all()
-    return render_template('store/diary.html', diary=diary)
-
+# ==================== الخزينة ====================
 @app.route('/treasury')
 @custom_login_required
-@role_required('meg', 'admin', 'mariam', 'ahmed', 'eid', 'abdo')
+@role_required('meg', 'admin', 'mariam', 'ahmed', 'eid', 'abdo', 'sayed')
 def treasury_index():
-    if current_user.role in ['meg', 'admin', 'mariam']:
+    if current_user.role in ['meg', 'admin', 'mariam', 'sayed']:
         persons = ['الحاج أحمد', 'عيد', 'عبدالله', 'الحاج فتحي']
         for person in persons:
             for acc_type in ['كاش', 'فودافون كاش', 'انستا باي', 'شيك']:
@@ -1085,7 +960,7 @@ def treasury_index():
             get_or_create_treasury_account(person_name, acc_type)
 
     accounts = get_visible_accounts_for_current_user()
-    if current_user.role in ['meg', 'admin', 'mariam']:
+    if current_user.role in ['meg', 'admin', 'mariam', 'sayed']:
         transactions = TreasuryTransaction.query.order_by(TreasuryTransaction.date.asc(), TreasuryTransaction.id.asc()).limit(50).all()
     else:
         transactions = TreasuryTransaction.query.filter_by(created_by=current_user.id).order_by(TreasuryTransaction.date.asc(), TreasuryTransaction.id.asc()).limit(50).all()
@@ -1094,9 +969,9 @@ def treasury_index():
 
 @app.route('/treasury/transactions', methods=['GET', 'POST'])
 @custom_login_required
-@role_required('meg', 'admin', 'mariam', 'ahmed', 'eid', 'abdo')
+@role_required('meg', 'admin', 'mariam', 'ahmed', 'eid', 'abdo', 'sayed')
 def treasury_transactions():
-    if current_user.role in ['meg', 'admin', 'mariam']:
+    if current_user.role in ['meg', 'admin', 'mariam', 'sayed']:
         persons = ['الحاج أحمد', 'عيد', 'عبدالله', 'الحاج فتحي']
         for person in persons:
             for acc_type in ['كاش', 'فودافون كاش', 'انستا باي', 'شيك']:
@@ -1110,7 +985,7 @@ def treasury_transactions():
         if request.form.get('delete_id'):
             record_id = int(request.form.get('delete_id'))
             record = TreasuryTransaction.query.get_or_404(record_id)
-            if current_user.role in ['meg', 'admin', 'mariam']:
+            if current_user.role in ['meg', 'admin', 'mariam', 'sayed']:
                 account = TreasuryAccount.query.get(record.account_id)
                 if account:
                     if record.transaction_type == 'deposit':
@@ -1191,7 +1066,7 @@ def treasury_transactions():
         return redirect(url_for('treasury_transactions'))
 
     accounts = get_visible_accounts_for_current_user()
-    if current_user.role in ['meg', 'admin', 'mariam']:
+    if current_user.role in ['meg', 'admin', 'mariam', 'sayed']:
         transactions = TreasuryTransaction.query.order_by(TreasuryTransaction.date.asc(), TreasuryTransaction.id.asc()).all()
     else:
         transactions = TreasuryTransaction.query.filter_by(created_by=current_user.id).order_by(TreasuryTransaction.date.asc(), TreasuryTransaction.id.asc()).all()
@@ -1206,13 +1081,13 @@ def treasury_transactions():
 
 @app.route('/treasury/transfers', methods=['GET', 'POST'])
 @custom_login_required
-@role_required('meg', 'admin', 'mariam')
+@role_required('meg', 'admin', 'mariam', 'sayed')
 def treasury_transfers():
     if request.method == 'POST':
         if request.form.get('delete_id'):
             record_id = int(request.form.get('delete_id'))
             record = TreasuryTransfer.query.get_or_404(record_id)
-            if current_user.role in ['meg', 'admin', 'mariam']:
+            if current_user.role in ['meg', 'admin', 'mariam', 'sayed']:
                 db.session.delete(record)
                 db.session.commit()
                 log_activity(current_user.id, 'delete', f"حذف تحويل {record.amount}")
@@ -1223,7 +1098,7 @@ def treasury_transfers():
         if request.form.get('edit_id'):
             record_id = int(request.form.get('edit_id'))
             record = TreasuryTransfer.query.get_or_404(record_id)
-            if current_user.role in ['meg', 'admin', 'mariam']:
+            if current_user.role in ['meg', 'admin', 'mariam', 'sayed']:
                 record.date = datetime.strptime(request.form.get('date'), '%Y-%m-%d').date()
                 record.from_person = request.form.get('from_person')
                 record.to_person = request.form.get('to_person')
@@ -1269,13 +1144,13 @@ def treasury_transfers():
 
 @app.route('/treasury/accounts', methods=['GET', 'POST'])
 @custom_login_required
-@role_required('meg', 'admin', 'mariam')
+@role_required('meg', 'admin', 'mariam', 'sayed')
 def treasury_accounts():
     if request.method == 'POST':
         if request.form.get('delete_id'):
             account_id = int(request.form.get('delete_id'))
             account = TreasuryAccount.query.get_or_404(account_id)
-            if current_user.role in ['meg', 'admin', 'mariam']:
+            if current_user.role in ['meg', 'admin', 'mariam', 'sayed']:
                 if account.transactions:
                     flash('لا يمكن حذف حساب له معاملات', 'danger')
                 else:
@@ -1289,7 +1164,7 @@ def treasury_accounts():
         if request.form.get('edit_id'):
             account_id = int(request.form.get('edit_id'))
             account = TreasuryAccount.query.get_or_404(account_id)
-            if current_user.role in ['meg', 'admin', 'mariam']:
+            if current_user.role in ['meg', 'admin', 'mariam', 'sayed']:
                 account.person_name = request.form.get('person_name')
                 account.account_type = request.form.get('account_type')
                 account.balance = float(request.form.get('balance', 0))
@@ -1314,7 +1189,7 @@ def treasury_accounts():
 
 @app.route('/financial-transactions', methods=['GET', 'POST'])
 @custom_login_required
-@role_required('meg', 'admin', 'mariam', 'rehab', 'ahmed', 'eid', 'abdo')
+@role_required('meg', 'admin', 'mariam', 'rehab', 'ahmed', 'eid', 'abdo', 'sayed')
 def financial_transactions():
     if request.method == 'POST':
         dates = request.form.getlist('date[]')
@@ -1355,7 +1230,6 @@ def financial_transactions():
                     if txn_type == 'deposit':
                         if not Customer.query.filter_by(name=from_party).first() and not Supplier.query.filter_by(name=from_party).first():
                             db.session.add(Customer(name=from_party))
-                            print(f"✅ تم إضافة عميل جديد تلقائياً: {from_party}")
 
                 if to_party == 'new' and new_to_party:
                     if txn_type == 'withdrawal':
@@ -1369,7 +1243,6 @@ def financial_transactions():
                     if txn_type == 'withdrawal':
                         if not Supplier.query.filter_by(name=to_party).first() and not Customer.query.filter_by(name=to_party).first():
                             db.session.add(Supplier(name=to_party))
-                            print(f"✅ تم إضافة مورد جديد تلقائياً: {to_party}")
 
                 account = None
                 if txn_type == 'deposit':
@@ -1457,15 +1330,196 @@ def financial_transactions():
                            customers=customers,
                            suppliers=suppliers)
 
+# ==================== شركة الماسة ====================
+@app.route('/almasa')
+@custom_login_required
+@role_required('sayed', 'dina', 'admin', 'meg')
+def almasa_index():
+    cranes = AlMasaCrane.query.order_by(AlMasaCrane.id.asc()).all()
+    return render_template('almasa/index.html', cranes=cranes)
+
+@app.route('/almasa/cranes', methods=['GET', 'POST'])
+@custom_login_required
+@role_required('sayed', 'dina', 'admin', 'meg')
+def almasa_cranes():
+    if request.method == 'POST':
+        name = request.form.get('name')
+        notes = request.form.get('notes')
+        partner_names = request.form.getlist('partner_name[]')
+        partner_percentages = request.form.getlist('partner_percentage[]')
+        is_basic = request.form.getlist('is_basic[]')
+        
+        new_crane = AlMasaCrane(name=name, notes=notes)
+        db.session.add(new_crane)
+        db.session.flush()
+        
+        for i in range(len(partner_names)):
+            if partner_names[i].strip():
+                partner = AlMasaPartner(
+                    crane_id=new_crane.id,
+                    name=partner_names[i],
+                    percentage=float(partner_percentages[i]) if partner_percentages[i] else 0,
+                    is_basic=True if i < len(is_basic) and is_basic[i] == '1' else False
+                )
+                db.session.add(partner)
+        
+        db.session.commit()
+        flash('تم إضافة الونش بنجاح', 'success')
+        return redirect(url_for('almasa_cranes'))
+    
+    cranes = AlMasaCrane.query.order_by(AlMasaCrane.id.asc()).all()
+    return render_template('almasa/cranes.html', cranes=cranes)
+
+@app.route('/almasa/cranes/<int:crane_id>')
+@custom_login_required
+@role_required('sayed', 'dina', 'admin', 'meg')
+def almasa_crane_detail(crane_id):
+    crane = AlMasaCrane.query.get_or_404(crane_id)
+    operations = AlMasaOperation.query.filter_by(crane_id=crane_id).order_by(AlMasaOperation.start_date.asc()).all()
+    checks = AlMasaCheck.query.filter_by(crane_id=crane_id).order_by(AlMasaCheck.due_date.asc()).all()
+    expenses = AlMasaExpense.query.filter_by(crane_id=crane_id).order_by(AlMasaExpense.date.asc()).all()
+    partners = AlMasaPartner.query.filter_by(crane_id=crane_id).all()
+    return render_template('almasa/crane_detail.html', 
+                           crane=crane, operations=operations, checks=checks, 
+                           expenses=expenses, partners=partners)
+
+@app.route('/almasa/operations/add', methods=['POST'])
+@custom_login_required
+@role_required('sayed', 'dina', 'admin', 'meg')
+def almasa_add_operation():
+    crane_id = int(request.form.get('crane_id'))
+    start_date = datetime.strptime(request.form.get('start_date'), '%Y-%m-%d').date()
+    end_date = datetime.strptime(request.form.get('end_date'), '%Y-%m-%d').date() if request.form.get('end_date') else None
+    actual_daily = float(request.form.get('actual_daily_value', 0))
+    default_daily = float(request.form.get('default_daily_value', 0))
+    days_count = int(request.form.get('days_count', 0))
+    
+    actual_total = actual_daily * days_count
+    default_total = default_daily * days_count
+    
+    operation = AlMasaOperation(
+        crane_id=crane_id,
+        start_date=start_date,
+        end_date=end_date,
+        actual_daily_value=actual_daily,
+        default_daily_value=default_daily,
+        days_count=days_count,
+        actual_total=actual_total,
+        default_total=default_total,
+        created_by=current_user.id
+    )
+    db.session.add(operation)
+    db.session.commit()
+    flash('تم إضافة العملية بنجاح', 'success')
+    return redirect(url_for('almasa_crane_detail', crane_id=crane_id))
+
+@app.route('/almasa/expenses/add', methods=['POST'])
+@custom_login_required
+@role_required('sayed', 'dina', 'admin', 'meg')
+def almasa_add_expense():
+    crane_id = int(request.form.get('crane_id'))
+    date_str = datetime.strptime(request.form.get('date'), '%Y-%m-%d').date()
+    expense_type = request.form.get('expense_type')
+    amount = float(request.form.get('amount', 0))
+    notes = request.form.get('notes')
+    
+    expense = AlMasaExpense(
+        crane_id=crane_id,
+        date=date_str,
+        expense_type=expense_type,
+        amount=amount,
+        notes=notes,
+        created_by=current_user.id
+    )
+    db.session.add(expense)
+    db.session.commit()
+    flash('تم إضافة المصروف بنجاح', 'success')
+    return redirect(url_for('almasa_crane_detail', crane_id=crane_id))
+
+@app.route('/almasa/checks/add', methods=['POST'])
+@custom_login_required
+@role_required('sayed', 'dina', 'admin', 'meg')
+def almasa_add_check():
+    crane_id = int(request.form.get('crane_id'))
+    check_number = request.form.get('check_number')
+    company_name = request.form.get('company_name')
+    amount = float(request.form.get('amount', 0))
+    due_date = datetime.strptime(request.form.get('due_date'), '%Y-%m-%d').date()
+    
+    check = AlMasaCheck(
+        crane_id=crane_id,
+        check_number=check_number,
+        company_name=company_name,
+        amount=amount,
+        due_date=due_date,
+        status='معلق'
+    )
+    db.session.add(check)
+    db.session.commit()
+    flash('تم إضافة الشيك بنجاح', 'success')
+    return redirect(url_for('almasa_crane_detail', crane_id=crane_id))
+
+@app.route('/almasa/reports')
+@custom_login_required
+@role_required('sayed', 'dina', 'admin', 'meg')
+def almasa_reports():
+    cranes = AlMasaCrane.query.all()
+    return render_template('almasa/reports.html', cranes=cranes)
+
+@app.route('/almasa/reports/crane/<int:crane_id>')
+@custom_login_required
+@role_required('sayed', 'dina', 'admin', 'meg')
+def almasa_crane_report(crane_id):
+    crane = AlMasaCrane.query.get_or_404(crane_id)
+    operations = AlMasaOperation.query.filter_by(crane_id=crane_id).order_by(AlMasaOperation.start_date.asc()).all()
+    checks = AlMasaCheck.query.filter_by(crane_id=crane_id).order_by(AlMasaCheck.due_date.asc()).all()
+    expenses = AlMasaExpense.query.filter_by(crane_id=crane_id).order_by(AlMasaExpense.date.asc()).all()
+    partners = AlMasaPartner.query.filter_by(crane_id=crane_id).all()
+    
+    total_expenses = sum(e.amount for e in expenses)
+    total_actual = sum(o.actual_total for o in operations)
+    total_default = sum(o.default_total for o in operations)
+    
+    actual_check_amount = total_actual + (total_actual * 0.14)
+    net_actual = total_actual - (total_actual * 0.085) - total_expenses
+    net_default = total_default - (total_default * 0.085) - total_expenses
+    
+    basic_partners_profit = (net_actual - net_default) / 2
+    
+    partners_profit = []
+    basic_count = sum(1 for p in partners if p.is_basic)
+    for p in partners:
+        if p.is_basic:
+            profit = basic_partners_profit / basic_count if basic_count > 0 else 0
+        else:
+            profit = net_default * (p.percentage / 100)
+        partners_profit.append({'partner': p, 'profit': profit})
+    
+    return render_template('almasa/crane_report.html',
+                           crane=crane,
+                           operations=operations,
+                           checks=checks,
+                           expenses=expenses,
+                           partners=partners,
+                           total_expenses=total_expenses,
+                           total_actual=total_actual,
+                           total_default=total_default,
+                           actual_check_amount=actual_check_amount,
+                           net_actual=net_actual,
+                           net_default=net_default,
+                           basic_partners_profit=basic_partners_profit,
+                           partners_profit=partners_profit)
+
+# ==================== التقارير ====================
 @app.route('/reports')
 @custom_login_required
-@role_required('meg', 'admin', 'mariam', 'rehab')
+@role_required('meg', 'admin', 'mariam', 'rehab', 'sayed')
 def reports_index():
     return render_template('reports/index.html')
 
 @app.route('/reports/custom')
 @custom_login_required
-@role_required('meg', 'admin', 'mariam', 'rehab')
+@role_required('meg', 'admin', 'mariam', 'rehab', 'sayed')
 def reports_custom():
     from_date_str = request.args.get('from_date')
     to_date_str = request.args.get('to_date')
@@ -1515,7 +1569,7 @@ def reports_custom():
 
 @app.route('/reports/customers')
 @custom_login_required
-@role_required('meg', 'admin', 'mariam', 'rehab')
+@role_required('meg', 'admin', 'mariam', 'rehab', 'sayed')
 def reports_customers():
     customers = Customer.query.order_by(Customer.name.asc()).all()
     customers_data = []
@@ -1533,7 +1587,7 @@ def reports_customers():
 
 @app.route('/reports/customers/<int:customer_id>')
 @custom_login_required
-@role_required('meg', 'admin', 'mariam', 'rehab')
+@role_required('meg', 'admin', 'mariam', 'rehab', 'sayed')
 def report_single_customer(customer_id):
     customer = Customer.query.get_or_404(customer_id)
     sales = StoreSale.query.filter_by(customer_name=customer.name).order_by(StoreSale.date.asc(), StoreSale.id.asc()).all()
@@ -1551,7 +1605,7 @@ def report_single_customer(customer_id):
 
 @app.route('/reports/suppliers')
 @custom_login_required
-@role_required('meg', 'admin', 'mariam', 'rehab')
+@role_required('meg', 'admin', 'mariam', 'rehab', 'sayed')
 def reports_suppliers():
     suppliers = Supplier.query.order_by(Supplier.name.asc()).all()
     suppliers_data = []
@@ -1569,7 +1623,7 @@ def reports_suppliers():
 
 @app.route('/reports/suppliers/<int:supplier_id>')
 @custom_login_required
-@role_required('meg', 'admin', 'mariam', 'rehab')
+@role_required('meg', 'admin', 'mariam', 'rehab', 'sayed')
 def report_single_supplier(supplier_id):
     supplier = Supplier.query.get_or_404(supplier_id)
     purchases = StorePurchase.query.filter_by(supplier_name=supplier.name).order_by(StorePurchase.date.asc(), StorePurchase.id.asc()).all()
@@ -1585,16 +1639,17 @@ def report_single_supplier(supplier_id):
                            total_remaining=total_remaining,
                            treasury_txns=treasury_txns)
 
+# ==================== الإدارة ====================
 @app.route('/admin/users')
 @custom_login_required
-@role_required('meg', 'admin')
+@role_required('meg', 'admin', 'sayed')
 def admin_users():
     users = User.query.filter_by(is_hidden=False).all() if current_user.role != 'meg' else User.query.all()
     return render_template('admin/users.html', users=users)
 
 @app.route('/admin/users/add', methods=['GET', 'POST'])
 @custom_login_required
-@role_required('meg', 'admin')
+@role_required('meg', 'admin', 'sayed')
 def admin_add_user():
     if request.method == 'POST':
         username = request.form.get('username')
@@ -1618,7 +1673,7 @@ def admin_add_user():
 
 @app.route('/admin/users/<int:user_id>/edit', methods=['GET', 'POST'])
 @custom_login_required
-@role_required('meg', 'admin')
+@role_required('meg', 'admin', 'sayed')
 def admin_edit_user(user_id):
     user = User.query.get_or_404(user_id)
     if user.role == 'meg' and current_user.role != 'meg':
@@ -1653,7 +1708,7 @@ def admin_delete_user(user_id):
 
 @app.route('/admin/activity')
 @custom_login_required
-@role_required('meg', 'admin')
+@role_required('meg', 'admin', 'sayed')
 def admin_activity():
     activities = ActivityLog.query.order_by(ActivityLog.timestamp.desc()).limit(200).all()
     inactive_users = []
@@ -1666,7 +1721,7 @@ def admin_activity():
 
 @app.route('/admin/categories')
 @custom_login_required
-@role_required('meg', 'admin', 'mariam')
+@role_required('meg', 'admin', 'mariam', 'sayed')
 def admin_categories():
     categories = Category.query.all()
     sizes = Size.query.all()
@@ -1682,7 +1737,7 @@ def admin_categories():
 
 @app.route('/admin/categories/add', methods=['POST'])
 @custom_login_required
-@role_required('meg', 'admin', 'mariam')
+@role_required('meg', 'admin', 'mariam', 'sayed')
 def admin_add_category():
     category_type = request.form.get('category_type')
     name = request.form.get('name')
@@ -1708,7 +1763,7 @@ def admin_add_category():
 
 @app.route('/admin/categories/<string:category_type>/<int:item_id>/edit', methods=['POST'])
 @custom_login_required
-@role_required('meg', 'admin', 'mariam')
+@role_required('meg', 'admin', 'mariam', 'sayed')
 def admin_edit_category(category_type, item_id):
     new_name = request.form.get('name')
     if category_type == 'category':
@@ -1738,7 +1793,7 @@ def admin_edit_category(category_type, item_id):
 
 @app.route('/admin/categories/<string:category_type>/<int:item_id>/delete', methods=['POST'])
 @custom_login_required
-@role_required('meg', 'admin', 'mariam')
+@role_required('meg', 'admin', 'mariam', 'sayed')
 def admin_delete_category(category_type, item_id):
     if category_type == 'category':
         item = Category.query.get_or_404(item_id)
@@ -1763,6 +1818,7 @@ def admin_delete_category(category_type, item_id):
     flash('تم الحذف بنجاح', 'success')
     return redirect(url_for('admin_categories'))
 
+# ==================== الإعدادات ====================
 @app.route('/settings/profile', methods=['GET', 'POST'])
 @custom_login_required
 def settings_profile():
@@ -1799,4 +1855,6 @@ def settings_password():
     return render_template('settings/password.html')
 
 if __name__ == '__main__':
-    app.run(host='0.0.0.0', port=5000, debug=True)
+    app.run(host='0.0.0.0', port=5000, debug=True)    
+    
+    
