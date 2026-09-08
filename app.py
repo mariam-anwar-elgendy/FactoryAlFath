@@ -531,7 +531,7 @@ def factory_diary():
         return redirect(url_for('factory_diary'))
     diary = FactoryDiary.query.order_by(FactoryDiary.date.asc(), FactoryDiary.id.asc()).all()
     return render_template('factory/diary.html', diary=diary)
-
+# ==================== المحل ====================
 @app.route('/store')
 @custom_login_required
 @role_required('meg', 'admin', 'mariam', 'rehab', 'ahmed', 'sayed')
@@ -540,7 +540,8 @@ def store_index():
     sales = StoreSale.query.filter_by(date=today).order_by(StoreSale.id.asc()).all()
     purchases = StorePurchase.query.filter_by(date=today).order_by(StorePurchase.id.asc()).all()
     receiving = StoreReceiving.query.filter_by(date=today).order_by(StoreReceiving.id.asc()).all()
-    return render_template('store/index.html', sales=sales, purchases=purchases, receiving=receiving)
+    inventory_low = StoreInventory.query.filter(StoreInventory.current_quantity <= StoreInventory.min_quantity).count()
+    return render_template('store/index.html', sales=sales, purchases=purchases, receiving=receiving, inventory_low=inventory_low)
 
 @app.route('/store/transactions', methods=['GET', 'POST'])
 @custom_login_required
@@ -938,6 +939,125 @@ def store_transactions():
                            sizes=sizes,
                            thicknesses=thicknesses)
 
+@app.route('/store/inventory', methods=['GET', 'POST'])
+@custom_login_required
+@role_required('meg', 'admin', 'mariam', 'rehab', 'ahmed', 'sayed')
+def store_inventory():
+    if request.method == 'POST':
+        inventory_id = int(request.form.get('inventory_id'))
+        item = StoreInventory.query.get_or_404(inventory_id)
+        if request.form.get('delete'):
+            if current_user.role in ['meg', 'admin', 'mariam', 'sayed']:
+                db.session.delete(item)
+                db.session.commit()
+                log_activity(current_user.id, 'delete', f"حذف مخزون {item.product_type}")
+                flash('تم حذف عنصر المخزون', 'success')
+            else:
+                flash('غير مصرح لك بالحذف', 'danger')
+        else:
+            item.current_quantity = float(request.form.get('current_quantity', item.current_quantity))
+            item.min_quantity = float(request.form.get('min_quantity', item.min_quantity))
+            db.session.commit()
+            log_activity(current_user.id, 'edit', f"تعديل مخزون {item.product_type}")
+            flash('تم تحديث المخزون', 'success')
+        return redirect(url_for('store_inventory'))
+    inventory = StoreInventory.query.order_by(StoreInventory.product_type.asc(), StoreInventory.product_size.asc()).all()
+    return render_template('store/inventory.html', inventory=inventory)
+
+@app.route('/store/returns', methods=['GET', 'POST'])
+@custom_login_required
+@role_required('meg', 'admin', 'mariam', 'rehab', 'ahmed', 'sayed')
+def store_returns():
+    if request.method == 'POST':
+        if request.form.get('delete_id'):
+            record_id = int(request.form.get('delete_id'))
+            record = StoreReturn.query.get_or_404(record_id)
+            if can_delete_record(current_user.role, record.date):
+                db.session.delete(record)
+                db.session.commit()
+                log_activity(current_user.id, 'delete', f"حذف مرتجع {record.party_name}")
+                flash('تم حذف المرتجع بنجاح', 'success')
+            else:
+                flash('غير مصرح لك بالحذف', 'danger')
+            return redirect(url_for('store_returns'))
+        if request.form.get('edit_id'):
+            record_id = int(request.form.get('edit_id'))
+            record = StoreReturn.query.get_or_404(record_id)
+            if can_edit(current_user.role, record.date, record.created_by, current_user.id):
+                record.date = datetime.strptime(request.form.get('date'), '%Y-%m-%d').date()
+                record.return_type = request.form.get('return_type')
+                record.party_name = request.form.get('party_name')
+                record.product_type = request.form.get('product_type')
+                record.product_size = request.form.get('product_size')
+                record.product_spec = request.form.get('product_spec')
+                record.quantity = float(request.form.get('quantity', 0))
+                record.reason = request.form.get('reason')
+                db.session.commit()
+                log_activity(current_user.id, 'edit', f"تعديل مرتجع {record.party_name}")
+                flash('تم تحديث المرتجع بنجاح', 'success')
+            else:
+                flash('غير مصرح لك بالتعديل أو انتهت صلاحية التعديل', 'danger')
+            return redirect(url_for('store_returns'))
+        record_date = datetime.strptime(request.form.get('date'), '%Y-%m-%d').date()
+        return_type = request.form.get('return_type')
+        party_name = request.form.get('party_name')
+        product_type = request.form.get('product_type')
+        product_size = request.form.get('product_size')
+        product_spec = request.form.get('product_spec')
+        quantity = float(request.form.get('quantity', 0))
+        reason = request.form.get('reason')
+        new_return = StoreReturn(date=record_date, return_type=return_type, party_name=party_name,
+                                 product_type=product_type, product_size=product_size, product_spec=product_spec,
+                                 quantity=quantity, reason=reason, created_by=current_user.id, created_at=datetime.utcnow())
+        db.session.add(new_return)
+        db.session.commit()
+        log_activity(current_user.id, 'create', f"إضافة مرتجع {party_name}")
+        flash('تم تسجيل المرتجع بنجاح', 'success')
+        return redirect(url_for('store_returns'))
+    returns = StoreReturn.query.order_by(StoreReturn.date.asc(), StoreReturn.id.asc()).all()
+    return render_template('store/returns.html', returns=returns)
+
+@app.route('/store/diary', methods=['GET', 'POST'])
+@custom_login_required
+@role_required('meg', 'admin', 'mariam', 'rehab', 'ahmed', 'sayed')
+def store_diary():
+    if request.method == 'POST':
+        if request.form.get('delete_id'):
+            record_id = int(request.form.get('delete_id'))
+            record = StoreDiary.query.get_or_404(record_id)
+            if can_delete_record(current_user.role, record.date):
+                db.session.delete(record)
+                db.session.commit()
+                log_activity(current_user.id, 'delete', f"حذف يومية محل")
+                flash('تم حذف اليومية بنجاح', 'success')
+            else:
+                flash('غير مصرح لك بالحذف', 'danger')
+            return redirect(url_for('store_diary'))
+        if request.form.get('edit_id'):
+            record_id = int(request.form.get('edit_id'))
+            record = StoreDiary.query.get_or_404(record_id)
+            if can_edit(current_user.role, record.date, record.created_by, current_user.id):
+                record.date = datetime.strptime(request.form.get('date'), '%Y-%m-%d').date()
+                record.description = request.form.get('description')
+                record.amount = float(request.form.get('amount', 0))
+                db.session.commit()
+                log_activity(current_user.id, 'edit', f"تعديل يومية محل")
+                flash('تم تحديث اليومية بنجاح', 'success')
+            else:
+                flash('غير مصرح لك بالتعديل أو انتهت صلاحية التعديل', 'danger')
+            return redirect(url_for('store_diary'))
+        record_date = datetime.strptime(request.form.get('date'), '%Y-%m-%d').date()
+        description = request.form.get('description')
+        amount = float(request.form.get('amount', 0))
+        new_record = StoreDiary(date=record_date, description=description, amount=amount,
+                                created_by=current_user.id, created_at=datetime.utcnow())
+        db.session.add(new_record)
+        db.session.commit()
+        log_activity(current_user.id, 'create', f"إضافة يومية محل: {description[:50]}")
+        flash('تم تسجيل اليومية بنجاح', 'success')
+        return redirect(url_for('store_diary'))
+    diary = StoreDiary.query.order_by(StoreDiary.date.asc(), StoreDiary.id.asc()).all()
+    return render_template('store/diary.html', diary=diary)
 # ==================== الخزينة ====================
 @app.route('/treasury')
 @custom_login_required
