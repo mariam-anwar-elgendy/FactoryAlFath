@@ -3,56 +3,102 @@
 {% block title %}المحل{% endblock %}
 
 {% block content %}
-<h2 class="fw-bold mb-4 text-purple-dark">🏪 المحل</h2>
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h2 class="fw-bold text-purple-dark">🏪 المحل</h2>
+</div>
 
-<div class="row g-3 mb-4">
-    <div class="col-md-3">
-        <div class="card border-0 shadow-sm">
-            <div class="card-body text-center">
-                <i class="fas fa-shopping-cart fa-3x text-purple mb-3"></i>
-                <h5 class="fw-bold">المعاملات</h5>
-                <a href="{{ url_for('store_transactions') }}" class="btn btn-purple w-100">إدارة المعاملات</a>
+<div class="row">
+    <!-- المبيعات اليوم -->
+    <div class="col-md-6 mb-4">
+        <div class="card border-0 shadow-sm h-100">
+            <div class="card-header bg-purple text-white fw-bold">💰 مبيعات اليوم</div>
+            <div class="card-body">
+                <div class="table-responsive">
+                    <table class="table table-sm table-striped">
+                        <thead>
+                            <tr><th>العميل</th><th>الصنف</th><th>الإجمالي</th></tr>
+                        </thead>
+                        <tbody>
+                            {% for s in sales %}
+                            <tr>
+                                <td>{{ s.customer_name }}</td>
+                                <td>
+                                    {% for item in s.items %}
+                                        {{ item.product_type }}{% if not loop.last %}, {% endif %}
+                                    {% else %}
+                                        -
+                                    {% endfor %}
+                                </td>
+                                <td>{{ s.total }}</td>
+                            </tr>
+                            {% else %}
+                            <tr><td colspan="3" class="text-center">لا توجد مبيعات اليوم</td></tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
             </div>
         </div>
     </div>
-    <div class="col-md-3">
-        <div class="card border-0 shadow-sm">
-            <div class="card-body text-center">
-                <i class="fas fa-boxes fa-3x text-purple mb-3"></i>
-                <h5 class="fw-bold">المخزون</h5>
-                <a href="{{ url_for('store_inventory') }}" class="btn btn-purple w-100">عرض المخزون</a>
-            </div>
-        </div>
-    </div>
-    <div class="col-md-3">
-        <div class="card border-0 shadow-sm">
-            <div class="card-body text-center">
-                <i class="fas fa-undo fa-3x text-purple mb-3"></i>
-                <h5 class="fw-bold">المرتجعات</h5>
-                <a href="{{ url_for('store_returns') }}" class="btn btn-purple w-100">إدارة المرتجعات</a>
-            </div>
-        </div>
-    </div>
-    <div class="col-md-3">
-        <div class="card border-0 shadow-sm">
-            <div class="card-body text-center">
-                <i class="fas fa-book fa-3x text-purple mb-3"></i>
-                <h5 class="fw-bold">اليوميات</h5>
-                <a href="{{ url_for('store_diary') }}" class="btn btn-purple w-100">إدارة اليوميات</a>
+
+    <!-- مشتريات اليوم -->
+    <div class="col-md-6 mb-4">
+        <div class="card border-0 shadow-sm h-100">
+            <div class="card-header bg-purple text-white fw-bold">📦 مشتريات اليوم</div>
+            <div class="card-body">
+                <div class="table-responsive">
+                    <table class="table table-sm table-striped">
+                        <thead>
+                            <tr><th>المورد</th><th>الصنف</th><th>الإجمالي</th></tr>
+                        </thead>
+                        <tbody>
+                            {% for p in purchases %}
+                            <tr>
+                                <td>{{ p.supplier_name }}</td>
+                                <td>
+                                    {% for item in p.items %}
+                                        {{ item.product_type }}{% if not loop.last %}, {% endif %}
+                                    {% else %}
+                                        -
+                                    {% endfor %}
+                                </td>
+                                <td>{{ p.total }}</td>
+                            </tr>
+                            {% else %}
+                            <tr><td colspan="3" class="text-center">لا توجد مشتريات اليوم</td></tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
             </div>
         </div>
     </div>
 </div>
 
-<!-- ملخص اليوم -->
+<!-- استلام اليوم -->
 <div class="card border-0 shadow-sm">
-    <div class="card-header bg-purple text-white fw-bold">
-        📅 ملخص اليوم ({{ now.strftime('%Y-%m-%d') }})
-    </div>
+    <div class="card-header bg-purple text-white fw-bold">📥 استلام اليوم</div>
     <div class="card-body">
-        <p>مبيعات اليوم: {{ sales|length }} عملية</p>
-        <p>مشتريات اليوم: {{ purchases|length }} عملية</p>
-        <p>استلام اليوم: {{ receiving|length }} عملية</p>
+        <div class="table-responsive">
+            <table class="table table-sm table-striped">
+                <thead>
+                    <tr><th>الصنف</th><th>المقاس</th><th>المواصفات</th><th>الكمية</th><th>من المصنع</th></tr>
+                </thead>
+                <tbody>
+                    {% for r in receiving %}
+                    <tr>
+                        <td>{{ r.product_type or '-' }}</td>
+                        <td>{{ r.product_size or '-' }}</td>
+                        <td>{{ r.product_spec or '-' }}</td>
+                        <td>{{ r.quantity }}</td>
+                        <td>{% if r.from_factory %}✅{% else %}❌{% endif %}</td>
+                    </tr>
+                    {% else %}
+                    <tr><td colspan="5" class="text-center">لا يوجد استلام اليوم</td></tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
     </div>
 </div>
 {% endblock %}
