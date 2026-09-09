@@ -102,7 +102,7 @@
             <table class="table table-sm table-striped">
                 <thead>
                     <tr>
-                        <th>رقم الشيك</th><th>الشركة</th><th>المبلغ</th><th>معاد الصرف</th><th>الحالة</th>
+                        <th>رقم الشيك</th><th>الشركة</th><th>المبلغ</th><th>معاد الصرف</th><th>الحالة</th><th>تقرير</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -115,9 +115,12 @@
                         <td>
                             <span class="badge bg-{{ 'success' if c.status == 'تم صرفه' else 'warning' }}">{{ c.status }}</span>
                         </td>
+                        <td>
+                            <a href="{{ url_for('almasa_check_report', check_id=c.id) }}" class="btn btn-sm btn-info">📊</a>
+                        </td>
                     </tr>
                     {% else %}
-                    <tr><td colspan="5" class="text-center">لا توجد شيكات</td></tr>
+                    <tr><td colspan="6" class="text-center">لا توجد شيكات</td></tr>
                     {% endfor %}
                 </tbody>
             </table>
@@ -211,7 +214,7 @@
 
 <!-- Modal إضافة شيك -->
 <div class="modal fade" id="addCheckModal" tabindex="-1">
-    <div class="modal-dialog">
+    <div class="modal-dialog modal-lg">
         <div class="modal-content">
             <form method="POST" action="{{ url_for('almasa_add_check') }}">
                 <input type="hidden" name="crane_id" value="{{ crane.id }}">
@@ -229,12 +232,29 @@
                         <input type="text" name="company_name" class="form-control" required>
                     </div>
                     <div class="mb-3">
-                        <label class="form-label fw-bold">المبلغ</label>
-                        <input type="number" step="0.01" name="amount" class="form-control" required>
-                    </div>
-                    <div class="mb-3">
                         <label class="form-label fw-bold">معاد الصرف</label>
                         <input type="date" name="due_date" class="form-control" required>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label fw-bold">اختر العمليات (واحدة أو أكثر)</label>
+                        <div class="card">
+                            <div class="card-body">
+                                {% for o in operations %}
+                                <div class="form-check">
+                                    <input type="checkbox" name="operation_ids[]" value="{{ o.id }}" class="form-check-input" id="op{{ o.id }}">
+                                    <label class="form-check-label" for="op{{ o.id }}">
+                                        من {{ o.start_date.strftime('%Y-%m-%d') }}
+                                        {% if o.end_date %}إلى {{ o.end_date.strftime('%Y-%m-%d') }}{% endif %}
+                                        - الأيام: {{ o.days_count }}
+                                        - الفعلي: {{ o.actual_total }}
+                                        - الافتراضي: {{ o.default_total }}
+                                    </label>
+                                </div>
+                                {% else %}
+                                <p class="text-muted">لا توجد عمليات - أضف عملية أولاً</p>
+                                {% endfor %}
+                            </div>
+                        </div>
                     </div>
                 </div>
                 <div class="modal-footer">
