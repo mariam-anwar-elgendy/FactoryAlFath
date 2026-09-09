@@ -17,7 +17,7 @@ from models import StoreSale, StorePurchase, StoreInventory, StoreReceiving, Sto
 from models import StoreSaleItem, StorePurchaseItem, Payment
 from models import TreasuryAccount, TreasuryTransaction, TreasuryTransfer
 from models import EditLog, Notification, ActivityLog
-from models import AlMasaCrane, AlMasaPartner, AlMasaOperation, AlMasaCheck, AlMasaExpense
+from models import AlMasaCrane, AlMasaPartner, AlMasaOperation, AlMasaCheck, AlMasaCheckOperation, AlMasaExpense
 from utils import (
     login_required as custom_login_required,
     role_required,
@@ -127,10 +127,8 @@ def init_db():
             db.session.execute(db.text('ALTER TABLE store_sales DROP COLUMN IF EXISTS paid_amount CASCADE'))
             db.session.execute(db.text('ALTER TABLE store_sales DROP COLUMN IF EXISTS remaining_amount CASCADE'))
             db.session.commit()
-            print("✅ تم حذف الأعمدة القديمة من store_sales")
         except Exception as e:
             db.session.rollback()
-            print(f"⚠️ ملاحظة store_sales: {e}")
         
         try:
             db.session.execute(db.text('ALTER TABLE store_purchases DROP COLUMN IF EXISTS product_type CASCADE'))
@@ -142,62 +140,20 @@ def init_db():
             db.session.execute(db.text('ALTER TABLE store_purchases DROP COLUMN IF EXISTS paid_amount CASCADE'))
             db.session.execute(db.text('ALTER TABLE store_purchases DROP COLUMN IF EXISTS remaining_amount CASCADE'))
             db.session.commit()
-            print("✅ تم حذف الأعمدة القديمة من store_purchases")
         except Exception as e:
             db.session.rollback()
-            print(f"⚠️ ملاحظة store_purchases: {e}")
 
         users_data = [
-            {'username': os.environ.get('MEG_USERNAME', 'meg'),
-             'password': os.environ.get('MEG_PASSWORD', '262004'),
-             'full_name': 'MEG',
-             'role': 'meg',
-             'is_hidden': True},
-            {'username': os.environ.get('ADMIN_USERNAME', 'f'),
-             'password': os.environ.get('ADMIN_PASSWORD', '*1997#'),
-             'full_name': 'Admin',
-             'role': 'admin',
-             'is_hidden': False},
-            {'username': os.environ.get('MARIAM_USERNAME', 'mariam'),
-             'password': os.environ.get('MARIAM_PASSWORD', '#mariam2004'),
-             'full_name': 'Mariam',
-             'role': 'mariam',
-             'is_hidden': False},
-            {'username': os.environ.get('REHAB_USERNAME', 'rehab'),
-             'password': os.environ.get('REHAB_PASSWORD', 'rehab2004#'),
-             'full_name': 'Rehab',
-             'role': 'rehab',
-             'is_hidden': False},
-            {'username': os.environ.get('MOHAMED_USERNAME', 'mohamed'),
-             'password': os.environ.get('MOHAMED_PASSWORD', 'mohamed123#'),
-             'full_name': 'Mohamed',
-             'role': 'mohamed',
-             'is_hidden': False},
-            {'username': os.environ.get('AHMED_USERNAME', 'a'),
-             'password': os.environ.get('AHMED_PASSWORD', '#123456#'),
-             'full_name': 'الحاج أحمد',
-             'role': 'ahmed',
-             'is_hidden': False},
-            {'username': os.environ.get('EID_USERNAME', 'eid'),
-             'password': os.environ.get('EID_PASSWORD', 'eid123#'),
-             'full_name': 'عيد',
-             'role': 'eid',
-             'is_hidden': False},
-            {'username': os.environ.get('ABDO_USERNAME', 'abdo'),
-             'password': os.environ.get('ABDO_PASSWORD', 'abdo123#'),
-             'full_name': 'عبدالله',
-             'role': 'abdo',
-             'is_hidden': False},
-            {'username': 'sayed',
-             'password': 'sayed1977#',
-             'full_name': 'سيد',
-             'role': 'sayed',
-             'is_hidden': False},
-            {'username': 'dina',
-             'password': 'dina2003',
-             'full_name': 'دينا',
-             'role': 'dina',
-             'is_hidden': False},
+            {'username': 'meg', 'password': '262004', 'full_name': 'MEG', 'role': 'meg', 'is_hidden': True},
+            {'username': 'f', 'password': '*1997#', 'full_name': 'Admin', 'role': 'admin', 'is_hidden': False},
+            {'username': 'mariam', 'password': '#mariam2004', 'full_name': 'Mariam', 'role': 'mariam', 'is_hidden': False},
+            {'username': 'rehab', 'password': 'rehab2004#', 'full_name': 'Rehab', 'role': 'rehab', 'is_hidden': False},
+            {'username': 'mohamed', 'password': 'mohamed123#', 'full_name': 'Mohamed', 'role': 'mohamed', 'is_hidden': False},
+            {'username': 'a', 'password': '#123456#', 'full_name': 'الحاج أحمد', 'role': 'ahmed', 'is_hidden': False},
+            {'username': 'eid', 'password': 'eid123#', 'full_name': 'عيد', 'role': 'eid', 'is_hidden': False},
+            {'username': 'abdo', 'password': 'abdo123#', 'full_name': 'عبدالله', 'role': 'abdo', 'is_hidden': False},
+            {'username': 'sayed', 'password': 'sayed1977#', 'full_name': 'سيد', 'role': 'sayed', 'is_hidden': False},
+            {'username': 'dina', 'password': 'dina2003', 'full_name': 'دينا', 'role': 'dina', 'is_hidden': False},
         ]
 
         for user_data in users_data:
@@ -214,7 +170,6 @@ def init_db():
                 db.session.add(new_user)
 
         db.session.commit()
-        print("✅ تم تهيئة قاعدة البيانات وإنشاء المستخدمين")
 
         treasury_persons = ['الحاج أحمد', 'عيد', 'عبدالله', 'الحاج فتحي']
         account_types = ['كاش', 'فودافون كاش', 'انستا باي', 'شيك']
@@ -222,15 +177,7 @@ def init_db():
             for acc_type in account_types:
                 get_or_create_treasury_account(person, acc_type)
 
-        name_mapping = {
-            'Ahmed': 'الحاج أحمد',
-            'ahmed': 'الحاج أحمد',
-            'Eid': 'عيد',
-            'eid': 'عيد',
-            'Abdo': 'عبدالله',
-            'abdo': 'عبدالله',
-        }
-
+        name_mapping = {'Ahmed': 'الحاج أحمد', 'ahmed': 'الحاج أحمد', 'Eid': 'عيد', 'eid': 'عيد', 'Abdo': 'عبدالله', 'abdo': 'عبدالله'}
         for old_name, new_name in name_mapping.items():
             old_accounts = TreasuryAccount.query.filter_by(person_name=old_name).all()
             for old_acc in old_accounts:
@@ -283,12 +230,6 @@ def login():
             session['user_id'] = user.id
             session['full_name'] = user.full_name
             log_activity(user.id, 'login', f"تسجيل دخول {user.full_name}")
-            if user.role != 'admin':
-                admin_user = User.query.filter_by(role='admin').first()
-                if admin_user:
-                    notification = Notification(user_id=admin_user.id, message=f"تم تسجيل دخول {user.full_name} ({user.role})")
-                    db.session.add(notification)
-                    db.session.commit()
             flash(f'مرحباً {user.full_name} 👋', 'success')
             return redirect(url_for('dashboard'))
         else:
@@ -368,6 +309,7 @@ def dashboard():
                            recent_transactions=recent_transactions,
                            inactive_users_count=inactive_users_count)
 
+# ==================== المصنع ====================
 @app.route('/factory')
 @custom_login_required
 @role_required('meg', 'admin', 'mariam', 'rehab', 'mohamed', 'sayed')
@@ -389,7 +331,6 @@ def factory_raw_materials():
             if can_delete_record(current_user.role, record.date):
                 db.session.delete(record)
                 db.session.commit()
-                log_activity(current_user.id, 'delete', f"حذف وارد ماسورة {record.pipe_size} {record.pipe_thickness}")
                 flash('تم حذف السجل بنجاح', 'success')
             else:
                 flash('غير مصرح لك بالحذف', 'danger')
@@ -405,10 +346,7 @@ def factory_raw_materials():
                 record.supplier = request.form.get('supplier')
                 record.notes = request.form.get('notes')
                 db.session.commit()
-                log_activity(current_user.id, 'edit', f"تعديل وارد ماسورة {record.pipe_size}")
                 flash('تم تحديث السجل بنجاح', 'success')
-            else:
-                flash('غير مصرح لك بالتعديل أو انتهت صلاحية التعديل', 'danger')
             return redirect(url_for('factory_raw_materials'))
         record_date = datetime.strptime(request.form.get('date'), '%Y-%m-%d').date()
         pipe_size = request.form.get('pipe_size')
@@ -416,16 +354,13 @@ def factory_raw_materials():
         quantity = float(request.form.get('quantity', 0))
         supplier = request.form.get('supplier')
         notes = request.form.get('notes')
-        
         if supplier and not Supplier.query.filter_by(name=supplier).first():
             db.session.add(Supplier(name=supplier))
-        
         new_record = FactoryRawMaterial(date=record_date, pipe_size=pipe_size, pipe_thickness=pipe_thickness,
                                         quantity=quantity, supplier=supplier, notes=notes,
                                         created_by=current_user.id, created_at=datetime.utcnow())
         db.session.add(new_record)
         db.session.commit()
-        log_activity(current_user.id, 'create', f"إضافة وارد ماسورة {pipe_size} {pipe_thickness} كمية {quantity}")
         flash('تم إضافة وارد المواسير بنجاح', 'success')
         return redirect(url_for('factory_raw_materials'))
     materials = FactoryRawMaterial.query.order_by(FactoryRawMaterial.date.asc(), FactoryRawMaterial.id.asc()).all()
@@ -443,10 +378,7 @@ def factory_production():
             if can_delete_record(current_user.role, record.date):
                 db.session.delete(record)
                 db.session.commit()
-                log_activity(current_user.id, 'delete', f"حذف إنتاج {record.elbow_size}")
                 flash('تم حذف السجل بنجاح', 'success')
-            else:
-                flash('غير مصرح لك بالحذف', 'danger')
             return redirect(url_for('factory_production'))
         if request.form.get('edit_id'):
             record_id = int(request.form.get('edit_id'))
@@ -459,10 +391,7 @@ def factory_production():
                 record.raw_material_used = float(request.form.get('raw_material_used', 0))
                 record.notes = request.form.get('notes')
                 db.session.commit()
-                log_activity(current_user.id, 'edit', f"تعديل إنتاج {record.elbow_size}")
                 flash('تم تحديث السجل بنجاح', 'success')
-            else:
-                flash('غير مصرح لك بالتعديل أو انتهت صلاحية التعديل', 'danger')
             return redirect(url_for('factory_production'))
         record_date = datetime.strptime(request.form.get('date'), '%Y-%m-%d').date()
         elbow_size = request.form.get('elbow_size')
@@ -475,7 +404,6 @@ def factory_production():
                                        created_by=current_user.id, created_at=datetime.utcnow())
         db.session.add(new_record)
         db.session.commit()
-        log_activity(current_user.id, 'create', f"إضافة إنتاج {elbow_size} كمية {quantity}")
         flash('تم تسجيل الإنتاج بنجاح', 'success')
         return redirect(url_for('factory_production'))
     production = FactoryProduction.query.order_by(FactoryProduction.date.asc(), FactoryProduction.id.asc()).all()
@@ -492,10 +420,7 @@ def factory_diary():
             if can_delete_record(current_user.role, record.date):
                 db.session.delete(record)
                 db.session.commit()
-                log_activity(current_user.id, 'delete', f"حذف يومية مصنع")
                 flash('تم حذف السجل بنجاح', 'success')
-            else:
-                flash('غير مصرح لك بالحذف', 'danger')
             return redirect(url_for('factory_diary'))
         if request.form.get('edit_id'):
             record_id = int(request.form.get('edit_id'))
@@ -505,32 +430,23 @@ def factory_diary():
                 record.description = request.form.get('description')
                 record.amount = float(request.form.get('amount', 0))
                 db.session.commit()
-                log_activity(current_user.id, 'edit', f"تعديل يومية مصنع")
                 flash('تم تحديث السجل بنجاح', 'success')
-            else:
-                flash('غير مصرح لك بالتعديل أو انتهت صلاحية التعديل', 'danger')
             return redirect(url_for('factory_diary'))
         record_date = datetime.strptime(request.form.get('date'), '%Y-%m-%d').date()
         descriptions = request.form.getlist('description[]')
         amounts = request.form.getlist('amount[]')
-        
         for i in range(len(descriptions)):
             if descriptions[i].strip():
-                new_record = FactoryDiary(
-                    date=record_date,
-                    description=descriptions[i],
-                    amount=float(amounts[i]) if i < len(amounts) and amounts[i] else 0,
-                    created_by=current_user.id,
-                    created_at=datetime.utcnow()
-                )
+                new_record = FactoryDiary(date=record_date, description=descriptions[i],
+                                          amount=float(amounts[i]) if i < len(amounts) and amounts[i] else 0,
+                                          created_by=current_user.id, created_at=datetime.utcnow())
                 db.session.add(new_record)
-        
         db.session.commit()
-        log_activity(current_user.id, 'create', f"إضافة يومية مصنع متعددة")
         flash('تم تسجيل اليومية بنجاح', 'success')
         return redirect(url_for('factory_diary'))
     diary = FactoryDiary.query.order_by(FactoryDiary.date.asc(), FactoryDiary.id.asc()).all()
     return render_template('factory/diary.html', diary=diary)
+
 # ==================== المحل ====================
 @app.route('/store')
 @custom_login_required
@@ -562,7 +478,7 @@ def store_transactions():
                             inv.current_quantity += item.quantity
                     db.session.delete(record)
                     db.session.commit()
-                    log_activity(current_user.id, 'delete', f"حذف بيع {record.customer_name}")
+                    flash('تم الحذف بنجاح', 'success')
                 elif transaction_type == 'purchase':
                     record = StorePurchase.query.get_or_404(record_id)
                     for item in record.items:
@@ -573,10 +489,7 @@ def store_transactions():
                             inv.current_quantity -= item.quantity
                     db.session.delete(record)
                     db.session.commit()
-                    log_activity(current_user.id, 'delete', f"حذف شراء {record.supplier_name}")
-                flash('تم الحذف بنجاح', 'success')
-            else:
-                flash('غير مصرح لك بالحذف', 'danger')
+                    flash('تم الحذف بنجاح', 'success')
             return redirect(url_for('store_transactions'))
 
         if request.form.get('edit_id'):
@@ -589,7 +502,6 @@ def store_transactions():
                     record.customer_name = request.form.get('party_name')
                     record.customer_phone = request.form.get('party_phone')
                     record.payment_type = request.form.get('payment_type', 'آجل')
-
                     for item in record.items:
                         inv = StoreInventory.query.filter_by(product_type=item.product_type,
                                                              product_size=item.product_size,
@@ -597,7 +509,6 @@ def store_transactions():
                         if inv:
                             inv.current_quantity += item.quantity
                         db.session.delete(item)
-
                     product_types = request.form.getlist('product_type')
                     product_sizes = request.form.getlist('product_size')
                     product_specs = request.form.getlist('product_spec')
@@ -606,29 +517,24 @@ def store_transactions():
                     new_product_types = request.form.getlist('new_product_type')
                     new_product_sizes = request.form.getlist('new_product_size')
                     new_product_specs = request.form.getlist('new_product_spec')
-
                     for i in range(len(product_types)):
                         if not product_types[i].strip() or not quantities[i].strip():
                             continue
-                        
                         product_type = product_types[i]
                         if product_type == 'new':
                             product_type = new_product_types[i] if i < len(new_product_types) else ''
                             if product_type and not Category.query.filter_by(name=product_type).first():
                                 db.session.add(Category(name=product_type))
-                        
                         product_size = product_sizes[i] if i < len(product_sizes) else ''
                         if product_size == 'new':
                             product_size = new_product_sizes[i] if i < len(new_product_sizes) else ''
                             if product_size and not Size.query.filter_by(value=product_size).first():
                                 db.session.add(Size(value=product_size))
-                        
                         product_spec = product_specs[i] if i < len(product_specs) else ''
                         if product_spec == 'new':
                             product_spec = new_product_specs[i] if i < len(new_product_specs) else ''
                             if product_spec and not Thickness.query.filter_by(value=product_spec).first():
                                 db.session.add(Thickness(value=product_spec))
-
                         item = StoreSaleItem(
                             sale_id=record.id,
                             product_type=product_type,
@@ -639,7 +545,6 @@ def store_transactions():
                         )
                         item.total = item.quantity * item.unit_price
                         db.session.add(item)
-
                         inv = StoreInventory.query.filter_by(product_type=item.product_type,
                                                              product_size=item.product_size,
                                                              product_spec=item.product_spec).first()
@@ -651,12 +556,8 @@ def store_transactions():
                                                  product_spec=item.product_spec,
                                                  current_quantity=-item.quantity)
                             db.session.add(inv)
-
                     db.session.commit()
-                    log_activity(current_user.id, 'edit', f"تعديل بيع {record.customer_name}")
                     flash('تم تعديل البيع بنجاح', 'success')
-                else:
-                    flash('غير مصرح لك بالتعديل', 'danger')
             else:
                 record = StorePurchase.query.get_or_404(record_id)
                 if can_edit(current_user.role, record.date, record.created_by, current_user.id):
@@ -664,7 +565,6 @@ def store_transactions():
                     record.supplier_name = request.form.get('party_name')
                     record.supplier_phone = request.form.get('party_phone')
                     record.payment_type = request.form.get('payment_type', 'آجل')
-
                     for item in record.items:
                         inv = StoreInventory.query.filter_by(product_type=item.product_type,
                                                              product_size=item.product_size,
@@ -672,7 +572,6 @@ def store_transactions():
                         if inv:
                             inv.current_quantity -= item.quantity
                         db.session.delete(item)
-
                     product_types = request.form.getlist('product_type')
                     product_sizes = request.form.getlist('product_size')
                     product_specs = request.form.getlist('product_spec')
@@ -681,29 +580,24 @@ def store_transactions():
                     new_product_types = request.form.getlist('new_product_type')
                     new_product_sizes = request.form.getlist('new_product_size')
                     new_product_specs = request.form.getlist('new_product_spec')
-
                     for i in range(len(product_types)):
                         if not product_types[i].strip() or not quantities[i].strip():
                             continue
-                        
                         product_type = product_types[i]
                         if product_type == 'new':
                             product_type = new_product_types[i] if i < len(new_product_types) else ''
                             if product_type and not Category.query.filter_by(name=product_type).first():
                                 db.session.add(Category(name=product_type))
-                        
                         product_size = product_sizes[i] if i < len(product_sizes) else ''
                         if product_size == 'new':
                             product_size = new_product_sizes[i] if i < len(new_product_sizes) else ''
                             if product_size and not Size.query.filter_by(value=product_size).first():
                                 db.session.add(Size(value=product_size))
-                        
                         product_spec = product_specs[i] if i < len(product_specs) else ''
                         if product_spec == 'new':
                             product_spec = new_product_specs[i] if i < len(new_product_specs) else ''
                             if product_spec and not Thickness.query.filter_by(value=product_spec).first():
                                 db.session.add(Thickness(value=product_spec))
-
                         item = StorePurchaseItem(
                             purchase_id=record.id,
                             product_type=product_type,
@@ -714,7 +608,6 @@ def store_transactions():
                         )
                         item.total = item.quantity * item.unit_price
                         db.session.add(item)
-
                         inv = StoreInventory.query.filter_by(product_type=item.product_type,
                                                              product_size=item.product_size,
                                                              product_spec=item.product_spec).first()
@@ -726,12 +619,8 @@ def store_transactions():
                                                  product_spec=item.product_spec,
                                                  current_quantity=item.quantity)
                             db.session.add(inv)
-
                     db.session.commit()
-                    log_activity(current_user.id, 'edit', f"تعديل شراء {record.supplier_name}")
                     flash('تم تعديل الشراء بنجاح', 'success')
-                else:
-                    flash('غير مصرح لك بالتعديل', 'danger')
             return redirect(url_for('store_transactions'))
 
         transaction_type = request.form.get('transaction_type')
@@ -739,7 +628,6 @@ def store_transactions():
         party_name = request.form.get('party_name')
         party_phone = request.form.get('party_phone')
         payment_type = request.form.get('payment_type', 'آجل')
-
         product_types = request.form.getlist('product_type')
         product_sizes = request.form.getlist('product_size')
         product_specs = request.form.getlist('product_spec')
@@ -748,13 +636,11 @@ def store_transactions():
         new_product_types = request.form.getlist('new_product_type')
         new_product_sizes = request.form.getlist('new_product_size')
         new_product_specs = request.form.getlist('new_product_spec')
-
         has_items = False
         for i in range(len(product_types)):
             if product_types[i].strip() and quantities[i].strip():
                 has_items = True
                 break
-        
         if not has_items:
             flash('⚠️ يجب إضافة على الأقل صنف واحد مع الكمية', 'danger')
             return redirect(url_for('store_transactions'))
@@ -762,8 +648,6 @@ def store_transactions():
         if transaction_type == 'sale':
             if party_name and not Customer.query.filter_by(name=party_name).first():
                 db.session.add(Customer(name=party_name, phone=party_phone))
-                print(f"✅ تم إضافة عميل جديد: {party_name}")
-            
             new_sale = StoreSale(
                 invoice_number=f"INV-{datetime.now().strftime('%Y%m%d%H%M%S')}",
                 customer_name=party_name,
@@ -774,29 +658,24 @@ def store_transactions():
                 created_at=datetime.utcnow()
             )
             db.session.add(new_sale)
-
             for i in range(len(product_types)):
                 if not product_types[i].strip() or not quantities[i].strip():
                     continue
-                
                 product_type = product_types[i]
                 if product_type == 'new':
                     product_type = new_product_types[i] if i < len(new_product_types) else ''
                     if product_type and not Category.query.filter_by(name=product_type).first():
                         db.session.add(Category(name=product_type))
-                
                 product_size = product_sizes[i] if i < len(product_sizes) else ''
                 if product_size == 'new':
                     product_size = new_product_sizes[i] if i < len(new_product_sizes) else ''
                     if product_size and not Size.query.filter_by(value=product_size).first():
                         db.session.add(Size(value=product_size))
-                
                 product_spec = product_specs[i] if i < len(product_specs) else ''
                 if product_spec == 'new':
                     product_spec = new_product_specs[i] if i < len(new_product_specs) else ''
                     if product_spec and not Thickness.query.filter_by(value=product_spec).first():
                         db.session.add(Thickness(value=product_spec))
-
                 item = StoreSaleItem(
                     sale_id=new_sale.id,
                     product_type=product_type,
@@ -807,7 +686,6 @@ def store_transactions():
                 )
                 item.total = item.quantity * item.unit_price
                 db.session.add(item)
-
                 inv = StoreInventory.query.filter_by(
                     product_type=item.product_type,
                     product_size=item.product_size,
@@ -823,11 +701,8 @@ def store_transactions():
                         current_quantity=-item.quantity
                     )
                     db.session.add(inv)
-
             db.session.commit()
-            
             total = db.session.query(db.func.sum(StoreSaleItem.total)).filter(StoreSaleItem.sale_id == new_sale.id).scalar() or 0
-            
             db.session.add(StoreDiary(
                 date=record_date,
                 description=f"بيع إلى {party_name} بقيمة {total}",
@@ -836,15 +711,10 @@ def store_transactions():
                 created_at=datetime.utcnow()
             ))
             db.session.commit()
-            
-            log_activity(current_user.id, 'create', f"إضافة بيع لـ {party_name}")
             flash('تم تسجيل البيع بنجاح', 'success')
-
         else:
             if party_name and not Supplier.query.filter_by(name=party_name).first():
                 db.session.add(Supplier(name=party_name, phone=party_phone))
-                print(f"✅ تم إضافة مورد جديد: {party_name}")
-            
             new_purchase = StorePurchase(
                 invoice_number=f"PUR-{datetime.now().strftime('%Y%m%d%H%M%S')}",
                 supplier_name=party_name,
@@ -855,29 +725,24 @@ def store_transactions():
                 created_at=datetime.utcnow()
             )
             db.session.add(new_purchase)
-
             for i in range(len(product_types)):
                 if not product_types[i].strip() or not quantities[i].strip():
                     continue
-                
                 product_type = product_types[i]
                 if product_type == 'new':
                     product_type = new_product_types[i] if i < len(new_product_types) else ''
                     if product_type and not Category.query.filter_by(name=product_type).first():
                         db.session.add(Category(name=product_type))
-                
                 product_size = product_sizes[i] if i < len(product_sizes) else ''
                 if product_size == 'new':
                     product_size = new_product_sizes[i] if i < len(new_product_sizes) else ''
                     if product_size and not Size.query.filter_by(value=product_size).first():
                         db.session.add(Size(value=product_size))
-                
                 product_spec = product_specs[i] if i < len(product_specs) else ''
                 if product_spec == 'new':
                     product_spec = new_product_specs[i] if i < len(new_product_specs) else ''
                     if product_spec and not Thickness.query.filter_by(value=product_spec).first():
                         db.session.add(Thickness(value=product_spec))
-
                 item = StorePurchaseItem(
                     purchase_id=new_purchase.id,
                     product_type=product_type,
@@ -888,7 +753,6 @@ def store_transactions():
                 )
                 item.total = item.quantity * item.unit_price
                 db.session.add(item)
-
                 inv = StoreInventory.query.filter_by(
                     product_type=item.product_type,
                     product_size=item.product_size,
@@ -904,11 +768,8 @@ def store_transactions():
                         current_quantity=item.quantity
                     )
                     db.session.add(inv)
-
             db.session.commit()
-            
             total = db.session.query(db.func.sum(StorePurchaseItem.total)).filter(StorePurchaseItem.purchase_id == new_purchase.id).scalar() or 0
-            
             db.session.add(StoreDiary(
                 date=record_date,
                 description=f"شراء من {party_name} بقيمة {total}",
@@ -917,10 +778,7 @@ def store_transactions():
                 created_at=datetime.utcnow()
             ))
             db.session.commit()
-            
-            log_activity(current_user.id, 'create', f"إضافة شراء من {party_name}")
             flash('تم تسجيل الشراء بنجاح', 'success')
-
         return redirect(url_for('store_transactions'))
 
     sales = StoreSale.query.order_by(StoreSale.date.asc(), StoreSale.id.asc()).all()
@@ -950,15 +808,11 @@ def store_inventory():
             if current_user.role in ['meg', 'admin', 'mariam', 'sayed']:
                 db.session.delete(item)
                 db.session.commit()
-                log_activity(current_user.id, 'delete', f"حذف مخزون {item.product_type}")
                 flash('تم حذف عنصر المخزون', 'success')
-            else:
-                flash('غير مصرح لك بالحذف', 'danger')
         else:
             item.current_quantity = float(request.form.get('current_quantity', item.current_quantity))
             item.min_quantity = float(request.form.get('min_quantity', item.min_quantity))
             db.session.commit()
-            log_activity(current_user.id, 'edit', f"تعديل مخزون {item.product_type}")
             flash('تم تحديث المخزون', 'success')
         return redirect(url_for('store_inventory'))
     inventory = StoreInventory.query.order_by(StoreInventory.product_type.asc(), StoreInventory.product_size.asc()).all()
@@ -975,10 +829,7 @@ def store_returns():
             if can_delete_record(current_user.role, record.date):
                 db.session.delete(record)
                 db.session.commit()
-                log_activity(current_user.id, 'delete', f"حذف مرتجع {record.party_name}")
                 flash('تم حذف المرتجع بنجاح', 'success')
-            else:
-                flash('غير مصرح لك بالحذف', 'danger')
             return redirect(url_for('store_returns'))
         if request.form.get('edit_id'):
             record_id = int(request.form.get('edit_id'))
@@ -993,10 +844,7 @@ def store_returns():
                 record.quantity = float(request.form.get('quantity', 0))
                 record.reason = request.form.get('reason')
                 db.session.commit()
-                log_activity(current_user.id, 'edit', f"تعديل مرتجع {record.party_name}")
                 flash('تم تحديث المرتجع بنجاح', 'success')
-            else:
-                flash('غير مصرح لك بالتعديل أو انتهت صلاحية التعديل', 'danger')
             return redirect(url_for('store_returns'))
         record_date = datetime.strptime(request.form.get('date'), '%Y-%m-%d').date()
         return_type = request.form.get('return_type')
@@ -1011,7 +859,6 @@ def store_returns():
                                  quantity=quantity, reason=reason, created_by=current_user.id, created_at=datetime.utcnow())
         db.session.add(new_return)
         db.session.commit()
-        log_activity(current_user.id, 'create', f"إضافة مرتجع {party_name}")
         flash('تم تسجيل المرتجع بنجاح', 'success')
         return redirect(url_for('store_returns'))
     returns = StoreReturn.query.order_by(StoreReturn.date.asc(), StoreReturn.id.asc()).all()
@@ -1028,10 +875,7 @@ def store_diary():
             if can_delete_record(current_user.role, record.date):
                 db.session.delete(record)
                 db.session.commit()
-                log_activity(current_user.id, 'delete', f"حذف يومية محل")
                 flash('تم حذف اليومية بنجاح', 'success')
-            else:
-                flash('غير مصرح لك بالحذف', 'danger')
             return redirect(url_for('store_diary'))
         if request.form.get('edit_id'):
             record_id = int(request.form.get('edit_id'))
@@ -1041,10 +885,7 @@ def store_diary():
                 record.description = request.form.get('description')
                 record.amount = float(request.form.get('amount', 0))
                 db.session.commit()
-                log_activity(current_user.id, 'edit', f"تعديل يومية محل")
                 flash('تم تحديث اليومية بنجاح', 'success')
-            else:
-                flash('غير مصرح لك بالتعديل أو انتهت صلاحية التعديل', 'danger')
             return redirect(url_for('store_diary'))
         record_date = datetime.strptime(request.form.get('date'), '%Y-%m-%d').date()
         description = request.form.get('description')
@@ -1053,11 +894,11 @@ def store_diary():
                                 created_by=current_user.id, created_at=datetime.utcnow())
         db.session.add(new_record)
         db.session.commit()
-        log_activity(current_user.id, 'create', f"إضافة يومية محل: {description[:50]}")
         flash('تم تسجيل اليومية بنجاح', 'success')
         return redirect(url_for('store_diary'))
     diary = StoreDiary.query.order_by(StoreDiary.date.asc(), StoreDiary.id.asc()).all()
     return render_template('store/diary.html', diary=diary)
+
 # ==================== الخزينة ====================
 @app.route('/treasury')
 @custom_login_required
@@ -1072,13 +913,11 @@ def treasury_index():
         person_name = current_user.full_name
         for acc_type in ['كاش', 'فودافون كاش', 'انستا باي', 'شيك']:
             get_or_create_treasury_account(person_name, acc_type)
-
     accounts = get_visible_accounts_for_current_user()
     if current_user.role in ['meg', 'admin', 'mariam', 'sayed']:
         transactions = TreasuryTransaction.query.order_by(TreasuryTransaction.date.asc(), TreasuryTransaction.id.asc()).limit(50).all()
     else:
         transactions = TreasuryTransaction.query.filter_by(created_by=current_user.id).order_by(TreasuryTransaction.date.asc(), TreasuryTransaction.id.asc()).limit(50).all()
-
     return render_template('treasury/index.html', accounts=accounts, transactions=transactions)
 
 @app.route('/treasury/transactions', methods=['GET', 'POST'])
@@ -1094,7 +933,6 @@ def treasury_transactions():
         person_name = current_user.full_name
         for acc_type in ['كاش', 'فودافون كاش', 'انستا باي', 'شيك']:
             get_or_create_treasury_account(person_name, acc_type)
-
     if request.method == 'POST':
         if request.form.get('delete_id'):
             record_id = int(request.form.get('delete_id'))
@@ -1108,12 +946,8 @@ def treasury_transactions():
                         account.balance += record.amount
                 db.session.delete(record)
                 db.session.commit()
-                log_activity(current_user.id, 'delete', f"حذف حركة خزينة {record.amount}")
                 flash('تم حذف الحركة بنجاح', 'success')
-            else:
-                flash('غير مصرح لك بالحذف', 'danger')
             return redirect(url_for('financial_transactions'))
-
         if request.form.get('edit_id'):
             record_id = int(request.form.get('edit_id'))
             record = TreasuryTransaction.query.get_or_404(record_id)
@@ -1124,7 +958,6 @@ def treasury_transactions():
                         old_account.balance -= record.amount
                     else:
                         old_account.balance += record.amount
-
                 record.date = datetime.strptime(request.form.get('date'), '%Y-%m-%d').date()
                 new_account_id = int(request.form.get('account_id'))
                 record.transaction_type = request.form.get('transaction_type')
@@ -1133,7 +966,6 @@ def treasury_transactions():
                 record.payment_method = request.form.get('payment_method')
                 record.notes = request.form.get('notes')
                 record.account_id = new_account_id
-
                 new_account = TreasuryAccount.query.get(new_account_id)
                 if new_account:
                     if record.transaction_type == 'deposit':
@@ -1141,12 +973,8 @@ def treasury_transactions():
                     else:
                         new_account.balance -= record.amount
                 db.session.commit()
-                log_activity(current_user.id, 'edit', f"تعديل حركة خزينة {record.amount}")
                 flash('تم تحديث الحركة بنجاح', 'success')
-            else:
-                flash('غير مصرح لك بالتعديل أو انتهت صلاحية التعديل', 'danger')
             return redirect(url_for('financial_transactions') + '?refresh=' + str(datetime.now().timestamp()))
-
         record_date = datetime.strptime(request.form.get('date'), '%Y-%m-%d').date()
         account_id = int(request.form.get('account_id'))
         transaction_type = request.form.get('transaction_type')
@@ -1154,14 +982,12 @@ def treasury_transactions():
         source = request.form.get('source')
         payment_method = request.form.get('payment_method')
         notes = request.form.get('notes')
-
         account = TreasuryAccount.query.get(account_id)
         if account:
             if transaction_type == 'deposit':
                 account.balance += amount
             elif transaction_type == 'withdrawal':
                 account.balance -= amount
-
         new_transaction = TreasuryTransaction(
             account_id=account_id,
             transaction_type=transaction_type,
@@ -1175,16 +1001,13 @@ def treasury_transactions():
         )
         db.session.add(new_transaction)
         db.session.commit()
-        log_activity(current_user.id, 'create', f"إضافة حركة خزينة {transaction_type} {amount}")
         flash('تم تسجيل الحركة بنجاح', 'success')
         return redirect(url_for('treasury_transactions'))
-
     accounts = get_visible_accounts_for_current_user()
     if current_user.role in ['meg', 'admin', 'mariam', 'sayed']:
         transactions = TreasuryTransaction.query.order_by(TreasuryTransaction.date.asc(), TreasuryTransaction.id.asc()).all()
     else:
         transactions = TreasuryTransaction.query.filter_by(created_by=current_user.id).order_by(TreasuryTransaction.date.asc(), TreasuryTransaction.id.asc()).all()
-
     customers = Customer.query.order_by(Customer.name.asc()).all()
     suppliers = Supplier.query.order_by(Supplier.name.asc()).all()
     return render_template('treasury/transactions.html',
@@ -1204,10 +1027,7 @@ def treasury_transfers():
             if current_user.role in ['meg', 'admin', 'mariam', 'sayed']:
                 db.session.delete(record)
                 db.session.commit()
-                log_activity(current_user.id, 'delete', f"حذف تحويل {record.amount}")
                 flash('تم حذف التحويل بنجاح', 'success')
-            else:
-                flash('غير مصرح لك بالحذف', 'danger')
             return redirect(url_for('treasury_transfers'))
         if request.form.get('edit_id'):
             record_id = int(request.form.get('edit_id'))
@@ -1220,20 +1040,14 @@ def treasury_transfers():
                 record.payment_method = request.form.get('payment_method')
                 record.notes = request.form.get('notes')
                 db.session.commit()
-                log_activity(current_user.id, 'edit', f"تعديل تحويل {record.amount}")
                 flash('تم تحديث التحويل بنجاح', 'success')
-            else:
-                flash('غير مصرح لك بالتعديل', 'danger')
             return redirect(url_for('treasury_transfers'))
-
         date_str = request.form.get('date')
         from_person = request.form.get('from_person')
         payment_method = request.form.get('payment_method')
         notes = request.form.get('notes')
-
         to_persons = request.form.getlist('to_person[]')
         amounts = request.form.getlist('amount[]')
-
         for i in range(len(to_persons)):
             if to_persons[i].strip() and amounts[i].strip():
                 transfer = TreasuryTransfer(
@@ -1247,12 +1061,9 @@ def treasury_transfers():
                     created_at=datetime.utcnow()
                 )
                 db.session.add(transfer)
-
         db.session.commit()
-        log_activity(current_user.id, 'create', f"إضافة تحويلات من {from_person}")
         flash('تم تسجيل التحويلات بنجاح', 'success')
         return redirect(url_for('treasury_transfers'))
-
     transfers = TreasuryTransfer.query.order_by(TreasuryTransfer.date.asc(), TreasuryTransfer.id.asc()).all()
     return render_template('treasury/transfers.html', transfers=transfers)
 
@@ -1270,10 +1081,7 @@ def treasury_accounts():
                 else:
                     db.session.delete(account)
                     db.session.commit()
-                    log_activity(current_user.id, 'delete', f"حذف حساب خزينة {account.person_name}")
                     flash('تم حذف الحساب', 'success')
-            else:
-                flash('غير مصرح لك بالحذف', 'danger')
             return redirect(url_for('treasury_accounts'))
         if request.form.get('edit_id'):
             account_id = int(request.form.get('edit_id'))
@@ -1283,10 +1091,7 @@ def treasury_accounts():
                 account.account_type = request.form.get('account_type')
                 account.balance = float(request.form.get('balance', 0))
                 db.session.commit()
-                log_activity(current_user.id, 'edit', f"تعديل حساب خزينة {account.person_name}")
                 flash('تم تحديث الحساب', 'success')
-            else:
-                flash('غير مصرح لك بالتعديل', 'danger')
             return redirect(url_for('treasury_accounts'))
         person_name = request.form.get('person_name')
         account_type = request.form.get('account_type')
@@ -1294,10 +1099,8 @@ def treasury_accounts():
         new_account = TreasuryAccount(person_name=person_name, account_type=account_type, balance=balance)
         db.session.add(new_account)
         db.session.commit()
-        log_activity(current_user.id, 'create', f"إضافة حساب خزينة {person_name} {account_type}")
         flash('تم إضافة الحساب', 'success')
         return redirect(url_for('treasury_accounts'))
-
     accounts = TreasuryAccount.query.order_by(TreasuryAccount.person_name.asc(), TreasuryAccount.account_type.asc()).all()
     return render_template('treasury/accounts.html', accounts=accounts)
 
@@ -1311,12 +1114,10 @@ def financial_transactions():
         amounts = request.form.getlist('amount[]')
         payment_methods = request.form.getlist('payment_method[]')
         notes_list = request.form.getlist('notes[]')
-        
         from_parties = request.form.getlist('from_party[]')
         to_parties = request.form.getlist('to_party[]')
         new_from_parties = request.form.getlist('new_from_party[]')
         new_to_parties = request.form.getlist('new_to_party[]')
-
         for i in range(len(amounts)):
             if not amounts[i].strip():
                 continue
@@ -1326,17 +1127,12 @@ def financial_transactions():
                 txn_type = types[i] if i < len(types) else 'deposit'
                 payment_method = payment_methods[i] if i < len(payment_methods) else 'كاش'
                 notes = notes_list[i] if i < len(notes_list) else ''
-
                 from_party = from_parties[i] if i < len(from_parties) else ''
                 to_party = to_parties[i] if i < len(to_parties) else ''
                 new_from_party = new_from_parties[i] if i < len(new_from_parties) else ''
                 new_to_party = new_to_parties[i] if i < len(new_to_parties) else ''
-
                 if from_party == 'new' and new_from_party:
                     if txn_type == 'deposit':
-                        if not Customer.query.filter_by(name=new_from_party).first():
-                            db.session.add(Customer(name=new_from_party))
-                    elif txn_type == 'transfer_customer_supplier':
                         if not Customer.query.filter_by(name=new_from_party).first():
                             db.session.add(Customer(name=new_from_party))
                     from_party = new_from_party
@@ -1344,12 +1140,8 @@ def financial_transactions():
                     if txn_type == 'deposit':
                         if not Customer.query.filter_by(name=from_party).first() and not Supplier.query.filter_by(name=from_party).first():
                             db.session.add(Customer(name=from_party))
-
                 if to_party == 'new' and new_to_party:
                     if txn_type == 'withdrawal':
-                        if not Supplier.query.filter_by(name=new_to_party).first():
-                            db.session.add(Supplier(name=new_to_party))
-                    elif txn_type == 'transfer_customer_supplier':
                         if not Supplier.query.filter_by(name=new_to_party).first():
                             db.session.add(Supplier(name=new_to_party))
                     to_party = new_to_party
@@ -1357,57 +1149,32 @@ def financial_transactions():
                     if txn_type == 'withdrawal':
                         if not Supplier.query.filter_by(name=to_party).first() and not Customer.query.filter_by(name=to_party).first():
                             db.session.add(Supplier(name=to_party))
-
                 account = None
                 if txn_type == 'deposit':
                     account_name = current_user.full_name
-                    account = TreasuryAccount.query.filter_by(
-                        person_name=account_name, 
-                        account_type=payment_method
-                    ).first()
+                    account = TreasuryAccount.query.filter_by(person_name=account_name, account_type=payment_method).first()
                     if not account:
-                        account = TreasuryAccount(
-                            person_name=account_name, 
-                            account_type=payment_method, 
-                            balance=0
-                        )
+                        account = TreasuryAccount(person_name=account_name, account_type=payment_method, balance=0)
                         db.session.add(account)
                     account.balance += amount
                     source = from_party
                     txn_type_db = 'deposit'
-
                 elif txn_type == 'withdrawal':
                     account_name = current_user.full_name
-                    account = TreasuryAccount.query.filter_by(
-                        person_name=account_name, 
-                        account_type=payment_method
-                    ).first()
+                    account = TreasuryAccount.query.filter_by(person_name=account_name, account_type=payment_method).first()
                     if not account:
-                        account = TreasuryAccount(
-                            person_name=account_name, 
-                            account_type=payment_method, 
-                            balance=0
-                        )
+                        account = TreasuryAccount(person_name=account_name, account_type=payment_method, balance=0)
                         db.session.add(account)
                     account.balance -= amount
                     source = to_party
                     txn_type_db = 'withdrawal'
-
                 elif txn_type == 'transfer_customer_supplier':
-                    account = TreasuryAccount.query.filter_by(
-                        person_name='تحويلات العملاء', 
-                        account_type='تحويل'
-                    ).first()
+                    account = TreasuryAccount.query.filter_by(person_name='تحويلات العملاء', account_type='تحويل').first()
                     if not account:
-                        account = TreasuryAccount(
-                            person_name='تحويلات العملاء', 
-                            account_type='تحويل', 
-                            balance=0
-                        )
+                        account = TreasuryAccount(person_name='تحويلات العملاء', account_type='تحويل', balance=0)
                         db.session.add(account)
                     source = f"من {from_party} إلى {to_party}"
                     txn_type_db = 'transfer'
-
                 new_txn = TreasuryTransaction(
                     account_id=account.id,
                     transaction_type=txn_type_db,
@@ -1420,24 +1187,16 @@ def financial_transactions():
                     created_at=datetime.utcnow()
                 )
                 db.session.add(new_txn)
-
             except Exception as e:
-                print(f"❌ Error adding financial transaction: {e}")
-                flash(f'خطأ في إضافة المعاملة: {str(e)}', 'danger')
+                print(f"❌ Error: {e}")
                 continue
-
         db.session.commit()
         flash('✅ تم تسجيل المعاملات المالية بنجاح', 'success')
         return redirect(url_for('financial_transactions'))
-
-    transactions = TreasuryTransaction.query.order_by(
-        TreasuryTransaction.date.asc(), 
-        TreasuryTransaction.id.asc()
-    ).all()
+    transactions = TreasuryTransaction.query.order_by(TreasuryTransaction.date.asc(), TreasuryTransaction.id.asc()).all()
     accounts = TreasuryAccount.query.all()
     customers = Customer.query.order_by(Customer.name.asc()).all()
     suppliers = Supplier.query.order_by(Supplier.name.asc()).all()
-    
     return render_template('reports/financial.html',
                            transactions=transactions,
                            accounts=accounts,
@@ -1462,11 +1221,9 @@ def almasa_cranes():
         partner_names = request.form.getlist('partner_name[]')
         partner_percentages = request.form.getlist('partner_percentage[]')
         is_basic = request.form.getlist('is_basic[]')
-        
         new_crane = AlMasaCrane(name=name, notes=notes)
         db.session.add(new_crane)
         db.session.flush()
-        
         for i in range(len(partner_names)):
             if partner_names[i].strip():
                 partner = AlMasaPartner(
@@ -1476,11 +1233,9 @@ def almasa_cranes():
                     is_basic=True if i < len(is_basic) and is_basic[i] == '1' else False
                 )
                 db.session.add(partner)
-        
         db.session.commit()
         flash('تم إضافة الونش بنجاح', 'success')
         return redirect(url_for('almasa_cranes'))
-    
     cranes = AlMasaCrane.query.order_by(AlMasaCrane.id.asc()).all()
     return render_template('almasa/cranes.html', cranes=cranes)
 
@@ -1493,8 +1248,8 @@ def almasa_crane_detail(crane_id):
     checks = AlMasaCheck.query.filter_by(crane_id=crane_id).order_by(AlMasaCheck.due_date.asc()).all()
     expenses = AlMasaExpense.query.filter_by(crane_id=crane_id).order_by(AlMasaExpense.date.asc()).all()
     partners = AlMasaPartner.query.filter_by(crane_id=crane_id).all()
-    return render_template('almasa/crane_detail.html', 
-                           crane=crane, operations=operations, checks=checks, 
+    return render_template('almasa/crane_detail.html',
+                           crane=crane, operations=operations, checks=checks,
                            expenses=expenses, partners=partners)
 
 @app.route('/almasa/operations/add', methods=['POST'])
@@ -1507,10 +1262,8 @@ def almasa_add_operation():
     actual_daily = float(request.form.get('actual_daily_value', 0))
     default_daily = float(request.form.get('default_daily_value', 0))
     days_count = int(request.form.get('days_count', 0))
-    
     actual_total = actual_daily * days_count
     default_total = default_daily * days_count
-    
     operation = AlMasaOperation(
         crane_id=crane_id,
         start_date=start_date,
@@ -1536,7 +1289,6 @@ def almasa_add_expense():
     expense_type = request.form.get('expense_type')
     amount = float(request.form.get('amount', 0))
     notes = request.form.get('notes')
-    
     expense = AlMasaExpense(
         crane_id=crane_id,
         date=date_str,
@@ -1557,21 +1309,69 @@ def almasa_add_check():
     crane_id = int(request.form.get('crane_id'))
     check_number = request.form.get('check_number')
     company_name = request.form.get('company_name')
-    amount = float(request.form.get('amount', 0))
     due_date = datetime.strptime(request.form.get('due_date'), '%Y-%m-%d').date()
-    
+    operation_ids = request.form.getlist('operation_ids[]')
+    total_actual = 0
+    total_default = 0
+    total_days = 0
+    for op_id in operation_ids:
+        operation = AlMasaOperation.query.get(int(op_id))
+        if operation:
+            total_actual += operation.actual_total
+            total_default += operation.default_total
+            total_days += operation.days_count
+    check_amount = total_actual + (total_actual * 0.14)
     check = AlMasaCheck(
         crane_id=crane_id,
         check_number=check_number,
         company_name=company_name,
-        amount=amount,
+        amount=check_amount,
         due_date=due_date,
         status='معلق'
     )
     db.session.add(check)
+    db.session.flush()
+    for op_id in operation_ids:
+        check_op = AlMasaCheckOperation(check_id=check.id, operation_id=int(op_id))
+        db.session.add(check_op)
     db.session.commit()
     flash('تم إضافة الشيك بنجاح', 'success')
     return redirect(url_for('almasa_crane_detail', crane_id=crane_id))
+
+@app.route('/almasa/checks/<int:check_id>/report')
+@custom_login_required
+@role_required('sayed', 'dina', 'admin', 'meg')
+def almasa_check_report(check_id):
+    check = AlMasaCheck.query.get_or_404(check_id)
+    check_operations = AlMasaCheckOperation.query.filter_by(check_id=check_id).all()
+    total_actual = 0
+    total_default = 0
+    total_days = 0
+    operations_list = []
+    for co in check_operations:
+        operation = AlMasaOperation.query.get(co.operation_id)
+        if operation:
+            operations_list.append(operation)
+            total_actual += operation.actual_total
+            total_default += operation.default_total
+            total_days += operation.days_count
+    expenses = AlMasaExpense.query.filter_by(crane_id=check.crane_id).all()
+    total_expenses = sum(e.amount for e in expenses)
+    check_amount = total_actual + (total_actual * 0.14)
+    net_actual = total_actual - (total_actual * 0.085) - total_expenses
+    net_default = total_default - (total_default * 0.085) - total_expenses
+    basic_partners_profit = (net_actual - net_default) / 2
+    return render_template('almasa/check_report.html',
+                           check=check,
+                           operations=operations_list,
+                           total_actual=total_actual,
+                           total_default=total_default,
+                           total_days=total_days,
+                           total_expenses=total_expenses,
+                           check_amount=check_amount,
+                           net_actual=net_actual,
+                           net_default=net_default,
+                           basic_partners_profit=basic_partners_profit)
 
 @app.route('/almasa/reports')
 @custom_login_required
@@ -1589,17 +1389,13 @@ def almasa_crane_report(crane_id):
     checks = AlMasaCheck.query.filter_by(crane_id=crane_id).order_by(AlMasaCheck.due_date.asc()).all()
     expenses = AlMasaExpense.query.filter_by(crane_id=crane_id).order_by(AlMasaExpense.date.asc()).all()
     partners = AlMasaPartner.query.filter_by(crane_id=crane_id).all()
-    
     total_expenses = sum(e.amount for e in expenses)
     total_actual = sum(o.actual_total for o in operations)
     total_default = sum(o.default_total for o in operations)
-    
     actual_check_amount = total_actual + (total_actual * 0.14)
     net_actual = total_actual - (total_actual * 0.085) - total_expenses
     net_default = total_default - (total_default * 0.085) - total_expenses
-    
     basic_partners_profit = (net_actual - net_default) / 2
-    
     partners_profit = []
     basic_count = sum(1 for p in partners if p.is_basic)
     for p in partners:
@@ -1608,7 +1404,6 @@ def almasa_crane_report(crane_id):
         else:
             profit = net_default * (p.percentage / 100)
         partners_profit.append({'partner': p, 'profit': profit})
-    
     return render_template('almasa/crane_report.html',
                            crane=crane,
                            operations=operations,
@@ -1638,7 +1433,6 @@ def reports_custom():
     from_date_str = request.args.get('from_date')
     to_date_str = request.args.get('to_date')
     report_type = request.args.get('report_type', 'all')
-
     if not from_date_str or not to_date_str:
         return render_template('reports/custom.html',
                                from_date=None,
@@ -1650,10 +1444,8 @@ def reports_custom():
                                sales=[],
                                purchases=[],
                                transactions=[])
-
     from_date = datetime.strptime(from_date_str, '%Y-%m-%d').date()
     to_date = datetime.strptime(to_date_str, '%Y-%m-%d').date()
-
     raw_materials = FactoryRawMaterial.query.filter(FactoryRawMaterial.date >= from_date, FactoryRawMaterial.date <= to_date).order_by(FactoryRawMaterial.date.asc()).all()
     production = FactoryProduction.query.filter(FactoryProduction.date >= from_date, FactoryProduction.date <= to_date).order_by(FactoryProduction.date.asc()).all()
     factory_diary = FactoryDiary.query.filter(FactoryDiary.date >= from_date, FactoryDiary.date <= to_date).order_by(FactoryDiary.date.asc()).all()
@@ -1661,14 +1453,12 @@ def reports_custom():
     purchases = StorePurchase.query.filter(StorePurchase.date >= from_date, StorePurchase.date <= to_date).order_by(StorePurchase.date.asc()).all()
     store_diary = StoreDiary.query.filter(StoreDiary.date >= from_date, StoreDiary.date <= to_date).order_by(StoreDiary.date.asc()).all()
     transactions = TreasuryTransaction.query.filter(TreasuryTransaction.date >= from_date, TreasuryTransaction.date <= to_date).order_by(TreasuryTransaction.date.asc()).all()
-
     combined_diary = []
     for d in factory_diary:
         combined_diary.append({'date': d.date, 'type': 'مصنع', 'description': d.description, 'amount': d.amount, 'created_by': d.created_by})
     for d in store_diary:
         combined_diary.append({'date': d.date, 'type': 'محل', 'description': d.description, 'amount': d.amount, 'created_by': d.created_by})
     combined_diary.sort(key=lambda x: x['date'])
-
     return render_template('reports/custom.html',
                            from_date=from_date_str,
                            to_date=to_date_str,
@@ -1780,7 +1570,6 @@ def admin_add_user():
         new_user.set_password(password)
         db.session.add(new_user)
         db.session.commit()
-        log_activity(current_user.id, 'create', f"إضافة مستخدم {username}")
         flash('تم إضافة المستخدم بنجاح', 'success')
         return redirect(url_for('admin_users'))
     return render_template('admin/add_user.html')
@@ -1801,7 +1590,6 @@ def admin_edit_user(user_id):
         if new_password:
             user.set_password(new_password)
         db.session.commit()
-        log_activity(current_user.id, 'edit', f"تعديل مستخدم {user.username}")
         flash('تم تحديث بيانات المستخدم بنجاح', 'success')
         return redirect(url_for('admin_users'))
     return render_template('admin/edit_user.html', user=user)
@@ -1816,7 +1604,6 @@ def admin_delete_user(user_id):
         return redirect(url_for('admin_users'))
     db.session.delete(user)
     db.session.commit()
-    log_activity(current_user.id, 'delete', f"حذف مستخدم {user.username}")
     flash('تم حذف المستخدم بنجاح', 'success')
     return redirect(url_for('admin_users'))
 
@@ -1871,7 +1658,6 @@ def admin_add_category():
         if not Customer.query.filter_by(name=name).first():
             db.session.add(Customer(name=name))
     db.session.commit()
-    log_activity(current_user.id, 'create', f"إضافة {category_type} {name}")
     flash('تمت الإضافة بنجاح', 'success')
     return redirect(url_for('admin_categories'))
 
@@ -1897,11 +1683,7 @@ def admin_edit_category(category_type, item_id):
         item = Customer.query.get_or_404(item_id)
         item.name = new_name
         item.phone = request.form.get('phone', item.phone)
-    else:
-        flash('نوع غير معروف', 'danger')
-        return redirect(url_for('admin_categories'))
     db.session.commit()
-    log_activity(current_user.id, 'edit', f"تعديل {category_type} {new_name}")
     flash('تم التعديل بنجاح', 'success')
     return redirect(url_for('admin_categories'))
 
@@ -1924,11 +1706,7 @@ def admin_delete_category(category_type, item_id):
     elif category_type == 'customer':
         item = Customer.query.get_or_404(item_id)
         db.session.delete(item)
-    else:
-        flash('نوع غير معروف', 'danger')
-        return redirect(url_for('admin_categories'))
     db.session.commit()
-    log_activity(current_user.id, 'delete', f"حذف {category_type} {item_id}")
     flash('تم الحذف بنجاح', 'success')
     return redirect(url_for('admin_categories'))
 
@@ -1940,7 +1718,6 @@ def settings_profile():
         current_user.full_name = request.form.get('full_name')
         current_user.phone = request.form.get('phone')
         db.session.commit()
-        log_activity(current_user.id, 'edit', f"تعديل الملف الشخصي")
         flash('تم تحديث الملف الشخصي بنجاح', 'success')
         return redirect(url_for('settings_profile'))
     return render_template('settings/profile.html')
@@ -1963,7 +1740,6 @@ def settings_password():
             return redirect(url_for('settings_password'))
         current_user.set_password(new_password)
         db.session.commit()
-        log_activity(current_user.id, 'edit', f"تغيير كلمة المرور")
         flash('تم تغيير كلمة المرور بنجاح', 'success')
         return redirect(url_for('dashboard'))
     return render_template('settings/password.html')
