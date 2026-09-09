@@ -98,6 +98,11 @@
                                 <i class="fas fa-store ms-2"></i> المحل
                             </a>
                         </li>
+                        <li class="nav-item">
+                            <a class="nav-link text-white" href="{{ url_for('store_transactions') }}">
+                                <i class="fas fa-exchange-alt ms-2"></i> المعاملات
+                            </a>
+                        </li>
                         {% endif %}
 
                         {% if current_user.role in ['meg', 'admin', 'mariam', 'ahmed', 'eid', 'abdo', 'sayed'] %}
