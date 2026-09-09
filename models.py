@@ -254,6 +254,7 @@ class TreasuryTransfer(db.Model):
     created_by = db.Column(db.Integer, db.ForeignKey('users.id'))
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
 
+# ==================== شركة الماسة ====================
 class AlMasaCrane(db.Model):
     __tablename__ = 'almasa_cranes'
     id = db.Column(db.Integer, primary_key=True)
@@ -310,7 +311,6 @@ class AlMasaExpense(db.Model):
     __tablename__ = 'almasa_expenses'
     id = db.Column(db.Integer, primary_key=True)
     crane_id = db.Column(db.Integer, db.ForeignKey('almasa_cranes.id'), nullable=False)
-    check_id = db.Column(db.Integer, db.ForeignKey('almasa_checks.id'), nullable=True)
     date = db.Column(db.Date, nullable=False)
     expense_type = db.Column(db.String(50))
     amount = db.Column(db.Float, default=0)
