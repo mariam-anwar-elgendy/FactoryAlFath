@@ -5,142 +5,92 @@
 {% block content %}
 <div class="d-flex justify-content-between align-items-center mb-4">
     <h2 class="fw-bold text-purple-dark">🏪 المحل</h2>
-    <div class="d-flex gap-2 flex-wrap">
-        <a href="{{ url_for('store_transactions') }}" class="btn btn-purple">➕ معاملات جديدة</a>
+    <div>
+        <a href="{{ url_for('store_transactions') }}" class="btn btn-purple">➕ معاملات المحل</a>
         <a href="{{ url_for('store_inventory') }}" class="btn btn-outline-purple">📦 المخزون</a>
         <a href="{{ url_for('store_returns') }}" class="btn btn-outline-purple">🔁 المرتجعات</a>
         <a href="{{ url_for('store_diary') }}" class="btn btn-outline-purple">📔 اليوميات</a>
     </div>
 </div>
 
-<!-- إحصائيات سريعة -->
-<div class="row mb-4">
-    <div class="col-md-3">
-        <div class="card bg-primary text-white text-center">
-            <div class="card-body py-3">
-                <h5 class="mb-1">مبيعات اليوم</h5>
-                <h3>{{ sales|sum(attribute='total') }}</h3>
-                <small>عدد الفواتير: {{ sales|length }}</small>
-            </div>
-        </div>
-    </div>
-    <div class="col-md-3">
-        <div class="card bg-success text-white text-center">
-            <div class="card-body py-3">
-                <h5 class="mb-1">مشتريات اليوم</h5>
-                <h3>{{ purchases|sum(attribute='total') }}</h3>
-                <small>عدد الفواتير: {{ purchases|length }}</small>
-            </div>
-        </div>
-    </div>
-    <div class="col-md-3">
-        <div class="card bg-info text-white text-center">
-            <div class="card-body py-3">
-                <h5 class="mb-1">استلام اليوم</h5>
-                <h3>{{ receiving|sum(attribute='quantity') }}</h3>
-                <small>عدد الأصناف: {{ receiving|length }}</small>
-            </div>
-        </div>
-    </div>
-    <div class="col-md-3">
-        <div class="card bg-warning text-dark text-center">
-            <div class="card-body py-3">
-                <h5 class="mb-1">المخزون المنخفض</h5>
-                <h3>{{ inventory_low if inventory_low else 0 }}</h3>
-                <a href="{{ url_for('store_inventory') }}" class="btn btn-sm btn-dark">عرض المخزون</a>
-            </div>
-        </div>
-    </div>
-</div>
-
-<div class="row">
-    <div class="col-md-6 mb-4">
-        <div class="card border-0 shadow-sm h-100">
-            <div class="card-header bg-purple text-white fw-bold d-flex justify-content-between align-items-center">
-                <span>💰 مبيعات اليوم</span>
-                <a href="{{ url_for('store_transactions') }}" class="btn btn-sm btn-light">عرض الكل</a>
-            </div>
-            <div class="card-body">
-                <div class="table-responsive">
-                    <table class="table table-sm table-striped">
-                        <thead>
-                            <tr><th>العميل</th><th>الأصناف</th><th>الإجمالي</th><th>الدفع</th></tr>
-                        </thead>
-                        <tbody>
-                            {% for s in sales %}
-                            <tr>
-                                <td>{{ s.customer_name }}</td>
-                                <td>
-                                    {% for item in s.items %}
-                                        {{ item.product_type }}{% if not loop.last %}, {% endif %}
-                                    {% else %}
-                                        -
-                                    {% endfor %}
-                                </td>
-                                <td>{{ s.total }}</td>
-                                <td>
-                                    <span class="badge bg-{{ 'success' if s.payment_type == 'نقدي' else 'warning' }}">{{ s.payment_type }}</span>
-                                </td>
-                            </tr>
-                            {% else %}
-                            <tr><td colspan="4" class="text-center">لا توجد مبيعات اليوم</td></tr>
-                            {% endfor %}
-                        </tbody>
-                    </table>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <div class="col-md-6 mb-4">
-        <div class="card border-0 shadow-sm h-100">
-            <div class="card-header bg-purple text-white fw-bold d-flex justify-content-between align-items-center">
-                <span>📦 مشتريات اليوم</span>
-                <a href="{{ url_for('store_transactions') }}" class="btn btn-sm btn-light">عرض الكل</a>
-            </div>
-            <div class="card-body">
-                <div class="table-responsive">
-                    <table class="table table-sm table-striped">
-                        <thead>
-                            <tr><th>المورد</th><th>الأصناف</th><th>الإجمالي</th><th>الدفع</th></tr>
-                        </thead>
-                        <tbody>
-                            {% for p in purchases %}
-                            <tr>
-                                <td>{{ p.supplier_name }}</td>
-                                <td>
-                                    {% for item in p.items %}
-                                        {{ item.product_type }}{% if not loop.last %}, {% endif %}
-                                    {% else %}
-                                        -
-                                    {% endfor %}
-                                </td>
-                                <td>{{ p.total }}</td>
-                                <td>
-                                    <span class="badge bg-{{ 'success' if p.payment_type == 'نقدي' else 'warning' }}">{{ p.payment_type }}</span>
-                                </td>
-                            </tr>
-                            {% else %}
-                            <tr><td colspan="4" class="text-center">لا توجد مشتريات اليوم</td></tr>
-                            {% endfor %}
-                        </tbody>
-                    </table>
-                </div>
-            </div>
-        </div>
-    </div>
-</div>
-
-<div class="card border-0 shadow-sm">
-    <div class="card-header bg-purple text-white fw-bold d-flex justify-content-between align-items-center">
-        <span>📥 استلام اليوم</span>
-        <a href="{{ url_for('store_inventory') }}" class="btn btn-sm btn-light">عرض المخزون</a>
+<!-- مبيعات اليوم -->
+<div class="card border-0 shadow-sm mb-4">
+    <div class="card-header bg-purple text-white fw-bold d-flex justify-content-between">
+        <span>💰 مبيعات اليوم</span>
+        <a href="{{ url_for('store_transactions') }}" class="btn btn-sm btn-light">عرض الكل</a>
     </div>
     <div class="card-body">
         <div class="table-responsive">
             <table class="table table-sm table-striped">
                 <thead>
-                    <tr><th>الصنف</th><th>المقاس</th><th>المواصفات</th><th>الكمية</th><th>من المصنع</th></tr>
+                    <tr><th>العميل</th><th>الأصناف</th><th>الإجمالي</th><th>الدفع</th></tr>
+                </thead>
+                <tbody>
+                    {% for s in sales %}
+                    <tr>
+                        <td>{{ s.customer_name }}</td>
+                        <td>
+                            {% for item in s.items %}
+                                {{ item.product_type }}{% if not loop.last %}, {% endif %}
+                            {% else %}
+                                -
+                            {% endfor %}
+                        </td>
+                        <td>{{ s.total }}</td>
+                        <td><span class="badge bg-{{ 'success' if s.payment_type == 'نقدي' else 'warning' }}">{{ s.payment_type }}</span></td>
+                    </tr>
+                    {% else %}
+                    <tr><td colspan="4" class="text-center">لا توجد مبيعات اليوم</td></tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<!-- مشتريات اليوم -->
+<div class="card border-0 shadow-sm mb-4">
+    <div class="card-header bg-purple text-white fw-bold d-flex justify-content-between">
+        <span>📦 مشتريات اليوم</span>
+        <a href="{{ url_for('store_transactions') }}" class="btn btn-sm btn-light">عرض الكل</a>
+    </div>
+    <div class="card-body">
+        <div class="table-responsive">
+            <table class="table table-sm table-striped">
+                <thead>
+                    <tr><th>المورد</th><th>الأصناف</th><th>الإجمالي</th><th>الدفع</th></tr>
+                </thead>
+                <tbody>
+                    {% for p in purchases %}
+                    <tr>
+                        <td>{{ p.supplier_name }}</td>
+                        <td>
+                            {% for item in p.items %}
+                                {{ item.product_type }}{% if not loop.last %}, {% endif %}
+                            {% else %}
+                                -
+                            {% endfor %}
+                        </td>
+                        <td>{{ p.total }}</td>
+                        <td><span class="badge bg-{{ 'success' if p.payment_type == 'نقدي' else 'warning' }}">{{ p.payment_type }}</span></td>
+                    </tr>
+                    {% else %}
+                    <tr><td colspan="4" class="text-center">لا توجد مشتريات اليوم</td></tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<!-- استلام اليوم -->
+<div class="card border-0 shadow-sm">
+    <div class="card-header bg-purple text-white fw-bold">📥 استلام اليوم</div>
+    <div class="card-body">
+        <div class="table-responsive">
+            <table class="table table-sm table-striped">
+                <thead>
+                    <tr><th>الصنف</th><th>المقاس</th><th>المواصفات</th><th>الكمية</th></tr>
                 </thead>
                 <tbody>
                     {% for r in receiving %}
@@ -149,10 +99,9 @@
                         <td>{{ r.product_size or '-' }}</td>
                         <td>{{ r.product_spec or '-' }}</td>
                         <td>{{ r.quantity }}</td>
-                        <td>{% if r.from_factory %}✅{% else %}❌{% endif %}</td>
                     </tr>
                     {% else %}
-                    <tr><td colspan="5" class="text-center">لا يوجد استلام اليوم</td></tr>
+                    <tr><td colspan="4" class="text-center">لا يوجد استلام اليوم</td></tr>
                     {% endfor %}
                 </tbody>
             </table>
