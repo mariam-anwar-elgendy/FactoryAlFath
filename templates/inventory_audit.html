@@ -765,4 +765,43 @@ function saveNewAccount() {
         headers: {'Content-Type': 'application/json'},
         body: JSON.stringify({person_name: personName, account_type: accountType})
     })
-    .then(response
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            accountsData.push({
+                id: data.id,
+                person_name: personName,
+                account_type: accountType,
+                balance: 0
+            });
+            
+            var row = document.getElementById(currentRowId);
+            row.querySelector('input[name="treasury_person_name[]"]').value = personName;
+            row.querySelector('select[name="treasury_account_type[]"]').value = accountType;
+            
+            bootstrap.Modal.getInstance(document.getElementById('addAccountModal')).hide();
+            document.getElementById('newAccountPerson').value = '';
+            document.getElementById('newAccountType').value = '';
+            updateTreasuryRow(currentRowId);
+        }
+    });
+}
+
+// إضافة أول صف عند فتح الصفحة
+document.addEventListener('DOMContentLoaded', function() {
+    addStoreRow();
+    addTreasuryRow();
+});
+</script>
+
+<datalist id="persons_list_audit">
+    {% set seen_persons = [] %}
+    {% for acc in accounts %}
+        {% if acc.person_name not in seen_persons %}
+            {% set _ = seen_persons.append(acc.person_name) %}
+            <option value="{{ acc.person_name }}">
+        {% endif %}
+    {% endfor %}
+</datalist>
+
+{% endblock %}
