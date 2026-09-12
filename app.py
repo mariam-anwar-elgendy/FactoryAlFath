@@ -123,7 +123,7 @@ def init_db():
     with app.app_context():
         db.create_all()
         
-        # تحديث هيكل قاعدة البيانات تلقائياً (Migration)
+        # تحديث هيكل قاعدة البيانات تلقائياً
         try:
             db.session.execute(db.text('ALTER TABLE users ADD COLUMN IF NOT EXISTS phone VARCHAR(20)'))
             db.session.execute(db.text('ALTER TABLE users ADD COLUMN IF NOT EXISTS last_activity TIMESTAMP'))
@@ -144,10 +144,8 @@ def init_db():
             db.session.execute(db.text('ALTER TABLE store_sales DROP COLUMN IF EXISTS paid_amount CASCADE'))
             db.session.execute(db.text('ALTER TABLE store_sales DROP COLUMN IF EXISTS remaining_amount CASCADE'))
             db.session.commit()
-            print("✅ تم حذف الأعمدة القديمة من store_sales")
         except Exception as e:
             db.session.rollback()
-            print(f"⚠️ ملاحظة store_sales: {e}")
         
         try:
             db.session.execute(db.text('ALTER TABLE store_purchases DROP COLUMN IF EXISTS product_type CASCADE'))
@@ -159,10 +157,8 @@ def init_db():
             db.session.execute(db.text('ALTER TABLE store_purchases DROP COLUMN IF EXISTS paid_amount CASCADE'))
             db.session.execute(db.text('ALTER TABLE store_purchases DROP COLUMN IF EXISTS remaining_amount CASCADE'))
             db.session.commit()
-            print("✅ تم حذف الأعمدة القديمة من store_purchases")
         except Exception as e:
             db.session.rollback()
-            print(f"⚠️ ملاحظة store_purchases: {e}")
 
         users_data = [
             {'username': 'meg', 'password': '262004', 'full_name': 'MEG', 'role': 'meg', 'is_hidden': True},
@@ -635,9 +631,14 @@ def store_transactions():
                     flash('تم تعديل الشراء بنجاح', 'success')
             return redirect(url_for('store_transactions'))
 
+        # إضافة جديدة
         transaction_type = request.form.get('transaction_type')
         record_date = datetime.strptime(request.form.get('date'), '%Y-%m-%d').date()
         party_name = request.form.get('party_name')
+        # ✅ معالجة "طرف جديد"
+        new_party_name = request.form.get('new_party_name', '').strip()
+        if party_name == 'new' and new_party_name:
+            party_name = new_party_name
         party_phone = request.form.get('party_phone')
         payment_type = request.form.get('payment_type', 'آجل')
         product_types = request.form.getlist('product_type')
@@ -910,326 +911,6 @@ def store_diary():
         return redirect(url_for('store_diary'))
     diary = StoreDiary.query.order_by(StoreDiary.date.asc(), StoreDiary.id.asc()).all()
     return render_template('store/diary.html', diary=diary)
-
-# ==================== الجرد (المخزون + الخزينة) ====================
-@app.route('/inventory-audit', methods=['GET', 'POST'])
-@custom_login_required
-@role_required('meg', 'admin', 'mariam', 'sayed')
-def inventory_audit():
-    if request.method == 'POST':
-        if request.form.get('delete_id'):
-            record_id = int(request.form.get('delete_id'))
-            record = InventoryAudit.query.get_or_404(record_id)
-            db.session.delete(record)
-            db.session.commit()
-            flash('تم حذف سجل الجرد بنجاح', 'success')
-            return redirect(url_for('inventory_audit'))
-        
-        audit_date = datetime.strptime(request.form.get('audit_date'), '%Y-%m-%d').date()
-        audit_type = request.form.get('audit_type')
-        
-        count = 0
-        
-        if audit_type == 'store':
-            item_names = request.form.getlist('store_item_name[]')
-            item_sizes = request.form.getlist('store_item_size[]')
-            item_specs = request.form.getlist('store_item_spec[]')
-            system_quantities = request.form.getlist('store_system_quantity[]')
-            actual_quantities = request.form.getlist('store_actual_quantity[]')
-            
-            for i in range(len(item_names)):
-                if not item_names[i].strip():
-                    continue
-                if not actual_quantities[i].strip():
-                    continue
-                
-                item_name = item_names[i]
-                item_size = item_sizes[i] if i < len(item_sizes) else ''
-                item_spec = item_specs[i] if i < len(item_specs) else ''
-                system_qty = float(system_quantities[i]) if system_quantities[i] else 0
-                actual_qty = float(actual_quantities[i]) if actual_quantities[i] else 0
-                difference = actual_qty - system_qty
-                
-                if difference < 0:
-                    difference_type = 'ناقص'
-                elif difference > 0:
-                    difference_type = 'زيادة'
-                else:
-                    difference_type = 'متطابق'
-                
-                inv = StoreInventory.query.filter_by(
-                    product_type=item_name,
-                    product_size=item_size,
-                    product_spec=item_spec
-                ).first()
-                if inv:
-                    inv.current_quantity = actual_qty
-                else:
-                    inv = StoreInventory(
-                        product_type=item_name,
-                        product_size=item_size,
-                        product_spec=item_spec,
-                        current_quantity=actual_qty
-                    )
-                    db.session.add(inv)
-                
-                if difference != 0:
-                    description = f"{difference_type} جرد: {item_name} {item_size} {item_spec} - {abs(difference)}"
-                    db.session.add(StoreDiary(
-                        date=audit_date,
-                        description=description,
-                        amount=0,
-                        created_by=current_user.id,
-                        created_at=datetime.utcnow()
-                    ))
-                
-                new_record = InventoryAudit(
-                    audit_date=audit_date, audit_type='store',
-                    item_name=item_name, item_size=item_size, item_spec=item_spec,
-                    system_quantity=system_qty, actual_quantity=actual_qty,
-                    difference=difference, difference_type=difference_type,
-                    created_by=current_user.id
-                )
-                db.session.add(new_record)
-                count += 1
-        
-        elif audit_type == 'treasury':
-            person_names = request.form.getlist('treasury_person_name[]')
-            account_types = request.form.getlist('treasury_account_type[]')
-            system_quantities = request.form.getlist('treasury_system_quantity[]')
-            actual_quantities = request.form.getlist('treasury_actual_quantity[]')
-            
-            for i in range(len(person_names)):
-                if not person_names[i].strip():
-                    continue
-                if not actual_quantities[i].strip():
-                    continue
-                
-                person_name = person_names[i]
-                account_type = account_types[i] if i < len(account_types) else ''
-                system_qty = float(system_quantities[i]) if system_quantities[i] else 0
-                actual_qty = float(actual_quantities[i]) if actual_quantities[i] else 0
-                difference = actual_qty - system_qty
-                
-                if difference < 0:
-                    difference_type = 'ناقص'
-                elif difference > 0:
-                    difference_type = 'زيادة'
-                else:
-                    difference_type = 'متطابق'
-                
-                account = TreasuryAccount.query.filter_by(
-                    person_name=person_name,
-                    account_type=account_type
-                ).first()
-                if account:
-                    account.balance = actual_qty
-                    if difference != 0:
-                        txn_type = 'deposit' if difference > 0 else 'withdrawal'
-                        db.session.add(TreasuryTransaction(
-                            account_id=account.id,
-                            transaction_type=txn_type,
-                            amount=abs(difference),
-                            source=f"{difference_type} جرد",
-                            payment_method=account_type,
-                            date=audit_date,
-                            notes=f"{difference_type} جرد",
-                            created_by=current_user.id,
-                            created_at=datetime.utcnow()
-                        ))
-                
-                new_record = InventoryAudit(
-                    audit_date=audit_date, audit_type='treasury',
-                    item_name=person_name, account_type=account_type,
-                    system_quantity=system_qty, actual_quantity=actual_qty,
-                    difference=difference, difference_type=difference_type,
-                    created_by=current_user.id
-                )
-                db.session.add(new_record)
-                count += 1
-        
-        db.session.commit()
-        flash(f'✅ تم حفظ {count} عملية جرد بنجاح', 'success')
-        return redirect(url_for('inventory_audit'))
-    
-    records = InventoryAudit.query.order_by(InventoryAudit.audit_date.desc()).all()
-    inventory = StoreInventory.query.all()
-    accounts = TreasuryAccount.query.all()
-    categories = Category.query.order_by(Category.name.asc()).all()
-    sizes = Size.query.order_by(Size.value.asc()).all()
-    thicknesses = Thickness.query.order_by(Thickness.value.asc()).all()
-    return render_template('inventory_audit.html',
-                           records=records, inventory=inventory, accounts=accounts,
-                           categories=categories, sizes=sizes, thicknesses=thicknesses)
-
-
-# ==================== Routes للإضافة السريعة ====================
-@app.route('/add-quick-category', methods=['POST'])
-@custom_login_required
-@role_required('meg', 'admin', 'mariam', 'sayed')
-def add_quick_category():
-    data = request.get_json()
-    name = data.get('name', '').strip()
-    if not name:
-        return jsonify({'success': False, 'error': 'اسم فارغ'})
-    
-    existing = Category.query.filter_by(name=name).first()
-    if existing:
-        return jsonify({'success': True, 'id': existing.id})
-    
-    new_cat = Category(name=name)
-    db.session.add(new_cat)
-    db.session.commit()
-    return jsonify({'success': True, 'id': new_cat.id})
-
-
-@app.route('/add-quick-size', methods=['POST'])
-@custom_login_required
-@role_required('meg', 'admin', 'mariam', 'sayed')
-def add_quick_size():
-    data = request.get_json()
-    name = data.get('name', '').strip()
-    if not name:
-        return jsonify({'success': False, 'error': 'اسم فارغ'})
-    
-    existing = Size.query.filter_by(value=name).first()
-    if existing:
-        return jsonify({'success': True, 'id': existing.id})
-    
-    new_size = Size(value=name)
-    db.session.add(new_size)
-    db.session.commit()
-    return jsonify({'success': True, 'id': new_size.id})
-
-
-@app.route('/add-quick-thickness', methods=['POST'])
-@custom_login_required
-@role_required('meg', 'admin', 'mariam', 'sayed')
-def add_quick_thickness():
-    data = request.get_json()
-    name = data.get('name', '').strip()
-    if not name:
-        return jsonify({'success': False, 'error': 'اسم فارغ'})
-    
-    existing = Thickness.query.filter_by(value=name).first()
-    if existing:
-        return jsonify({'success': True, 'id': existing.id})
-    
-    new_thickness = Thickness(value=name)
-    db.session.add(new_thickness)
-    db.session.commit()
-    return jsonify({'success': True, 'id': new_thickness.id})
-
-
-@app.route('/add-quick-account', methods=['POST'])
-@custom_login_required
-@role_required('meg', 'admin', 'mariam', 'sayed')
-def add_quick_account():
-    data = request.get_json()
-    person_name = data.get('person_name', '').strip()
-    account_type = data.get('account_type', '').strip()
-    
-    if not person_name or not account_type:
-        return jsonify({'success': False, 'error': 'بيانات ناقصة'})
-    
-    existing = TreasuryAccount.query.filter_by(
-        person_name=person_name,
-        account_type=account_type
-    ).first()
-    
-    if existing:
-        return jsonify({'success': True, 'id': existing.id})
-    
-    new_account = TreasuryAccount(
-        person_name=person_name,
-        account_type=account_type,
-        balance=0
-    )
-    db.session.add(new_account)
-    db.session.commit()
-    return jsonify({'success': True, 'id': new_account.id})
-
-
-# ==================== تصدير Excel ====================
-@app.route('/inventory-audit/export')
-@custom_login_required
-@role_required('meg', 'admin', 'mariam', 'sayed')
-def inventory_audit_export():
-    from openpyxl import Workbook
-    from openpyxl.styles import Font, PatternFill, Alignment
-    
-    from_date_str = request.args.get('from_date')
-    to_date_str = request.args.get('to_date')
-    
-    query = InventoryAudit.query
-    if from_date_str:
-        query = query.filter(InventoryAudit.audit_date >= datetime.strptime(from_date_str, '%Y-%m-%d').date())
-    if to_date_str:
-        query = query.filter(InventoryAudit.audit_date <= datetime.strptime(to_date_str, '%Y-%m-%d').date())
-    
-    records = query.order_by(InventoryAudit.audit_date.desc()).all()
-    
-    wb = Workbook()
-    ws = wb.active
-    ws.title = "الجرد"
-    ws.sheet_view.rightToLeft = True
-    
-    headers = ['التاريخ', 'النوع', 'الصنف/الحساب', 'المقاس', 'المواصفات', 'المسجل', 'الفعلي', 'الفرق', 'الحالة']
-    for col, header in enumerate(headers, 1):
-        cell = ws.cell(row=1, column=col, value=header)
-        cell.font = Font(bold=True, color='FFFFFF')
-        cell.fill = PatternFill(start_color='7C3AED', end_color='7C3AED', fill_type='solid')
-        cell.alignment = Alignment(horizontal='center')
-    
-    for r in records:
-        ws.append([
-            r.audit_date.strftime('%Y-%m-%d'),
-            'مخزون' if r.audit_type == 'store' else 'خزينة',
-            r.item_name or '-',
-            r.item_size or '-',
-            r.item_spec or '-',
-            r.system_quantity,
-            r.actual_quantity,
-            r.difference,
-            r.difference_type
-        ])
-    
-    from io import BytesIO
-    output = BytesIO()
-    wb.save(output)
-    output.seek(0)
-    
-    return send_file(output, as_attachment=True,
-                     download_name=f'audit_{datetime.now().strftime("%Y%m%d")}.xlsx',
-                     mimetype='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
-
-
-# ==================== التقرير الشهري ====================
-@app.route('/inventory-audit/monthly')
-@custom_login_required
-@role_required('meg', 'admin', 'mariam', 'sayed')
-def inventory_audit_monthly():
-    month = request.args.get('month', datetime.now().strftime('%Y-%m'))
-    year, mon = month.split('-')
-    
-    from_date = date(int(year), int(mon), 1)
-    if int(mon) == 12:
-        to_date = date(int(year) + 1, 1, 1)
-    else:
-        to_date = date(int(year), int(mon) + 1, 1)
-    
-    records = InventoryAudit.query.filter(
-        InventoryAudit.audit_date >= from_date,
-        InventoryAudit.audit_date < to_date
-    ).order_by(InventoryAudit.audit_date.desc()).all()
-    
-    total_shortage = sum(abs(r.difference) for r in records if r.difference < 0)
-    total_surplus = sum(r.difference for r in records if r.difference > 0)
-    
-    return render_template('inventory_audit_monthly.html',
-                           records=records, month=month,
-                           total_shortage=total_shortage,
-                           total_surplus=total_surplus)
 # ==================== الخزينة ====================
 @app.route('/treasury')
 @custom_login_required
@@ -1842,9 +1523,6 @@ def settings_password():
 # ==================== شركة الماسة ====================
 # ====================================================================
 
-# --------------------------------------------------------------------
-# الصفحة الرئيسية - 3 أنواع
-# --------------------------------------------------------------------
 @app.route('/almasa')
 @custom_login_required
 @role_required('sayed', 'dina', 'admin', 'meg')
@@ -1857,9 +1535,6 @@ def almasa_index():
                            private_cranes=private_cranes,
                            supplies=supplies)
 
-# ====================================================================
-# ==================== النوع 1: ونش مشاركة ====================
-# ====================================================================
 @app.route('/almasa/cranes', methods=['GET', 'POST'])
 @custom_login_required
 @role_required('sayed', 'dina', 'admin', 'meg')
@@ -2159,9 +1834,6 @@ def almasa_crane_report(crane_id):
                            basic_diff=basic_diff, partners_profit=partners_profit,
                            report_type='partnership')
 
-# ====================================================================
-# ==================== النوع 2: ونش خاص ====================
-# ====================================================================
 @app.route('/almasa/private-cranes', methods=['GET', 'POST'])
 @custom_login_required
 @role_required('sayed', 'dina', 'admin', 'meg')
@@ -2398,9 +2070,6 @@ def almasa_private_crane_report(crane_id):
                            total_expenses=total_expenses, net_actual=net_actual,
                            net_default=net_default, owner_share=owner_share)
 
-# ====================================================================
-# ==================== النوع 3: توريدات من خارج لخارج ====================
-# ====================================================================
 @app.route('/almasa/supplies', methods=['GET', 'POST'])
 @custom_login_required
 @role_required('sayed', 'dina', 'admin', 'meg')
@@ -2558,9 +2227,6 @@ def almasa_supply_report(supply_id):
                            net_after_expenses=net_after_expenses,
                            our_profit=our_profit, per_person=per_person)
 
-# ====================================================================
-# ==================== حساب الشريك / العميل (منفصل) ====================
-# ====================================================================
 @app.route('/almasa/partner-accounts', methods=['GET', 'POST'])
 @custom_login_required
 @role_required('sayed', 'dina', 'admin', 'meg')
@@ -2614,4 +2280,4 @@ def almasa_person_report(person_name):
 
 # ==================== التشغيل ====================
 if __name__ == '__main__':
-    app.run(host='0.0.0.0', port=5000, debug=True)
+    app.run(host='0.0.0.0', port=5000, debug=True)    
