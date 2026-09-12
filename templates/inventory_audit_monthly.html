@@ -1,0 +1,262 @@
+{% extends "base.html" %}
+
+{% block title %}التقرير الشهري للجرد{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h2 class="fw-bold text-purple-dark">📅 التقرير الشهري للجرد</h2>
+    <div>
+        <a href="{{ url_for('inventory_audit') }}" class="btn btn-outline-secondary">← رجوع للجرد</a>
+        <a href="{{ url_for('inventory_audit_export', from_date=month + '-01') }}" class="btn btn-success">📊 تصدير Excel</a>
+    </div>
+</div>
+
+<!-- اختيار الشهر -->
+<div class="card border-0 shadow-sm mb-4">
+    <div class="card-body">
+        <form method="GET" class="row align-items-end">
+            <div class="col-md-4">
+                <label class="form-label fw-bold">اختر الشهر</label>
+                <input type="month" name="month" class="form-control" value="{{ month }}" onchange="this.form.submit()">
+            </div>
+            <div class="col-md-4">
+                <button type="submit" class="btn btn-purple">🔍 عرض</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- إحصائيات -->
+<div class="row mb-4">
+    <div class="col-md-3">
+        <div class="card border-0 shadow-sm h-100">
+            <div class="card-body text-center">
+                <h6 class="text-muted">إجمالي العمليات</h6>
+                <h3 class="fw-bold text-primary">{{ records|length }}</h3>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card border-0 shadow-sm h-100">
+            <div class="card-body text-center">
+                <h6 class="text-muted">عمليات ناقصة</h6>
+                <h3 class="fw-bold text-danger">{{ records|selectattr('difference_type', 'equalto', 'ناقص')|list|length }}</h3>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card border-0 shadow-sm h-100">
+            <div class="card-body text-center">
+                <h6 class="text-muted">إجمالي العجز</h6>
+                <h3 class="fw-bold text-danger">{{ total_shortage }}</h3>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card border-0 shadow-sm h-100">
+            <div class="card-body text-center">
+                <h6 class="text-muted">إجمالي الزيادة</h6>
+                <h3 class="fw-bold text-success">{{ total_surplus }}</h3>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- تبويبات -->
+<ul class="nav nav-tabs mb-3" id="monthlyTab" role="tablist">
+    <li class="nav-item" role="presentation">
+        <button class="nav-link active" id="all-tab" data-bs-toggle="tab" data-bs-target="#all_records" type="button" role="tab">
+            📋 كل السجلات
+        </button>
+    </li>
+    <li class="nav-item" role="presentation">
+        <button class="nav-link" id="store-tab" data-bs-toggle="tab" data-bs-target="#store_records" type="button" role="tab">
+            📦 المخزون
+        </button>
+    </li>
+    <li class="nav-item" role="presentation">
+        <button class="nav-link" id="treasury-tab" data-bs-toggle="tab" data-bs-target="#treasury_records" type="button" role="tab">
+            💰 الخزينة
+        </button>
+    </li>
+</ul>
+
+<div class="tab-content">
+    <!-- كل السجلات -->
+    <div class="tab-pane fade show active" id="all_records" role="tabpanel">
+        <div class="card border-0 shadow-sm">
+            <div class="card-header bg-light fw-bold">📋 كل عمليات الجرد في {{ month }}</div>
+            <div class="card-body">
+                <div class="table-responsive">
+                    <table class="table table-sm table-striped table-hover">
+                        <thead class="bg-purple text-white">
+                            <tr>
+                                <th>التاريخ</th>
+                                <th>النوع</th>
+                                <th>الصنف/الحساب</th>
+                                <th>المقاس</th>
+                                <th>المواصفات</th>
+                                <th>المسجل</th>
+                                <th>الفعلي</th>
+                                <th>الفرق</th>
+                                <th>الحالة</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for r in records %}
+                            <tr>
+                                <td>{{ r.audit_date.strftime('%Y-%m-%d') }}</td>
+                                <td>
+                                    {% if r.audit_type == 'store' %}
+                                        <span class="badge bg-info">📦 مخزون</span>
+                                    {% else %}
+                                        <span class="badge bg-success">💰 خزينة</span>
+                                    {% endif %}
+                                </td>
+                                <td>{{ r.item_name or '-' }}</td>
+                                <td>{{ r.item_size or '-' }}</td>
+                                <td>{{ r.item_spec or '-' }}</td>
+                                <td>{{ r.system_quantity }}</td>
+                                <td>{{ r.actual_quantity }}</td>
+                                <td>
+                                    {% if r.difference < 0 %}
+                                        <span class="text-danger fw-bold">{{ r.difference }}</span>
+                                    {% elif r.difference > 0 %}
+                                        <span class="text-warning fw-bold">+{{ r.difference }}</span>
+                                    {% else %}
+                                        <span class="text-success">0</span>
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    {% if r.difference_type == 'ناقص' %}
+                                        <span class="badge bg-danger">ناقص</span>
+                                    {% elif r.difference_type == 'زيادة' %}
+                                        <span class="badge bg-warning text-dark">زيادة</span>
+                                    {% else %}
+                                        <span class="badge bg-success">متطابق</span>
+                                    {% endif %}
+                                </td>
+                            </tr>
+                            {% else %}
+                            <tr><td colspan="9" class="text-center text-muted">لا توجد عمليات في الشهر ده</td></tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- المخزون -->
+    <div class="tab-pane fade" id="store_records" role="tabpanel">
+        <div class="card border-0 shadow-sm">
+            <div class="card-header bg-light fw-bold">📦 جرد المخزون</div>
+            <div class="card-body">
+                <div class="table-responsive">
+                    <table class="table table-sm table-striped">
+                        <thead class="bg-purple text-white">
+                            <tr>
+                                <th>التاريخ</th>
+                                <th>الصنف</th>
+                                <th>المقاس</th>
+                                <th>المواصفات</th>
+                                <th>المسجل</th>
+                                <th>الفعلي</th>
+                                <th>الفرق</th>
+                                <th>الحالة</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for r in records if r.audit_type == 'store' %}
+                            <tr>
+                                <td>{{ r.audit_date.strftime('%Y-%m-%d') }}</td>
+                                <td>{{ r.item_name }}</td>
+                                <td>{{ r.item_size or '-' }}</td>
+                                <td>{{ r.item_spec or '-' }}</td>
+                                <td>{{ r.system_quantity }}</td>
+                                <td>{{ r.actual_quantity }}</td>
+                                <td>
+                                    {% if r.difference < 0 %}
+                                        <span class="text-danger fw-bold">{{ r.difference }}</span>
+                                    {% elif r.difference > 0 %}
+                                        <span class="text-warning fw-bold">+{{ r.difference }}</span>
+                                    {% else %}
+                                        <span class="text-success">0</span>
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    {% if r.difference_type == 'ناقص' %}
+                                        <span class="badge bg-danger">ناقص</span>
+                                    {% elif r.difference_type == 'زيادة' %}
+                                        <span class="badge bg-warning text-dark">زيادة</span>
+                                    {% else %}
+                                        <span class="badge bg-success">متطابق</span>
+                                    {% endif %}
+                                </td>
+                            </tr>
+                            {% else %}
+                            <tr><td colspan="8" class="text-center text-muted">لا توجد عمليات جرد مخزون</td></tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- الخزينة -->
+    <div class="tab-pane fade" id="treasury_records" role="tabpanel">
+        <div class="card border-0 shadow-sm">
+            <div class="card-header bg-light fw-bold">💰 جرد الخزينة</div>
+            <div class="card-body">
+                <div class="table-responsive">
+                    <table class="table table-sm table-striped">
+                        <thead class="bg-purple text-white">
+                            <tr>
+                                <th>التاريخ</th>
+                                <th>اسم الشخص</th>
+                                <th>نوع الحساب</th>
+                                <th>المسجل</th>
+                                <th>الفعلي</th>
+                                <th>الفرق</th>
+                                <th>الحالة</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for r in records if r.audit_type == 'treasury' %}
+                            <tr>
+                                <td>{{ r.audit_date.strftime('%Y-%m-%d') }}</td>
+                                <td>{{ r.item_name }}</td>
+                                <td>{{ r.account_type or '-' }}</td>
+                                <td>{{ r.system_quantity }}</td>
+                                <td>{{ r.actual_quantity }}</td>
+                                <td>
+                                    {% if r.difference < 0 %}
+                                        <span class="text-danger fw-bold">{{ r.difference }}</span>
+                                    {% elif r.difference > 0 %}
+                                        <span class="text-warning fw-bold">+{{ r.difference }}</span>
+                                    {% else %}
+                                        <span class="text-success">0</span>
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    {% if r.difference_type == 'ناقص' %}
+                                        <span class="badge bg-danger">ناقص</span>
+                                    {% elif r.difference_type == 'زيادة' %}
+                                        <span class="badge bg-warning text-dark">زيادة</span>
+                                    {% else %}
+                                        <span class="badge bg-success">متطابق</span>
+                                    {% endif %}
+                                </td>
+                            </tr>
+                            {% else %}
+                            <tr><td colspan="7" class="text-center text-muted">لا توجد عمليات جرد خزينة</td></tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
