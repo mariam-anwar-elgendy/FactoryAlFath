@@ -1,0 +1,75 @@
+{% extends "base_almasa.html" %}
+
+{% block title %}التوريدات{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h2 class="fw-bold text-warning">📦 التوريدات من خارج لخارج</h2>
+    <button class="btn btn-warning" data-bs-toggle="modal" data-bs-target="#addSupplyModal">
+        ➕ إضافة توريدة جديدة
+    </button>
+</div>
+
+<div class="row">
+    {% for supply in supplies %}
+    <div class="col-md-4 mb-3">
+        <div class="card border-0 shadow-sm h-100">
+            <div class="card-header text-white fw-bold" style="background: linear-gradient(90deg, #e65100, #ef6c00);">
+                📦 {{ supply.name }}
+            </div>
+            <div class="card-body">
+                <p class="mb-2"><strong>المورد:</strong> {{ supply.supplier_name or '-' }}</p>
+                <p class="mb-2"><strong>العميل:</strong> {{ supply.customer_name or '-' }}</p>
+                <p class="mb-2"><strong>عدد العمليات:</strong> {{ supply.operations|length }}</p>
+                <p class="mb-3"><strong>إجمالي المصاريف:</strong> {{ supply.expenses|sum(attribute='amount') }}</p>
+                <a href="{{ url_for('almasa_supply_detail', supply_id=supply.id) }}" class="btn btn-sm btn-warning w-100">عرض التفاصيل</a>
+                <a href="{{ url_for('almasa_supply_report', supply_id=supply.id) }}" class="btn btn-sm btn-info w-100 mt-2">📊 التقرير</a>
+                <form action="{{ url_for('almasa_supply_delete', supply_id=supply.id) }}" method="POST" class="mt-2" onsubmit="return confirm('حذف التوريدة وكل بياناتها؟');">
+                    <button type="submit" class="btn btn-sm btn-danger w-100">🗑️ حذف</button>
+                </form>
+            </div>
+        </div>
+    </div>
+    {% else %}
+    <div class="col-12">
+        <div class="alert alert-info">لا توجد توريدات - أضف توريدة جديدة</div>
+    </div>
+    {% endfor %}
+</div>
+
+<!-- Modal إضافة توريدة -->
+<div class="modal fade" id="addSupplyModal" tabindex="-1">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <form method="POST" action="{{ url_for('almasa_supplies') }}">
+        <div class="modal-header bg-warning text-white">
+          <h5 class="modal-title">➕ إضافة توريدة</h5>
+          <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+        </div>
+        <div class="modal-body">
+          <div class="mb-3">
+            <label class="form-label fw-bold">اسم التوريدة</label>
+            <input type="text" name="name" class="form-control" required>
+          </div>
+          <div class="mb-3">
+            <label class="form-label fw-bold">اسم المورد</label>
+            <input type="text" name="supplier_name" class="form-control">
+          </div>
+          <div class="mb-3">
+            <label class="form-label fw-bold">اسم العميل</label>
+            <input type="text" name="customer_name" class="form-control">
+          </div>
+          <div class="mb-3">
+            <label class="form-label fw-bold">ملاحظات</label>
+            <textarea name="notes" class="form-control" rows="2"></textarea>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">إلغاء</button>
+          <button type="submit" class="btn btn-warning">حفظ</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+{% endblock %}
