@@ -122,12 +122,50 @@ def log_activity(user_id, action, details=''):
 def init_db():
     with app.app_context():
         db.create_all()
+        
+        # ✅ تحديث هيكل قاعدة البيانات تلقائياً (Migration)
         try:
+            # إضافة حقول جديدة لو مش موجودة
             db.session.execute(db.text('ALTER TABLE users ADD COLUMN IF NOT EXISTS phone VARCHAR(20)'))
             db.session.execute(db.text('ALTER TABLE users ADD COLUMN IF NOT EXISTS last_activity TIMESTAMP'))
+            db.session.execute(db.text('ALTER TABLE store_receiving ADD COLUMN IF NOT EXISTS supplier VARCHAR(100)'))
             db.session.commit()
-        except:
-            pass
+            print("✅ تم إضافة الحقول الجديدة")
+        except Exception as e:
+            db.session.rollback()
+            print(f"⚠️ ملاحظة الحقول: {e}")
+        
+        # حذف الأعمدة القديمة من store_sales
+        try:
+            db.session.execute(db.text('ALTER TABLE store_sales DROP COLUMN IF EXISTS product_type CASCADE'))
+            db.session.execute(db.text('ALTER TABLE store_sales DROP COLUMN IF EXISTS product_size CASCADE'))
+            db.session.execute(db.text('ALTER TABLE store_sales DROP COLUMN IF EXISTS product_spec CASCADE'))
+            db.session.execute(db.text('ALTER TABLE store_sales DROP COLUMN IF EXISTS quantity CASCADE'))
+            db.session.execute(db.text('ALTER TABLE store_sales DROP COLUMN IF EXISTS unit_price CASCADE'))
+            db.session.execute(db.text('ALTER TABLE store_sales DROP COLUMN IF EXISTS total CASCADE'))
+            db.session.execute(db.text('ALTER TABLE store_sales DROP COLUMN IF EXISTS paid_amount CASCADE'))
+            db.session.execute(db.text('ALTER TABLE store_sales DROP COLUMN IF EXISTS remaining_amount CASCADE'))
+            db.session.commit()
+            print("✅ تم حذف الأعمدة القديمة من store_sales")
+        except Exception as e:
+            db.session.rollback()
+            print(f"⚠️ ملاحظة store_sales: {e}")
+        
+        # حذف الأعمدة القديمة من store_purchases
+        try:
+            db.session.execute(db.text('ALTER TABLE store_purchases DROP COLUMN IF EXISTS product_type CASCADE'))
+            db.session.execute(db.text('ALTER TABLE store_purchases DROP COLUMN IF EXISTS product_size CASCADE'))
+            db.session.execute(db.text('ALTER TABLE store_purchases DROP COLUMN IF EXISTS product_spec CASCADE'))
+            db.session.execute(db.text('ALTER TABLE store_purchases DROP COLUMN IF EXISTS quantity CASCADE'))
+            db.session.execute(db.text('ALTER TABLE store_purchases DROP COLUMN IF EXISTS unit_price CASCADE'))
+            db.session.execute(db.text('ALTER TABLE store_purchases DROP COLUMN IF EXISTS total CASCADE'))
+            db.session.execute(db.text('ALTER TABLE store_purchases DROP COLUMN IF EXISTS paid_amount CASCADE'))
+            db.session.execute(db.text('ALTER TABLE store_purchases DROP COLUMN IF EXISTS remaining_amount CASCADE'))
+            db.session.commit()
+            print("✅ تم حذف الأعمدة القديمة من store_purchases")
+        except Exception as e:
+            db.session.rollback()
+            print(f"⚠️ ملاحظة store_purchases: {e}")
 
         users_data = [
             {'username': 'meg', 'password': '262004', 'full_name': 'MEG', 'role': 'meg', 'is_hidden': True},
@@ -2345,4 +2383,4 @@ def almasa_person_report(person_name):
 
 # ==================== التشغيل ====================
 if __name__ == '__main__':
-    app.run(host='0.0.0.0', port=5000, debug=True)    
+    app.run(host='0.0.0.0', port=5000, debug=True)
