@@ -1,0 +1,381 @@
+{% extends "base.html" %}
+
+{% block title %}الجرد{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h2 class="fw-bold text-purple-dark">📋 الجرد</h2>
+    <button class="btn btn-purple" data-bs-toggle="modal" data-bs-target="#addAuditModal">
+        ➕ إضافة عملية جرد
+    </button>
+</div>
+
+<!-- إحصائيات سريعة -->
+<div class="row mb-4">
+    <div class="col-md-4">
+        <div class="card border-0 shadow-sm bg-light">
+            <div class="card-body text-center">
+                <h5 class="fw-bold">📦 جرد المخزون</h5>
+                <p class="text-muted mb-0">آخر جرد: 
+                    {% set last_store = records|selectattr('audit_type', 'equalto', 'store')|list %}
+                    {% if last_store %}
+                        {{ last_store[0].audit_date.strftime('%Y-%m-%d') }}
+                    {% else %}
+                        لا يوجد
+                    {% endif %}
+                </p>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="card border-0 shadow-sm bg-light">
+            <div class="card-body text-center">
+                <h5 class="fw-bold">💰 جرد الخزينة</h5>
+                <p class="text-muted mb-0">آخر جرد: 
+                    {% set last_treasury = records|selectattr('audit_type', 'equalto', 'treasury')|list %}
+                    {% if last_treasury %}
+                        {{ last_treasury[0].audit_date.strftime('%Y-%m-%d') }}
+                    {% else %}
+                        لا يوجد
+                    {% endif %}
+                </p>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="card border-0 shadow-sm bg-light">
+            <div class="card-body text-center">
+                <h5 class="fw-bold">⚠️ الفروقات</h5>
+                <p class="text-muted mb-0">عدد الفروقات: 
+                    {{ records|selectattr('difference_type', 'ne', 'متطابق')|list|length }}
+                </p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- جدول سجلات الجرد -->
+<div class="card border-0 shadow-sm">
+    <div class="card-header bg-purple text-white fw-bold">
+        📋 سجل عمليات الجرد
+    </div>
+    <div class="card-body">
+        <div class="table-responsive">
+            <table class="table table-striped table-hover align-middle">
+                <thead class="bg-purple text-white">
+                    <tr>
+                        <th>التاريخ</th>
+                        <th>النوع</th>
+                        <th>الصنف / الحساب</th>
+                        <th>المقاس</th>
+                        <th>المواصفات</th>
+                        <th>الرصيد المسجل</th>
+                        <th>الرصيد الفعلي</th>
+                        <th>الفرق</th>
+                        <th>الحالة</th>
+                        <th>ملاحظات</th>
+                        <th>إجراءات</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for r in records %}
+                    <tr>
+                        <td>{{ r.audit_date.strftime('%Y-%m-%d') }}</td>
+                        <td>
+                            {% if r.audit_type == 'store' %}
+                                <span class="badge bg-info">📦 مخزون</span>
+                            {% else %}
+                                <span class="badge bg-success">💰 خزينة</span>
+                            {% endif %}
+                        </td>
+                        <td>{{ r.item_name or '-' }}</td>
+                        <td>{{ r.item_size or '-' }}</td>
+                        <td>{{ r.item_spec or '-' }}</td>
+                        <td>{{ r.system_quantity }}</td>
+                        <td>{{ r.actual_quantity }}</td>
+                        <td>{{ r.difference }}</td>
+                        <td>
+                            {% if r.difference_type == 'ناقص' %}
+                                <span class="badge bg-danger">ناقص</span>
+                            {% elif r.difference_type == 'زيادة' %}
+                                <span class="badge bg-warning text-dark">زيادة</span>
+                            {% else %}
+                                <span class="badge bg-success">متطابق</span>
+                            {% endif %}
+                        </td>
+                        <td>{{ r.notes or '-' }}</td>
+                        <td>
+                            <form action="{{ url_for('inventory_audit') }}" method="POST" class="d-inline" onsubmit="return confirm('حذف سجل الجرد؟ (لن يتم التراجع عن التسوية)');">
+                                <input type="hidden" name="delete_id" value="{{ r.id }}">
+                                <button type="submit" class="btn btn-sm btn-danger">🗑️</button>
+                            </form>
+                        </td>
+                    </tr>
+                    {% else %}
+                    <tr><td colspan="11" class="text-center text-muted">لا توجد عمليات جرد</td></tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<!-- ==================== Modal إضافة عملية جرد ==================== -->
+<div class="modal fade" id="addAuditModal" tabindex="-1">
+  <div class="modal-dialog modal-lg">
+    <div class="modal-content">
+      <form method="POST" action="{{ url_for('inventory_audit') }}">
+        <div class="modal-header bg-purple text-white">
+          <h5 class="modal-title">➕ إضافة عملية جرد</h5>
+          <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+        </div>
+        <div class="modal-body">
+          
+          <div class="row">
+            <div class="col-md-6 mb-3">
+              <label class="form-label fw-bold">التاريخ</label>
+              <input type="date" name="audit_date" class="form-control" value="{{ now.strftime('%Y-%m-%d') }}" required>
+            </div>
+            <div class="col-md-6 mb-3">
+              <label class="form-label fw-bold">نوع الجرد</label>
+              <select name="audit_type" id="audit_type" class="form-select" required onchange="toggleAuditFields()">
+                <option value="store">📦 جرد المخزون (المحل)</option>
+                <option value="treasury">💰 جرد الخزينة (الحسابات)</option>
+              </select>
+            </div>
+          </div>
+
+          <!-- جرد المخزون -->
+          <div id="store_fields">
+            <div class="row">
+              <div class="col-md-4 mb-3">
+                <label class="form-label fw-bold">الصنف</label>
+                <select name="item_name" id="store_item_name" class="form-select" onchange="updateSystemQty()">
+                  <option value="">اختر الصنف...</option>
+                  {% set seen_types = [] %}
+                  {% for inv in inventory %}
+                    {% if inv.product_type not in seen_types %}
+                      {% set _ = seen_types.append(inv.product_type) %}
+                      <option value="{{ inv.product_type }}">{{ inv.product_type }}</option>
+                    {% endif %}
+                  {% endfor %}
+                </select>
+              </div>
+              <div class="col-md-4 mb-3">
+                <label class="form-label fw-bold">المقاس</label>
+                <select name="item_size" id="store_item_size" class="form-select" onchange="updateSystemQty()">
+                  <option value="">اختر المقاس...</option>
+                  {% set seen_sizes = [] %}
+                  {% for inv in inventory %}
+                    {% if inv.product_size and inv.product_size not in seen_sizes %}
+                      {% set _ = seen_sizes.append(inv.product_size) %}
+                      <option value="{{ inv.product_size }}">{{ inv.product_size }}</option>
+                    {% endif %}
+                  {% endfor %}
+                </select>
+              </div>
+              <div class="col-md-4 mb-3">
+                <label class="form-label fw-bold">المواصفات</label>
+                <select name="item_spec" id="store_item_spec" class="form-select" onchange="updateSystemQty()">
+                  <option value="">اختر المواصفات...</option>
+                  {% set seen_specs = [] %}
+                  {% for inv in inventory %}
+                    {% if inv.product_spec and inv.product_spec not in seen_specs %}
+                      {% set _ = seen_specs.append(inv.product_spec) %}
+                      <option value="{{ inv.product_spec }}">{{ inv.product_spec }}</option>
+                    {% endif %}
+                  {% endfor %}
+                </select>
+              </div>
+            </div>
+          </div>
+
+          <!-- جرد الخزينة -->
+          <div id="treasury_fields" style="display:none;">
+            <div class="row">
+              <div class="col-md-6 mb-3">
+                <label class="form-label fw-bold">اسم الحساب</label>
+                <select name="item_name_treasury" id="treasury_item_name" class="form-select" onchange="updateSystemQty()">
+                  <option value="">اختر الحساب...</option>
+                  {% set seen_persons = [] %}
+                  {% for acc in accounts %}
+                    {% if acc.person_name not in seen_persons %}
+                      {% set _ = seen_persons.append(acc.person_name) %}
+                      <option value="{{ acc.person_name }}">{{ acc.person_name }}</option>
+                    {% endif %}
+                  {% endfor %}
+                </select>
+              </div>
+              <div class="col-md-6 mb-3">
+                <label class="form-label fw-bold">نوع الحساب</label>
+                <select name="account_type" id="treasury_account_type" class="form-select" onchange="updateSystemQty()">
+                  <option value="">اختر النوع...</option>
+                  {% set seen_acc_types = [] %}
+                  {% for acc in accounts %}
+                    {% if acc.account_type not in seen_acc_types %}
+                      {% set _ = seen_acc_types.append(acc.account_type) %}
+                      <option value="{{ acc.account_type }}">{{ acc.account_type }}</option>
+                    {% endif %}
+                  {% endfor %}
+                </select>
+              </div>
+            </div>
+          </div>
+
+          <div class="row">
+            <div class="col-md-6 mb-3">
+              <label class="form-label fw-bold">الرصيد المسجل في النظام</label>
+              <input type="number" step="0.01" name="system_quantity" id="system_quantity" class="form-control" readonly>
+              <small class="text-muted">يتم حسابه تلقائياً</small>
+            </div>
+            <div class="col-md-6 mb-3">
+              <label class="form-label fw-bold">الرصيد الفعلي (بعد الجرد)</label>
+              <input type="number" step="0.01" name="actual_quantity" id="actual_quantity" class="form-control" required oninput="calcDifference()">
+            </div>
+          </div>
+
+          <div class="alert alert-info" id="difference_alert" style="display:none;">
+            <strong>الفرق:</strong> <span id="difference_value">0</span>
+            <span id="difference_type_display"></span>
+          </div>
+
+          <div class="mb-3">
+            <label class="form-label fw-bold">ملاحظات</label>
+            <textarea name="notes" class="form-control" rows="2"></textarea>
+          </div>
+
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">إلغاء</button>
+          <button type="submit" class="btn btn-purple">حفظ الجرد والتسوية</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
+<!-- ==================== JavaScript ==================== -->
+<script>
+// بيانات المخزون والحسابات من السيرفر
+const inventoryData = [
+    {% for inv in inventory %}
+    {
+        product_type: "{{ inv.product_type }}",
+        product_size: "{{ inv.product_size or '' }}",
+        product_spec: "{{ inv.product_spec or '' }}",
+        current_quantity: {{ inv.current_quantity }}
+    }{% if not loop.last %},{% endif %}
+    {% endfor %}
+];
+
+const accountsData = [
+    {% for acc in accounts %}
+    {
+        person_name: "{{ acc.person_name }}",
+        account_type: "{{ acc.account_type }}",
+        balance: {{ acc.balance }}
+    }{% if not loop.last %},{% endif %}
+    {% endfor %}
+];
+
+// تبديل الحقول حسب نوع الجرد
+function toggleAuditFields() {
+    var auditType = document.getElementById('audit_type').value;
+    var storeFields = document.getElementById('store_fields');
+    var treasuryFields = document.getElementById('treasury_fields');
+    
+    if (auditType === 'store') {
+        storeFields.style.display = 'block';
+        treasuryFields.style.display = 'none';
+        document.getElementById('store_item_name').setAttribute('name', 'item_name');
+        document.getElementById('treasury_item_name').removeAttribute('name');
+        document.getElementById('store_item_size').setAttribute('name', 'item_size');
+        document.getElementById('store_item_spec').setAttribute('name', 'item_spec');
+        document.getElementById('treasury_account_type').removeAttribute('name');
+    } else {
+        storeFields.style.display = 'none';
+        treasuryFields.style.display = 'block';
+        document.getElementById('store_item_name').removeAttribute('name');
+        document.getElementById('treasury_item_name').setAttribute('name', 'item_name');
+        document.getElementById('store_item_size').removeAttribute('name');
+        document.getElementById('store_item_spec').removeAttribute('name');
+        document.getElementById('treasury_account_type').setAttribute('name', 'account_type');
+    }
+    document.getElementById('system_quantity').value = '';
+    document.getElementById('actual_quantity').value = '';
+    document.getElementById('difference_alert').style.display = 'none';
+}
+
+// تحديث الرصيد المسجل
+function updateSystemQty() {
+    var auditType = document.getElementById('audit_type').value;
+    var systemQty = 0;
+    
+    if (auditType === 'store') {
+        var itemName = document.getElementById('store_item_name').value;
+        var itemSize = document.getElementById('store_item_size').value;
+        var itemSpec = document.getElementById('store_item_spec').value;
+        
+        for (var i = 0; i < inventoryData.length; i++) {
+            var inv = inventoryData[i];
+            if (inv.product_type === itemName && 
+                inv.product_size === itemSize && 
+                inv.product_spec === itemSpec) {
+                systemQty = inv.current_quantity;
+                break;
+            }
+        }
+    } else {
+        var personName = document.getElementById('treasury_item_name').value;
+        var accountType = document.getElementById('treasury_account_type').value;
+        
+        for (var i = 0; i < accountsData.length; i++) {
+            var acc = accountsData[i];
+            if (acc.person_name === personName && acc.account_type === accountType) {
+                systemQty = acc.balance;
+                break;
+            }
+        }
+    }
+    
+    document.getElementById('system_quantity').value = systemQty;
+    calcDifference();
+}
+
+// حساب الفرق
+function calcDifference() {
+    var systemQty = parseFloat(document.getElementById('system_quantity').value) || 0;
+    var actualQty = parseFloat(document.getElementById('actual_quantity').value) || 0;
+    var diff = actualQty - systemQty;
+    
+    var alertDiv = document.getElementById('difference_alert');
+    var diffValue = document.getElementById('difference_value');
+    var diffTypeDisplay = document.getElementById('difference_type_display');
+    
+    if (document.getElementById('actual_quantity').value === '') {
+        alertDiv.style.display = 'none';
+        return;
+    }
+    
+    alertDiv.style.display = 'block';
+    diffValue.innerText = Math.abs(diff).toFixed(2);
+    
+    if (diff < 0) {
+        diffTypeDisplay.innerText = ' - ناقص ⚠️';
+        alertDiv.className = 'alert alert-danger';
+    } else if (diff > 0) {
+        diffTypeDisplay.innerText = ' - زيادة ✅';
+        alertDiv.className = 'alert alert-warning';
+    } else {
+        diffTypeDisplay.innerText = ' - متطابق ✅';
+        alertDiv.className = 'alert alert-success';
+    }
+}
+
+// تشغيل الدالة عند فتح الصفحة
+document.addEventListener('DOMContentLoaded', function() {
+    toggleAuditFields();
+});
+</script>
+
+{% endblock %}
