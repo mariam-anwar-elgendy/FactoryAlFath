@@ -1,0 +1,53 @@
+{% extends "base_almasa.html" %}
+
+{% block title %}تقرير {{ person_name }}{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h2 class="fw-bold text-info">👤 تقرير: {{ person_name }}</h2>
+    <a href="{{ url_for('almasa_partner_accounts') }}" class="btn btn-outline-secondary">← رجوع</a>
+</div>
+
+<div class="card border-0 shadow-sm mb-4">
+    <div class="card-header text-white fw-bold" style="background: linear-gradient(90deg, #006064, #00838f);">
+        📋 السجلات
+    </div>
+    <div class="card-body">
+        {% if records %}
+        <div class="table-responsive">
+            <table class="table table-striped">
+                <thead>
+                    <tr>
+                        <th>التاريخ</th>
+                        <th>النوع</th>
+                        <th>المبلغ</th>
+                        <th>الوصف</th>
+                        <th>ملاحظات</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for r in records %}
+                    <tr>
+                        <td>{{ r.date.strftime('%Y-%m-%d') }}</td>
+                        <td>{{ r.person_type }}</td>
+                        <td>{{ r.amount }}</td>
+                        <td>{{ r.description or '-' }}</td>
+                        <td>{{ r.notes or '-' }}</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+                <tfoot>
+                    <tr class="fw-bold table-info">
+                        <td colspan="2">الإجمالي</td>
+                        <td>{{ total }}</td>
+                        <td colspan="2"></td>
+                    </tr>
+                </tfoot>
+            </table>
+        </div>
+        {% else %}
+        <p class="text-muted mb-0">لا توجد سجلات</p>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}
