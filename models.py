@@ -281,6 +281,26 @@ class ActivityLog(db.Model):
     details = db.Column(db.Text)
     timestamp = db.Column(db.DateTime, default=datetime.utcnow)
 
+# ==================== الجرد (المخزون + الخزينة) ====================
+class InventoryAudit(db.Model):
+    """جرد المخزون والخزينة"""
+    __tablename__ = 'inventory_audits'
+    id = db.Column(db.Integer, primary_key=True)
+    audit_date = db.Column(db.Date, nullable=False)
+    audit_type = db.Column(db.String(20), nullable=False)  # 'store' / 'treasury'
+    item_name = db.Column(db.String(200))  # اسم الصنف أو اسم الحساب
+    item_size = db.Column(db.String(50))  # المقاس (للمخزون بس)
+    item_spec = db.Column(db.String(50))  # المواصفات (للمخزون بس)
+    account_type = db.Column(db.String(50))  # نوع الحساب (للخزينة بس)
+    system_quantity = db.Column(db.Float, default=0)
+    actual_quantity = db.Column(db.Float, default=0)
+    difference = db.Column(db.Float, default=0)
+    difference_type = db.Column(db.String(20))  # 'ناقص' / 'زيادة' / 'متطابق'
+    is_settled = db.Column(db.Boolean, default=False)
+    notes = db.Column(db.Text)
+    created_by = db.Column(db.Integer, db.ForeignKey('users.id'))
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+
 
 # ====================================================================
 # ==================== شركة الماسة - الأنواع الثلاثة ====================
@@ -290,13 +310,11 @@ class ActivityLog(db.Model):
 # النوع 1: ونش مشاركة براس المال
 # --------------------------------------------------------------------
 class AlMasaCrane(db.Model):
-    """ونش مشاركة براس المال"""
     __tablename__ = 'almasa_cranes'
     id = db.Column(db.Integer, primary_key=True)
     name = db.Column(db.String(100), nullable=False)
     notes = db.Column(db.Text)
-    crane_type = db.Column(db.String(20), default='partnership')  # partnership / private
-    owner_name = db.Column(db.String(100))  # اسم صاحب الونش لو خاص
+    crane_type = db.Column(db.String(20), default='partnership')
     partners = db.relationship('AlMasaPartner', backref='crane', lazy=True, cascade="all, delete-orphan")
     operations = db.relationship('AlMasaOperation', backref='crane', lazy=True, cascade="all, delete-orphan")
     checks = db.relationship('AlMasaCheck', backref='crane', lazy=True, cascade="all, delete-orphan")
@@ -304,24 +322,22 @@ class AlMasaCrane(db.Model):
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
 
 class AlMasaPartner(db.Model):
-    """شركاء ونش المشاركة"""
     __tablename__ = 'almasa_partners'
     id = db.Column(db.Integer, primary_key=True)
     crane_id = db.Column(db.Integer, db.ForeignKey('almasa_cranes.id'), nullable=False)
     name = db.Column(db.String(100), nullable=False)
     percentage = db.Column(db.Float, default=0)
-    is_basic = db.Column(db.Boolean, default=False)  # شريك أساسي (الفتح/أحمد)
+    is_basic = db.Column(db.Boolean, default=False)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
 
 class AlMasaOperation(db.Model):
-    """عمليات ونش المشاركة"""
     __tablename__ = 'almasa_operations'
     id = db.Column(db.Integer, primary_key=True)
     crane_id = db.Column(db.Integer, db.ForeignKey('almasa_cranes.id'), nullable=False)
     start_date = db.Column(db.Date, nullable=False)
     end_date = db.Column(db.Date)
-    actual_daily_value = db.Column(db.Float, default=0)  # القيمة الفعلية لليوم
-    default_daily_value = db.Column(db.Float, default=0)  # القيمة الافتراضية لليوم
+    actual_daily_value = db.Column(db.Float, default=0)
+    default_daily_value = db.Column(db.Float, default=0)
     days_count = db.Column(db.Integer, default=0)
     actual_total = db.Column(db.Float, default=0)
     default_total = db.Column(db.Float, default=0)
@@ -330,7 +346,6 @@ class AlMasaOperation(db.Model):
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
 
 class AlMasaCheck(db.Model):
-    """شيكات ونش المشاركة"""
     __tablename__ = 'almasa_checks'
     id = db.Column(db.Integer, primary_key=True)
     crane_id = db.Column(db.Integer, db.ForeignKey('almasa_cranes.id'), nullable=False)
@@ -343,14 +358,12 @@ class AlMasaCheck(db.Model):
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
 
 class AlMasaCheckOperation(db.Model):
-    """ربط الشيك بالعمليات"""
     __tablename__ = 'almasa_check_operations'
     id = db.Column(db.Integer, primary_key=True)
     check_id = db.Column(db.Integer, db.ForeignKey('almasa_checks.id'), nullable=False)
     operation_id = db.Column(db.Integer, db.ForeignKey('almasa_operations.id'), nullable=False)
 
 class AlMasaExpense(db.Model):
-    """مصاريف ونش المشاركة"""
     __tablename__ = 'almasa_expenses'
     id = db.Column(db.Integer, primary_key=True)
     crane_id = db.Column(db.Integer, db.ForeignKey('almasa_cranes.id'), nullable=False)
@@ -365,11 +378,10 @@ class AlMasaExpense(db.Model):
 # النوع 2: ونش خاص (شخص واحد)
 # --------------------------------------------------------------------
 class AlMasaPrivateCrane(db.Model):
-    """ونش خاص - بتاع شخص واحد"""
     __tablename__ = 'almasa_private_cranes'
     id = db.Column(db.Integer, primary_key=True)
     name = db.Column(db.String(100), nullable=False)
-    owner_name = db.Column(db.String(100), nullable=False)  # اسم صاحب الونش
+    owner_name = db.Column(db.String(100), nullable=False)
     notes = db.Column(db.Text)
     operations = db.relationship('AlMasaPrivateOperation', backref='crane', lazy=True, cascade="all, delete-orphan")
     checks = db.relationship('AlMasaPrivateCheck', backref='crane', lazy=True, cascade="all, delete-orphan")
@@ -377,7 +389,6 @@ class AlMasaPrivateCrane(db.Model):
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
 
 class AlMasaPrivateOperation(db.Model):
-    """عمليات الونش الخاص"""
     __tablename__ = 'almasa_private_operations'
     id = db.Column(db.Integer, primary_key=True)
     crane_id = db.Column(db.Integer, db.ForeignKey('almasa_private_cranes.id'), nullable=False)
@@ -393,7 +404,6 @@ class AlMasaPrivateOperation(db.Model):
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
 
 class AlMasaPrivateCheck(db.Model):
-    """شيكات الونش الخاص"""
     __tablename__ = 'almasa_private_checks'
     id = db.Column(db.Integer, primary_key=True)
     crane_id = db.Column(db.Integer, db.ForeignKey('almasa_private_cranes.id'), nullable=False)
@@ -406,14 +416,12 @@ class AlMasaPrivateCheck(db.Model):
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
 
 class AlMasaPrivateCheckOperation(db.Model):
-    """ربط شيك الونش الخاص بالعمليات"""
     __tablename__ = 'almasa_private_check_operations'
     id = db.Column(db.Integer, primary_key=True)
     check_id = db.Column(db.Integer, db.ForeignKey('almasa_private_checks.id'), nullable=False)
     operation_id = db.Column(db.Integer, db.ForeignKey('almasa_private_operations.id'), nullable=False)
 
 class AlMasaPrivateExpense(db.Model):
-    """مصاريف الونش الخاص"""
     __tablename__ = 'almasa_private_expenses'
     id = db.Column(db.Integer, primary_key=True)
     crane_id = db.Column(db.Integer, db.ForeignKey('almasa_private_cranes.id'), nullable=False)
@@ -428,35 +436,32 @@ class AlMasaPrivateExpense(db.Model):
 # النوع 3: توريدات من خارج لخارج
 # --------------------------------------------------------------------
 class AlMasaSupply(db.Model):
-    """توريدات من خارج لخارج"""
     __tablename__ = 'almasa_supplies'
     id = db.Column(db.Integer, primary_key=True)
-    name = db.Column(db.String(100), nullable=False)  # اسم التوريدة
-    supplier_name = db.Column(db.String(150))  # اسم المورد (اللي بناخد منه)
-    customer_name = db.Column(db.String(150))  # اسم العميل (اللي بنديله)
+    name = db.Column(db.String(100), nullable=False)
+    supplier_name = db.Column(db.String(150))
+    customer_name = db.Column(db.String(150))
     notes = db.Column(db.Text)
     operations = db.relationship('AlMasaSupplyOperation', backref='supply', lazy=True, cascade="all, delete-orphan")
     expenses = db.relationship('AlMasaSupplyExpense', backref='supply', lazy=True, cascade="all, delete-orphan")
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
 
 class AlMasaSupplyOperation(db.Model):
-    """عمليات التوريدات"""
     __tablename__ = 'almasa_supply_operations'
     id = db.Column(db.Integer, primary_key=True)
     supply_id = db.Column(db.Integer, db.ForeignKey('almasa_supplies.id'), nullable=False)
     start_date = db.Column(db.Date, nullable=False)
     end_date = db.Column(db.Date)
     days_count = db.Column(db.Integer, default=0)
-    supplier_daily_rate = db.Column(db.Float, default=0)  # سعر المورد اليومي
-    customer_daily_rate = db.Column(db.Float, default=0)  # سعر العميل اليومي
-    supplier_total = db.Column(db.Float, default=0)  # إجمالي المورد
-    customer_total = db.Column(db.Float, default=0)  # إجمالي العميل
+    supplier_daily_rate = db.Column(db.Float, default=0)
+    customer_daily_rate = db.Column(db.Float, default=0)
+    supplier_total = db.Column(db.Float, default=0)
+    customer_total = db.Column(db.Float, default=0)
     notes = db.Column(db.Text)
     created_by = db.Column(db.Integer, db.ForeignKey('users.id'))
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
 
 class AlMasaSupplyExpense(db.Model):
-    """مصاريف التوريدات"""
     __tablename__ = 'almasa_supply_expenses'
     id = db.Column(db.Integer, primary_key=True)
     supply_id = db.Column(db.Integer, db.ForeignKey('almasa_supplies.id'), nullable=False)
@@ -468,35 +473,16 @@ class AlMasaSupplyExpense(db.Model):
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
 
 # --------------------------------------------------------------------
-# حساب الشريك / العميل (منفصل تماماً)
+# حساب الشريك / العميل (منفصل)
 # --------------------------------------------------------------------
 class AlMasaPartnerAccount(db.Model):
-    """حساب منفصل للشريك أو العميل - بعيد عن الأوناش"""
     __tablename__ = 'almasa_partner_accounts'
     id = db.Column(db.Integer, primary_key=True)
-    person_name = db.Column(db.String(100), nullable=False)  # اسم الشريك/العميل
-    person_type = db.Column(db.String(20), default='شريك')  # شريك / عميل
+    person_name = db.Column(db.String(100), nullable=False)
+    person_type = db.Column(db.String(20), default='شريك')
     date = db.Column(db.Date, nullable=False)
     amount = db.Column(db.Float, default=0)
     description = db.Column(db.Text)
-    notes = db.Column(db.Text)
-    created_by = db.Column(db.Integer, db.ForeignKey('users.id'))
-    created_at = db.Column(db.DateTime, default=datetime.utcnow)
-
-# --------------------------------------------------------------------
-# تسوية الجرد (المخزن + الخزينة)
-# --------------------------------------------------------------------
-class AlMasaInventoryAudit(db.Model):
-    """تسوية الجرد - مخزن وخزينة"""
-    __tablename__ = 'almasa_inventory_audits'
-    id = db.Column(db.Integer, primary_key=True)
-    audit_date = db.Column(db.Date, nullable=False)
-    audit_type = db.Column(db.String(20), nullable=False)  # 'store' / 'treasury' / 'factory'
-    item_name = db.Column(db.String(200))
-    system_quantity = db.Column(db.Float, default=0)  # الكمية المسجلة
-    actual_quantity = db.Column(db.Float, default=0)  # الكمية الفعلية
-    difference = db.Column(db.Float, default=0)  # الفرق (ناقص أو زيادة)
-    difference_type = db.Column(db.String(20))  # 'ناقص' / 'زيادة' / 'متطابق'
     notes = db.Column(db.Text)
     created_by = db.Column(db.Integer, db.ForeignKey('users.id'))
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
