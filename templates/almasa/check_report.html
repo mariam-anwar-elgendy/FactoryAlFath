@@ -139,4 +139,38 @@
         <!-- ونش خاص - كله لصاحب الونش -->
         <div class="alert alert-success">
             <h5>💰 صاحب الونش: {{ crane.owner_name }}</h5>
-            <p class="mb-0 fs-4">الصافي النهائي: <
+            <p class="mb-0 fs-4">الصافي النهائي: <strong>{{ owner_share }}</strong></p>
+        </div>
+        {% else %}
+        <!-- ونش مشاركة - توزيع على الشركاء -->
+        <table class="table table-striped">
+            <thead>
+                <tr>
+                    <th>الشريك</th>
+                    <th>النسبة</th>
+                    <th>الصافي الفعلي للفرد</th>
+                    <th>الصافي الافتراضي للفرد</th>
+                    <th>الصافي النهائي للفرد</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for pp in partners_profit %}
+                <tr>
+                    <td>
+                        {{ pp.partner.name }}
+                        {% if pp.partner.is_basic %}
+                        <span class="badge bg-success">أساسي</span>
+                        {% endif %}
+                    </td>
+                    <td>{{ pp.partner.percentage }}%</td>
+                    <td>{{ pp.actual_share }}</td>
+                    <td>{{ pp.default_share }}</td>
+                    <td class="fw-bold text-success">{{ pp.total_share }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}
