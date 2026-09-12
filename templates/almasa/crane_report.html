@@ -4,171 +4,106 @@
 
 {% block content %}
 <div class="d-flex justify-content-between align-items-center mb-4">
-    <h2 class="fw-bold text-primary">📊 تقرير {{ crane.name }}</h2>
-    <a href="{{ url_for('almasa_reports') }}" class="btn btn-outline-primary">↩️ رجوع</a>
+    <h2 class="fw-bold text-primary">📊 تقرير: {{ crane.name }}</h2>
+    <a href="{{ url_for('almasa_crane_detail', crane_id=crane.id) }}" class="btn btn-outline-secondary">← رجوع</a>
 </div>
 
-<!-- ملخص -->
+<!-- ملخص عام -->
 <div class="row mb-4">
     <div class="col-md-3">
-        <div class="card bg-primary text-white text-center">
-            <div class="card-body">
-                <h5>الإجمالي الفعلي</h5>
-                <h3>{{ total_actual }}</h3>
-            </div>
-        </div>
-    </div>
-    <div class="col-md-3">
-        <div class="card bg-info text-white text-center">
-            <div class="card-body">
-                <h5>الإجمالي الافتراضي</h5>
-                <h3>{{ total_default }}</h3>
-            </div>
-        </div>
-    </div>
-    <div class="col-md-3">
-        <div class="card bg-warning text-dark text-center">
-            <div class="card-body">
-                <h5>إجمالي المصاريف</h5>
-                <h3>{{ total_expenses }}</h3>
-            </div>
-        </div>
-    </div>
-    <div class="col-md-3">
-        <div class="card bg-success text-white text-center">
-            <div class="card-body">
-                <h5>قيمة الشيك</h5>
-                <h3>{{ actual_check_amount }}</h3>
-            </div>
-        </div>
-    </div>
-</div>
-
-<!-- الصافي -->
-<div class="row mb-4">
-    <div class="col-md-6">
         <div class="card border-0 shadow-sm">
-            <div class="card-header text-white fw-bold" style="background: linear-gradient(90deg, #1a237e, #283593);">الصافي الفعلي</div>
-            <div class="card-body">
-                <h3 class="text-center">{{ net_actual }}</h3>
+            <div class="card-body text-center">
+                <h6 class="text-muted">إجمالي الفعلي</h6>
+                <h4 class="fw-bold">{{ total_actual }}</h4>
             </div>
         </div>
     </div>
-    <div class="col-md-6">
+    <div class="col-md-3">
         <div class="card border-0 shadow-sm">
-            <div class="card-header text-white fw-bold" style="background: linear-gradient(90deg, #1a237e, #283593);">الصافي الافتراضي</div>
-            <div class="card-body">
-                <h3 class="text-center">{{ net_default }}</h3>
+            <div class="card-body text-center">
+                <h6 class="text-muted">إجمالي الافتراضي</h6>
+                <h4 class="fw-bold">{{ total_default }}</h4>
             </div>
         </div>
     </div>
-</div>
-
-<!-- أرباح الشركاء -->
-<div class="card border-0 shadow-sm mb-4">
-    <div class="card-header text-white fw-bold" style="background: linear-gradient(90deg, #1a237e, #283593);">👥 أرباح الشركاء</div>
-    <div class="card-body">
-        <div class="table-responsive">
-            <table class="table table-striped">
-                <thead>
-                    <tr><th>الشريك</th><th>النسبة</th><th>الربح</th></tr>
-                </thead>
-                <tbody>
-                    {% for pp in partners_profit %}
-                    <tr>
-                        <td>{{ pp.partner.name }}</td>
-                        <td>{{ pp.partner.percentage }}%</td>
-                        <td class="fw-bold">{{ pp.profit }}</td>
-                    </tr>
-                    {% endfor %}
-                </tbody>
-            </table>
+    <div class="col-md-3">
+        <div class="card border-0 shadow-sm">
+            <div class="card-body text-center">
+                <h6 class="text-muted">المصاريف</h6>
+                <h4 class="fw-bold text-danger">{{ total_expenses }}</h4>
+            </div>
         </div>
-        <div class="alert alert-info">
-            <strong>الصافي الفعلي للفرد الأساسي:</strong> {{ basic_partners_profit / 2 if partners|selectattr('is_basic')|list|length > 0 else 0 }}
+    </div>
+    <div class="col-md-3">
+        <div class="card border-0 shadow-sm">
+            <div class="card-body text-center">
+                <h6 class="text-muted">الصافي الفعلي</h6>
+                <h4 class="fw-bold text-success">{{ net_actual }}</h4>
+            </div>
         </div>
     </div>
 </div>
 
 <!-- العمليات -->
 <div class="card border-0 shadow-sm mb-4">
-    <div class="card-header text-white fw-bold" style="background: linear-gradient(90deg, #1a237e, #283593);">📋 العمليات</div>
+    <div class="card-header bg-light fw-bold">⚙️ العمليات</div>
     <div class="card-body">
+        {% if operations %}
         <div class="table-responsive">
             <table class="table table-sm table-striped">
                 <thead>
-                    <tr>
-                        <th>من</th><th>إلى</th><th>الأيام</th>
-                        <th>اليومي الفعلي</th><th>اليومي الافتراضي</th>
-                        <th>الإجمالي الفعلي</th><th>الإجمالي الافتراضي</th>
-                    </tr>
+                    <tr><th>من</th><th>إلى</th><th>عدد الأيام</th><th>الفعلي</th><th>الافتراضي</th></tr>
                 </thead>
                 <tbody>
-                    {% for o in operations %}
+                    {% for op in operations %}
                     <tr>
-                        <td>{{ o.start_date.strftime('%Y-%m-%d') }}</td>
-                        <td>{{ o.end_date.strftime('%Y-%m-%d') if o.end_date else '-' }}</td>
-                        <td>{{ o.days_count }}</td>
-                        <td>{{ o.actual_daily_value }}</td>
-                        <td>{{ o.default_daily_value }}</td>
-                        <td>{{ o.actual_total }}</td>
-                        <td>{{ o.default_total }}</td>
+                        <td>{{ op.start_date.strftime('%Y-%m-%d') }}</td>
+                        <td>{{ op.end_date.strftime('%Y-%m-%d') if op.end_date else '-' }}</td>
+                        <td>{{ op.days_count }}</td>
+                        <td>{{ op.actual_total }}</td>
+                        <td>{{ op.default_total }}</td>
                     </tr>
                     {% endfor %}
                 </tbody>
             </table>
         </div>
+        {% else %}
+        <p class="text-muted mb-0">لا توجد عمليات</p>
+        {% endif %}
     </div>
 </div>
 
-<!-- الشيكات -->
-<div class="card border-0 shadow-sm mb-4">
-    <div class="card-header text-white fw-bold" style="background: linear-gradient(90deg, #1a237e, #283593);">💵 الشيكات</div>
-    <div class="card-body">
-        <div class="table-responsive">
-            <table class="table table-sm table-striped">
-                <thead>
-                    <tr><th>رقم الشيك</th><th>الشركة</th><th>المبلغ</th><th>معاد الصرف</th><th>الحالة</th></tr>
-                </thead>
-                <tbody>
-                    {% for c in checks %}
-                    <tr>
-                        <td>{{ c.check_number }}</td>
-                        <td>{{ c.company_name }}</td>
-                        <td>{{ c.amount }}</td>
-                        <td>{{ c.due_date.strftime('%Y-%m-%d') if c.due_date else '-' }}</td>
-                        <td>
-                            <span class="badge bg-{{ 'success' if c.status == 'تم صرفه' else 'warning' }}">{{ c.status }}</span>
-                        </td>
-                    </tr>
-                    {% endfor %}
-                </tbody>
-            </table>
-        </div>
+<!-- توزيع الأرباح على الشركاء -->
+<div class="card border-0 shadow-sm">
+    <div class="card-header text-white fw-bold" style="background: linear-gradient(90deg, #1b5e20, #2e7d32);">
+        👥 توزيع الأرباح
     </div>
-</div>
-
-<!-- المصاريف -->
-<div class="card border-0 shadow-sm mb-4">
-    <div class="card-header text-white fw-bold" style="background: linear-gradient(90deg, #1a237e, #283593);">💰 المصاريف</div>
     <div class="card-body">
-        <div class="table-responsive">
-            <table class="table table-sm table-striped">
-                <thead>
-                    <tr><th>التاريخ</th><th>النوع</th><th>المبلغ</th><th>ملاحظات</th></tr>
-                </thead>
-                <tbody>
-                    {% for e in expenses %}
-                    <tr>
-                        <td>{{ e.date.strftime('%Y-%m-%d') }}</td>
-                        <td>{{ e.expense_type }}</td>
-                        <td>{{ e.amount }}</td>
-                        <td>{{ e.notes or '-' }}</td>
-                    </tr>
-                    {% endfor %}
-                </tbody>
-            </table>
-        </div>
+        <table class="table table-striped">
+            <thead>
+                <tr>
+                    <th>الشريك</th>
+                    <th>النسبة</th>
+                    <th>الصافي الفعلي للفرد</th>
+                    <th>الصافي الافتراضي للفرد</th>
+                    <th>الصافي النهائي</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for pp in partners_profit %}
+                <tr>
+                    <td>
+                        {{ pp.partner.name }}
+                        {% if pp.partner.is_basic %}<span class="badge bg-success">أساسي</span>{% endif %}
+                    </td>
+                    <td>{{ pp.partner.percentage }}%</td>
+                    <td>{{ pp.actual_share }}</td>
+                    <td>{{ pp.default_share }}</td>
+                    <td class="fw-bold text-success">{{ pp.total_share }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
     </div>
 </div>
 {% endblock %}
