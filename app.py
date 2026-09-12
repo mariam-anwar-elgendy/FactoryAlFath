@@ -35,6 +35,7 @@ from utils import (
 
 app = Flask(__name__)
 
+# ==================== إعدادات الجلسة ====================
 app.config['SECRET_KEY'] = os.environ.get('SECRET_KEY', 'dev-secret-key-change-me')
 app.config['SESSION_TYPE'] = 'filesystem'
 app.config['SESSION_FILE_DIR'] = '/tmp/flask_session'
@@ -44,6 +45,7 @@ app.config['SESSION_COOKIE_SAMESITE'] = 'Lax'
 app.config['SESSION_COOKIE_SECURE'] = False
 app.config['PERMANENT_SESSION_LIFETIME'] = timedelta(days=30)
 
+# ==================== قاعدة البيانات ====================
 database_url = os.environ.get('DATABASE_URL', 'sqlite:///instance/factory.db')
 if database_url.startswith('postgres://'):
     database_url = database_url.replace('postgres://', 'postgresql://', 1)
@@ -58,6 +60,7 @@ app.config['SQLALCHEMY_ENGINE_OPTIONS'] = {
 
 db.init_app(app)
 
+# ==================== Flask-Login ====================
 login_manager = LoginManager()
 login_manager.init_app(app)
 login_manager.login_view = 'login'
@@ -67,6 +70,7 @@ login_manager.login_message = 'يرجى تسجيل الدخول أولاً'
 def load_user(user_id):
     return User.query.get(int(user_id))
 
+# ==================== خدمة Google Drive ====================
 drive_service = GoogleDriveService(
     credentials_file=os.environ.get('GOOGLE_CREDENTIALS_FILE', 'client_secrets.json'),
     folder_id=os.environ.get('GOOGLE_DRIVE_FOLDER_ID', '')
@@ -125,34 +129,6 @@ def init_db():
         except:
             pass
 
-        try:
-            db.session.execute(db.text('ALTER TABLE store_sales DROP COLUMN IF EXISTS product_type CASCADE'))
-            db.session.execute(db.text('ALTER TABLE store_sales DROP COLUMN IF EXISTS product_size CASCADE'))
-            db.session.execute(db.text('ALTER TABLE store_sales DROP COLUMN IF EXISTS product_spec CASCADE'))
-            db.session.execute(db.text('ALTER TABLE store_sales DROP COLUMN IF EXISTS quantity CASCADE'))
-            db.session.execute(db.text('ALTER TABLE store_sales DROP COLUMN IF EXISTS unit_price CASCADE'))
-            db.session.execute(db.text('ALTER TABLE store_sales DROP COLUMN IF EXISTS total CASCADE'))
-            db.session.execute(db.text('ALTER TABLE store_sales DROP COLUMN IF EXISTS paid_amount CASCADE'))
-            db.session.execute(db.text('ALTER TABLE store_sales DROP COLUMN IF EXISTS remaining_amount CASCADE'))
-            db.session.commit()
-            print("✅ تم حذف الأعمدة القديمة من store_sales")
-        except Exception as e:
-            db.session.rollback()
-
-        try:
-            db.session.execute(db.text('ALTER TABLE store_purchases DROP COLUMN IF EXISTS product_type CASCADE'))
-            db.session.execute(db.text('ALTER TABLE store_purchases DROP COLUMN IF EXISTS product_size CASCADE'))
-            db.session.execute(db.text('ALTER TABLE store_purchases DROP COLUMN IF EXISTS product_spec CASCADE'))
-            db.session.execute(db.text('ALTER TABLE store_purchases DROP COLUMN IF EXISTS quantity CASCADE'))
-            db.session.execute(db.text('ALTER TABLE store_purchases DROP COLUMN IF EXISTS unit_price CASCADE'))
-            db.session.execute(db.text('ALTER TABLE store_purchases DROP COLUMN IF EXISTS total CASCADE'))
-            db.session.execute(db.text('ALTER TABLE store_purchases DROP COLUMN IF EXISTS paid_amount CASCADE'))
-            db.session.execute(db.text('ALTER TABLE store_purchases DROP COLUMN IF EXISTS remaining_amount CASCADE'))
-            db.session.commit()
-            print("✅ تم حذف الأعمدة القديمة من store_purchases")
-        except Exception as e:
-            db.session.rollback()
-
         users_data = [
             {'username': 'meg', 'password': '262004', 'full_name': 'MEG', 'role': 'meg', 'is_hidden': True},
             {'username': 'f', 'password': '*1997#', 'full_name': 'Admin', 'role': 'admin', 'is_hidden': False},
@@ -182,28 +158,18 @@ def init_db():
         db.session.commit()
         print("✅ تم تهيئة قاعدة البيانات وإنشاء المستخدمين")
 
+        # إنشاء حسابات الخزينة تلقائياً
         treasury_persons = ['الحاج أحمد', 'عيد', 'عبدالله', 'الحاج فتحي']
         account_types = ['كاش', 'فودافون كاش', 'انستا باي', 'شيك']
         for person in treasury_persons:
             for acc_type in account_types:
                 get_or_create_treasury_account(person, acc_type)
 
-        name_mapping = {'Ahmed': 'الحاج أحمد', 'ahmed': 'الحاج أحمد', 'Eid': 'عيد', 'eid': 'عيد', 'Abdo': 'عبدالله', 'abdo': 'عبدالله'}
-        for old_name, new_name in name_mapping.items():
-            old_accounts = TreasuryAccount.query.filter_by(person_name=old_name).all()
-            for old_acc in old_accounts:
-                arabic_acc = TreasuryAccount.query.filter_by(person_name=new_name, account_type=old_acc.account_type).first()
-                if arabic_acc:
-                    arabic_acc.balance += old_acc.balance
-                    for txn in old_acc.transactions:
-                        txn.account_id = arabic_acc.id
-                    db.session.delete(old_acc)
-                else:
-                    old_acc.person_name = new_name
-            db.session.commit()
+        print("✅ تم إنشاء حسابات الخزينة")
 
 init_db()
 
+# ==================== Context Processor ====================
 @app.context_processor
 def inject_globals():
     unread_notifications = 0
@@ -942,9 +908,7 @@ def inventory_audit():
         else:
             difference_type = 'متطابق'
         
-        # ✅ التسوية التلقائية
         if audit_type == 'store' and difference != 0:
-            # تعديل المخزون
             inv = StoreInventory.query.filter_by(
                 product_type=item_name,
                 product_size=item_size,
@@ -952,7 +916,6 @@ def inventory_audit():
             ).first()
             if inv:
                 inv.current_quantity = actual_quantity
-            # تسجيل في يوميات المحل
             description = f"{difference_type} جرد: {item_name} {item_size} {item_spec} - {abs(difference)}"
             db.session.add(StoreDiary(
                 date=audit_date,
@@ -962,7 +925,6 @@ def inventory_audit():
                 created_at=datetime.utcnow()
             ))
         elif audit_type == 'treasury' and difference != 0:
-            # تعديل الخزينة
             account = TreasuryAccount.query.filter_by(
                 person_name=item_name,
                 account_type=account_type
@@ -988,7 +950,6 @@ def inventory_audit():
             account_type=account_type,
             system_quantity=system_quantity, actual_quantity=actual_quantity,
             difference=difference, difference_type=difference_type,
-            is_settled=True,
             notes=request.form.get('notes'), created_by=current_user.id
         )
         db.session.add(new_record)
@@ -1849,6 +1810,7 @@ def almasa_check_report(check_id):
     if len(non_basic) == 0:
         total_default = total_actual
     check_amount = total_actual + (total_actual * 0.14)
+    tax_14 = total_actual * 0.14
     net_actual = total_actual - total_expenses
     net_default = total_default - (total_default * 0.085) - total_expenses
     basic_diff = (net_actual - net_default) / 2
@@ -1871,8 +1833,9 @@ def almasa_check_report(check_id):
                            operations=operations_list, expenses=expenses,
                            total_actual=total_actual, total_default=total_default,
                            total_days=total_days, total_expenses=total_expenses,
-                           check_amount=check_amount, net_actual=net_actual,
-                           net_default=net_default, basic_diff=basic_diff,
+                           check_amount=check_amount, tax_14=tax_14,
+                           net_actual=net_actual, net_default=net_default,
+                           basic_diff=basic_diff,
                            partners=partners, partners_profit=partners_profit,
                            report_type='partnership')
 
@@ -2048,6 +2011,19 @@ def almasa_private_expense_delete(exp_id):
     flash('تم حذف المصروف بنجاح', 'success')
     return redirect(url_for('almasa_private_crane_detail', crane_id=crane_id))
 
+@app.route('/almasa/private-expenses/<int:exp_id>/edit', methods=['POST'])
+@custom_login_required
+@role_required('sayed', 'dina', 'admin', 'meg')
+def almasa_private_expense_edit(exp_id):
+    expense = AlMasaPrivateExpense.query.get_or_404(exp_id)
+    expense.date = datetime.strptime(request.form.get('date'), '%Y-%m-%d').date()
+    expense.expense_type = request.form.get('expense_type')
+    expense.amount = float(request.form.get('amount', 0))
+    expense.notes = request.form.get('notes')
+    db.session.commit()
+    flash('تم تعديل المصروف بنجاح', 'success')
+    return redirect(url_for('almasa_private_crane_detail', crane_id=expense.crane_id))
+
 @app.route('/almasa/private-checks/add', methods=['POST'])
 @custom_login_required
 @role_required('sayed', 'dina', 'admin', 'meg')
@@ -2120,6 +2096,7 @@ def almasa_private_check_report(check_id):
     total_expenses = sum(e.amount for e in expenses)
     total_default = total_actual
     check_amount = total_actual + (total_actual * 0.14)
+    tax_14 = total_actual * 0.14
     net_actual = total_actual - total_expenses
     net_default = total_default - (total_default * 0.085) - total_expenses
     owner_share = net_actual
@@ -2128,8 +2105,9 @@ def almasa_private_check_report(check_id):
                            operations=operations_list, expenses=expenses,
                            total_actual=total_actual, total_default=total_default,
                            total_days=total_days, total_expenses=total_expenses,
-                           check_amount=check_amount, net_actual=net_actual,
-                           net_default=net_default, owner_share=owner_share,
+                           check_amount=check_amount, tax_14=tax_14,
+                           net_actual=net_actual, net_default=net_default,
+                           owner_share=owner_share,
                            report_type='private')
 
 @app.route('/almasa/reports/private-crane/<int:crane_id>')
@@ -2272,6 +2250,19 @@ def almasa_supply_expense_delete(exp_id):
     flash('تم حذف المصروف بنجاح', 'success')
     return redirect(url_for('almasa_supply_detail', supply_id=supply_id))
 
+@app.route('/almasa/supply-expenses/<int:exp_id>/edit', methods=['POST'])
+@custom_login_required
+@role_required('sayed', 'dina', 'admin', 'meg')
+def almasa_supply_expense_edit(exp_id):
+    expense = AlMasaSupplyExpense.query.get_or_404(exp_id)
+    expense.date = datetime.strptime(request.form.get('date'), '%Y-%m-%d').date()
+    expense.expense_type = request.form.get('expense_type')
+    expense.amount = float(request.form.get('amount', 0))
+    expense.notes = request.form.get('notes')
+    db.session.commit()
+    flash('تم تعديل المصروف بنجاح', 'success')
+    return redirect(url_for('almasa_supply_detail', supply_id=expense.supply_id))
+
 @app.route('/almasa/supplies/<int:supply_id>/report')
 @custom_login_required
 @role_required('sayed', 'dina', 'admin', 'meg')
@@ -2351,5 +2342,7 @@ def almasa_person_report(person_name):
     total = sum(r.amount for r in records)
     return render_template('almasa/person_report.html',
                            person_name=person_name, records=records, total=total)
+
+# ==================== التشغيل ====================
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=5000, debug=True)    
