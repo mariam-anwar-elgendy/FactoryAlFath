@@ -5,75 +5,178 @@
 {% block content %}
 <div class="d-flex justify-content-between align-items-center mb-4">
     <h2 class="fw-bold text-purple-dark">📋 الجرد</h2>
-    <button class="btn btn-purple" data-bs-toggle="modal" data-bs-target="#addAuditModal">
-        ➕ إضافة عملية جرد
-    </button>
+    <div>
+        <a href="{{ url_for('inventory_audit_export') }}" class="btn btn-success">📊 تصدير Excel</a>
+        <a href="{{ url_for('inventory_audit_monthly') }}" class="btn btn-info">📅 التقرير الشهري</a>
+    </div>
 </div>
 
 <!-- إحصائيات سريعة -->
 <div class="row mb-4">
-    <div class="col-md-4">
-        <div class="card border-0 shadow-sm bg-light">
+    <div class="col-md-3">
+        <div class="card border-0 shadow-sm">
             <div class="card-body text-center">
-                <h5 class="fw-bold">📦 جرد المخزون</h5>
-                <p class="text-muted mb-0">آخر جرد: 
-                    {% set last_store = records|selectattr('audit_type', 'equalto', 'store')|list %}
-                    {% if last_store %}
-                        {{ last_store[0].audit_date.strftime('%Y-%m-%d') }}
-                    {% else %}
-                        لا يوجد
-                    {% endif %}
-                </p>
+                <h6 class="text-muted">إجمالي عمليات الجرد</h6>
+                <h4 class="fw-bold">{{ records|length }}</h4>
             </div>
         </div>
     </div>
-    <div class="col-md-4">
-        <div class="card border-0 shadow-sm bg-light">
+    <div class="col-md-3">
+        <div class="card border-0 shadow-sm">
             <div class="card-body text-center">
-                <h5 class="fw-bold">💰 جرد الخزينة</h5>
-                <p class="text-muted mb-0">آخر جرد: 
-                    {% set last_treasury = records|selectattr('audit_type', 'equalto', 'treasury')|list %}
-                    {% if last_treasury %}
-                        {{ last_treasury[0].audit_date.strftime('%Y-%m-%d') }}
-                    {% else %}
-                        لا يوجد
-                    {% endif %}
-                </p>
+                <h6 class="text-muted">عمليات ناقصة</h6>
+                <h4 class="fw-bold text-danger">{{ records|selectattr('difference_type', 'equalto', 'ناقص')|list|length }}</h4>
             </div>
         </div>
     </div>
-    <div class="col-md-4">
-        <div class="card border-0 shadow-sm bg-light">
+    <div class="col-md-3">
+        <div class="card border-0 shadow-sm">
             <div class="card-body text-center">
-                <h5 class="fw-bold">⚠️ الفروقات</h5>
-                <p class="text-muted mb-0">عدد الفروقات: 
-                    {{ records|selectattr('difference_type', 'ne', 'متطابق')|list|length }}
-                </p>
+                <h6 class="text-muted">عمليات زيادة</h6>
+                <h4 class="fw-bold text-warning">{{ records|selectattr('difference_type', 'equalto', 'زيادة')|list|length }}</h4>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card border-0 shadow-sm">
+            <div class="card-body text-center">
+                <h6 class="text-muted">متطابقة</h6>
+                <h4 class="fw-bold text-success">{{ records|selectattr('difference_type', 'equalto', 'متطابق')|list|length }}</h4>
             </div>
         </div>
     </div>
 </div>
 
-<!-- جدول سجلات الجرد -->
-<div class="card border-0 shadow-sm">
-    <div class="card-header bg-purple text-white fw-bold">
-        📋 سجل عمليات الجرد
+<!-- التبويبات -->
+<ul class="nav nav-tabs mb-3" id="auditTab" role="tablist">
+    <li class="nav-item" role="presentation">
+        <button class="nav-link active" id="store-tab" data-bs-toggle="tab" data-bs-target="#store_audit" type="button" role="tab">
+            📦 جرد المخزون
+        </button>
+    </li>
+    <li class="nav-item" role="presentation">
+        <button class="nav-link" id="treasury-tab" data-bs-toggle="tab" data-bs-target="#treasury_audit" type="button" role="tab">
+            💰 جرد الخزينة
+        </button>
+    </li>
+</ul>
+
+<div class="tab-content">
+    <!-- ==================== جرد المخزون ==================== -->
+    <div class="tab-pane fade show active" id="store_audit" role="tabpanel">
+        <form method="POST" action="{{ url_for('inventory_audit') }}" id="storeAuditForm">
+            <input type="hidden" name="audit_type" value="store">
+            <input type="hidden" name="audit_date" value="{{ now.strftime('%Y-%m-%d') }}">
+            
+            <div class="card border-0 shadow-sm">
+                <div class="card-header bg-light d-flex justify-content-between align-items-center">
+                    <span class="fw-bold">📦 جدول جرد المخزون</span>
+                    <div>
+                        <button type="button" class="btn btn-sm btn-outline-primary" onclick="loadAllInventory()">📥 تحميل كل المخزون</button>
+                        <button type="button" class="btn btn-sm btn-primary" onclick="addStoreRow()">➕ إضافة صف</button>
+                    </div>
+                </div>
+                <div class="card-body">
+                    <div class="table-responsive">
+                        <table class="table table-sm" id="storeAuditTable">
+                            <thead class="bg-purple text-white">
+                                <tr>
+                                    <th style="width: 15%;">الصنف</th>
+                                    <th style="width: 12%;">المقاس</th>
+                                    <th style="width: 12%;">المواصفات</th>
+                                    <th style="width: 10%;">الرصيد المسجل</th>
+                                    <th style="width: 10%;">الرصيد الفعلي</th>
+                                    <th style="width: 10%;">الفرق</th>
+                                    <th style="width: 15%;">آخر جرد</th>
+                                    <th style="width: 5%;"></th>
+                                </tr>
+                            </thead>
+                            <tbody id="storeAuditBody">
+                                <!-- الصفوف هتتضاف بـ JavaScript -->
+                            </tbody>
+                        </table>
+                    </div>
+                    
+                    <!-- ملخص -->
+                    <div class="alert alert-info mt-3" id="storeSummary" style="display:none;">
+                        <strong>ملخص:</strong>
+                        عدد الأصناف: <span id="store_count">0</span> |
+                        إجمالي العجز: <span id="store_shortage" class="text-danger">0</span> |
+                        إجمالي الزيادة: <span id="store_surplus" class="text-success">0</span>
+                    </div>
+                    
+                    <button type="submit" class="btn btn-purple w-100 mt-3">💾 حفظ جرد المخزون</button>
+                </div>
+            </div>
+        </form>
     </div>
+
+    <!-- ==================== جرد الخزينة ==================== -->
+    <div class="tab-pane fade" id="treasury_audit" role="tabpanel">
+        <form method="POST" action="{{ url_for('inventory_audit') }}" id="treasuryAuditForm">
+            <input type="hidden" name="audit_type" value="treasury">
+            <input type="hidden" name="audit_date" value="{{ now.strftime('%Y-%m-%d') }}">
+            
+            <div class="card border-0 shadow-sm">
+                <div class="card-header bg-light d-flex justify-content-between align-items-center">
+                    <span class="fw-bold">💰 جدول جرد الخزينة</span>
+                    <div>
+                        <button type="button" class="btn btn-sm btn-outline-success" onclick="loadAllAccounts()">📥 تحميل كل الحسابات</button>
+                        <button type="button" class="btn btn-sm btn-success" onclick="addTreasuryRow()">➕ إضافة صف</button>
+                    </div>
+                </div>
+                <div class="card-body">
+                    <div class="table-responsive">
+                        <table class="table table-sm" id="treasuryAuditTable">
+                            <thead class="bg-purple text-white">
+                                <tr>
+                                    <th style="width: 20%;">اسم الشخص</th>
+                                    <th style="width: 15%;">نوع الحساب</th>
+                                    <th style="width: 12%;">الرصيد المسجل</th>
+                                    <th style="width: 12%;">الرصيد الفعلي</th>
+                                    <th style="width: 10%;">الفرق</th>
+                                    <th style="width: 15%;">آخر جرد</th>
+                                    <th style="width: 5%;"></th>
+                                </tr>
+                            </thead>
+                            <tbody id="treasuryAuditBody">
+                                <!-- الصفوف هتتضاف بـ JavaScript -->
+                            </tbody>
+                        </table>
+                    </div>
+                    
+                    <!-- ملخص -->
+                    <div class="alert alert-info mt-3" id="treasurySummary" style="display:none;">
+                        <strong>ملخص:</strong>
+                        عدد الحسابات: <span id="treasury_count">0</span> |
+                        إجمالي العجز: <span id="treasury_shortage" class="text-danger">0</span> |
+                        إجمالي الزيادة: <span id="treasury_surplus" class="text-success">0</span>
+                    </div>
+                    
+                    <button type="submit" class="btn btn-purple w-100 mt-3">💾 حفظ جرد الخزينة</button>
+                </div>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- ==================== سجل عمليات الجرد ==================== -->
+<div class="card border-0 shadow-sm mt-4">
+    <div class="card-header bg-light fw-bold">📋 سجل عمليات الجرد</div>
     <div class="card-body">
         <div class="table-responsive">
-            <table class="table table-striped table-hover align-middle">
-                <thead class="bg-purple text-white">
+            <table class="table table-sm table-striped">
+                <thead>
                     <tr>
                         <th>التاريخ</th>
                         <th>النوع</th>
                         <th>الصنف / الحساب</th>
                         <th>المقاس</th>
                         <th>المواصفات</th>
-                        <th>الرصيد المسجل</th>
-                        <th>الرصيد الفعلي</th>
+                        <th>المسجل</th>
+                        <th>الفعلي</th>
                         <th>الفرق</th>
                         <th>الحالة</th>
-                        <th>ملاحظات</th>
                         <th>إجراءات</th>
                     </tr>
                 </thead>
@@ -83,9 +186,9 @@
                         <td>{{ r.audit_date.strftime('%Y-%m-%d') }}</td>
                         <td>
                             {% if r.audit_type == 'store' %}
-                                <span class="badge bg-info">📦 مخزون</span>
+                                <span class="badge bg-info">📦</span>
                             {% else %}
-                                <span class="badge bg-success">💰 خزينة</span>
+                                <span class="badge bg-success">💰</span>
                             {% endif %}
                         </td>
                         <td>{{ r.item_name or '-' }}</td>
@@ -103,7 +206,6 @@
                                 <span class="badge bg-success">متطابق</span>
                             {% endif %}
                         </td>
-                        <td>{{ r.notes or '-' }}</td>
                         <td>
                             <form action="{{ url_for('inventory_audit') }}" method="POST" class="d-inline" onsubmit="return confirm('حذف سجل الجرد؟ (لن يتم التراجع عن التسوية)');">
                                 <input type="hidden" name="delete_id" value="{{ r.id }}">
@@ -112,7 +214,7 @@
                         </td>
                     </tr>
                     {% else %}
-                    <tr><td colspan="11" class="text-center text-muted">لا توجد عمليات جرد</td></tr>
+                    <tr><td colspan="10" class="text-center text-muted">لا توجد عمليات جرد</td></tr>
                     {% endfor %}
                 </tbody>
             </table>
@@ -120,143 +222,107 @@
     </div>
 </div>
 
-<!-- ==================== Modal إضافة عملية جرد ==================== -->
-<div class="modal fade" id="addAuditModal" tabindex="-1">
-  <div class="modal-dialog modal-lg">
+<!-- ==================== Modal إضافة صنف جديد ==================== -->
+<div class="modal fade" id="addCategoryModal" tabindex="-1">
+  <div class="modal-dialog modal-sm">
     <div class="modal-content">
-      <form method="POST" action="{{ url_for('inventory_audit') }}">
-        <div class="modal-header bg-purple text-white">
-          <h5 class="modal-title">➕ إضافة عملية جرد</h5>
-          <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+      <div class="modal-header bg-primary text-white">
+        <h5 class="modal-title">➕ إضافة صنف جديد</h5>
+        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body">
+        <input type="text" id="newCategoryName" class="form-control" placeholder="اسم الصنف الجديد">
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">إلغاء</button>
+        <button type="button" class="btn btn-primary" onclick="saveNewCategory()">حفظ</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ==================== Modal إضافة مقاس جديد ==================== -->
+<div class="modal fade" id="addSizeModal" tabindex="-1">
+  <div class="modal-dialog modal-sm">
+    <div class="modal-content">
+      <div class="modal-header bg-primary text-white">
+        <h5 class="modal-title">➕ إضافة مقاس جديد</h5>
+        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body">
+        <input type="text" id="newSizeName" class="form-control" placeholder="المقاس الجديد">
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">إلغاء</button>
+        <button type="button" class="btn btn-primary" onclick="saveNewSize()">حفظ</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ==================== Modal إضافة سماكة جديدة ==================== -->
+<div class="modal fade" id="addThicknessModal" tabindex="-1">
+  <div class="modal-dialog modal-sm">
+    <div class="modal-content">
+      <div class="modal-header bg-primary text-white">
+        <h5 class="modal-title">➕ إضافة سماكة جديدة</h5>
+        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body">
+        <input type="text" id="newThicknessName" class="form-control" placeholder="السماكة الجديدة">
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">إلغاء</button>
+        <button type="button" class="btn btn-primary" onclick="saveNewThickness()">حفظ</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ==================== Modal إضافة حساب جديد ==================== -->
+<div class="modal fade" id="addAccountModal" tabindex="-1">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <div class="modal-header bg-success text-white">
+        <h5 class="modal-title">➕ إضافة حساب جديد</h5>
+        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body">
+        <div class="mb-3">
+          <label class="form-label fw-bold">اسم الشخص</label>
+          <input type="text" id="newAccountPerson" class="form-control" list="persons_list">
+          <datalist id="persons_list">
+            {% set seen_persons = [] %}
+            {% for acc in accounts %}
+              {% if acc.person_name not in seen_persons %}
+                {% set _ = seen_persons.append(acc.person_name) %}
+                <option value="{{ acc.person_name }}">
+              {% endif %}
+            {% endfor %}
+          </datalist>
         </div>
-        <div class="modal-body">
-          
-          <div class="row">
-            <div class="col-md-6 mb-3">
-              <label class="form-label fw-bold">التاريخ</label>
-              <input type="date" name="audit_date" class="form-control" value="{{ now.strftime('%Y-%m-%d') }}" required>
-            </div>
-            <div class="col-md-6 mb-3">
-              <label class="form-label fw-bold">نوع الجرد</label>
-              <select name="audit_type" id="audit_type" class="form-select" required onchange="toggleAuditFields()">
-                <option value="store">📦 جرد المخزون (المحل)</option>
-                <option value="treasury">💰 جرد الخزينة (الحسابات)</option>
-              </select>
-            </div>
-          </div>
-
-          <!-- جرد المخزون -->
-          <div id="store_fields">
-            <div class="row">
-              <div class="col-md-4 mb-3">
-                <label class="form-label fw-bold">الصنف</label>
-                <select name="item_name" id="store_item_name" class="form-select" onchange="updateSystemQty()">
-                  <option value="">اختر الصنف...</option>
-                  {% set seen_types = [] %}
-                  {% for inv in inventory %}
-                    {% if inv.product_type not in seen_types %}
-                      {% set _ = seen_types.append(inv.product_type) %}
-                      <option value="{{ inv.product_type }}">{{ inv.product_type }}</option>
-                    {% endif %}
-                  {% endfor %}
-                </select>
-              </div>
-              <div class="col-md-4 mb-3">
-                <label class="form-label fw-bold">المقاس</label>
-                <select name="item_size" id="store_item_size" class="form-select" onchange="updateSystemQty()">
-                  <option value="">اختر المقاس...</option>
-                  {% set seen_sizes = [] %}
-                  {% for inv in inventory %}
-                    {% if inv.product_size and inv.product_size not in seen_sizes %}
-                      {% set _ = seen_sizes.append(inv.product_size) %}
-                      <option value="{{ inv.product_size }}">{{ inv.product_size }}</option>
-                    {% endif %}
-                  {% endfor %}
-                </select>
-              </div>
-              <div class="col-md-4 mb-3">
-                <label class="form-label fw-bold">المواصفات</label>
-                <select name="item_spec" id="store_item_spec" class="form-select" onchange="updateSystemQty()">
-                  <option value="">اختر المواصفات...</option>
-                  {% set seen_specs = [] %}
-                  {% for inv in inventory %}
-                    {% if inv.product_spec and inv.product_spec not in seen_specs %}
-                      {% set _ = seen_specs.append(inv.product_spec) %}
-                      <option value="{{ inv.product_spec }}">{{ inv.product_spec }}</option>
-                    {% endif %}
-                  {% endfor %}
-                </select>
-              </div>
-            </div>
-          </div>
-
-          <!-- جرد الخزينة -->
-          <div id="treasury_fields" style="display:none;">
-            <div class="row">
-              <div class="col-md-6 mb-3">
-                <label class="form-label fw-bold">اسم الحساب</label>
-                <select name="item_name_treasury" id="treasury_item_name" class="form-select" onchange="updateSystemQty()">
-                  <option value="">اختر الحساب...</option>
-                  {% set seen_persons = [] %}
-                  {% for acc in accounts %}
-                    {% if acc.person_name not in seen_persons %}
-                      {% set _ = seen_persons.append(acc.person_name) %}
-                      <option value="{{ acc.person_name }}">{{ acc.person_name }}</option>
-                    {% endif %}
-                  {% endfor %}
-                </select>
-              </div>
-              <div class="col-md-6 mb-3">
-                <label class="form-label fw-bold">نوع الحساب</label>
-                <select name="account_type" id="treasury_account_type" class="form-select" onchange="updateSystemQty()">
-                  <option value="">اختر النوع...</option>
-                  {% set seen_acc_types = [] %}
-                  {% for acc in accounts %}
-                    {% if acc.account_type not in seen_acc_types %}
-                      {% set _ = seen_acc_types.append(acc.account_type) %}
-                      <option value="{{ acc.account_type }}">{{ acc.account_type }}</option>
-                    {% endif %}
-                  {% endfor %}
-                </select>
-              </div>
-            </div>
-          </div>
-
-          <div class="row">
-            <div class="col-md-6 mb-3">
-              <label class="form-label fw-bold">الرصيد المسجل في النظام</label>
-              <input type="number" step="0.01" name="system_quantity" id="system_quantity" class="form-control" readonly>
-              <small class="text-muted">يتم حسابه تلقائياً</small>
-            </div>
-            <div class="col-md-6 mb-3">
-              <label class="form-label fw-bold">الرصيد الفعلي (بعد الجرد)</label>
-              <input type="number" step="0.01" name="actual_quantity" id="actual_quantity" class="form-control" required oninput="calcDifference()">
-            </div>
-          </div>
-
-          <div class="alert alert-info" id="difference_alert" style="display:none;">
-            <strong>الفرق:</strong> <span id="difference_value">0</span>
-            <span id="difference_type_display"></span>
-          </div>
-
-          <div class="mb-3">
-            <label class="form-label fw-bold">ملاحظات</label>
-            <textarea name="notes" class="form-control" rows="2"></textarea>
-          </div>
-
+        <div class="mb-3">
+          <label class="form-label fw-bold">نوع الحساب</label>
+          <select id="newAccountType" class="form-select">
+            <option value="">اختر النوع...</option>
+            <option value="كاش">كاش</option>
+            <option value="فودافون كاش">فودافون كاش</option>
+            <option value="انستا باي">انستا باي</option>
+            <option value="شيك">شيك</option>
+          </select>
         </div>
-        <div class="modal-footer">
-          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">إلغاء</button>
-          <button type="submit" class="btn btn-purple">حفظ الجرد والتسوية</button>
-        </div>
-      </form>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">إلغاء</button>
+        <button type="button" class="btn btn-success" onclick="saveNewAccount()">حفظ</button>
+      </div>
     </div>
   </div>
 </div>
 
 <!-- ==================== JavaScript ==================== -->
 <script>
-// بيانات المخزون والحسابات من السيرفر
+// بيانات من السيرفر
 const inventoryData = [
     {% for inv in inventory %}
     {
@@ -271,6 +337,7 @@ const inventoryData = [
 const accountsData = [
     {% for acc in accounts %}
     {
+        id: {{ acc.id }},
         person_name: "{{ acc.person_name }}",
         account_type: "{{ acc.account_type }}",
         balance: {{ acc.balance }}
@@ -278,104 +345,424 @@ const accountsData = [
     {% endfor %}
 ];
 
-// تبديل الحقول حسب نوع الجرد
-function toggleAuditFields() {
-    var auditType = document.getElementById('audit_type').value;
-    var storeFields = document.getElementById('store_fields');
-    var treasuryFields = document.getElementById('treasury_fields');
+const categoriesList = [
+    {% for c in categories %}"{{ c.name }}"{% if not loop.last %},{% endif %}{% endfor %}
+];
+
+const sizesList = [
+    {% for s in sizes %}"{{ s.value }}"{% if not loop.last %},{% endif %}{% endfor %}
+];
+
+const thicknessesList = [
+    {% for t in thicknesses %}"{{ t.value }}"{% if not loop.last %},{% endif %}{% endfor %}
+];
+
+const lastAudits = {
+    {% for r in records %}
+    "{{ r.item_name }}_{{ r.item_size or '' }}_{{ r.item_spec or '' }}": {
+        date: "{{ r.audit_date.strftime('%Y-%m-%d') }}",
+        difference: {{ r.difference }}
+    }{% if not loop.last %},{% endif %}
+    {% endfor %}
+};
+
+// ==================== جرد المخزون ====================
+var storeRowCounter = 0;
+
+function addStoreRow(data = null) {
+    storeRowCounter++;
+    var rowId = 'store_row_' + storeRowCounter;
+    var tbody = document.getElementById('storeAuditBody');
     
-    if (auditType === 'store') {
-        storeFields.style.display = 'block';
-        treasuryFields.style.display = 'none';
-        document.getElementById('store_item_name').setAttribute('name', 'item_name');
-        document.getElementById('treasury_item_name').removeAttribute('name');
-        document.getElementById('store_item_size').setAttribute('name', 'item_size');
-        document.getElementById('store_item_spec').setAttribute('name', 'item_spec');
-        document.getElementById('treasury_account_type').removeAttribute('name');
-    } else {
-        storeFields.style.display = 'none';
-        treasuryFields.style.display = 'block';
-        document.getElementById('store_item_name').removeAttribute('name');
-        document.getElementById('treasury_item_name').setAttribute('name', 'item_name');
-        document.getElementById('store_item_size').removeAttribute('name');
-        document.getElementById('store_item_spec').removeAttribute('name');
-        document.getElementById('treasury_account_type').setAttribute('name', 'account_type');
+    var row = document.createElement('tr');
+    row.id = rowId;
+    row.className = 'store-row';
+    
+    row.innerHTML = `
+        <td>
+            <div class="input-group input-group-sm">
+                <select name="store_item_name[]" class="form-select" onchange="updateStoreRow('${rowId}')">
+                    <option value="">اختر...</option>
+                    ${categoriesList.map(c => `<option value="${c}">${c}</option>`).join('')}
+                </select>
+                <button type="button" class="btn btn-outline-primary btn-sm" onclick="openAddCategoryModal('${rowId}')">➕</button>
+            </div>
+        </td>
+        <td>
+            <div class="input-group input-group-sm">
+                <select name="store_item_size[]" class="form-select" onchange="updateStoreRow('${rowId}')">
+                    <option value="">اختر...</option>
+                    ${sizesList.map(s => `<option value="${s}">${s}</option>`).join('')}
+                </select>
+                <button type="button" class="btn btn-outline-primary btn-sm" onclick="openAddSizeModal('${rowId}')">➕</button>
+            </div>
+        </td>
+        <td>
+            <div class="input-group input-group-sm">
+                <select name="store_item_spec[]" class="form-select" onchange="updateStoreRow('${rowId}')">
+                    <option value="">اختر...</option>
+                    ${thicknessesList.map(t => `<option value="${t}">${t}</option>`).join('')}
+                </select>
+                <button type="button" class="btn btn-outline-primary btn-sm" onclick="openAddThicknessModal('${rowId}')">➕</button>
+            </div>
+        </td>
+        <td><input type="number" name="store_system_quantity[]" class="form-control form-control-sm" readonly></td>
+        <td><input type="number" step="0.01" name="store_actual_quantity[]" class="form-control form-control-sm" oninput="calcStoreRow('${rowId}')"></td>
+        <td><span class="store-diff">0</span></td>
+        <td><span class="store-last-audit text-muted small">-</span></td>
+        <td><button type="button" class="btn btn-sm btn-danger" onclick="document.getElementById('${rowId}').remove(); updateStoreSummary();">🗑️</button></td>
+    `;
+    
+    tbody.appendChild(row);
+    
+    if (data) {
+        row.querySelector('select[name="store_item_name[]"]').value = data.product_type || '';
+        row.querySelector('select[name="store_item_size[]"]').value = data.product_size || '';
+        row.querySelector('select[name="store_item_spec[]"]').value = data.product_spec || '';
+        row.querySelector('input[name="store_system_quantity[]"]').value = data.current_quantity || 0;
+        updateStoreRow(rowId);
     }
-    document.getElementById('system_quantity').value = '';
-    document.getElementById('actual_quantity').value = '';
-    document.getElementById('difference_alert').style.display = 'none';
 }
 
-// تحديث الرصيد المسجل
-function updateSystemQty() {
-    var auditType = document.getElementById('audit_type').value;
+function updateStoreRow(rowId) {
+    var row = document.getElementById(rowId);
+    var itemName = row.querySelector('select[name="store_item_name[]"]').value;
+    var itemSize = row.querySelector('select[name="store_item_size[]"]').value;
+    var itemSpec = row.querySelector('select[name="store_item_spec[]"]').value;
+    
     var systemQty = 0;
-    
-    if (auditType === 'store') {
-        var itemName = document.getElementById('store_item_name').value;
-        var itemSize = document.getElementById('store_item_size').value;
-        var itemSpec = document.getElementById('store_item_spec').value;
-        
-        for (var i = 0; i < inventoryData.length; i++) {
-            var inv = inventoryData[i];
-            if (inv.product_type === itemName && 
-                inv.product_size === itemSize && 
-                inv.product_spec === itemSpec) {
-                systemQty = inv.current_quantity;
-                break;
-            }
-        }
-    } else {
-        var personName = document.getElementById('treasury_item_name').value;
-        var accountType = document.getElementById('treasury_account_type').value;
-        
-        for (var i = 0; i < accountsData.length; i++) {
-            var acc = accountsData[i];
-            if (acc.person_name === personName && acc.account_type === accountType) {
-                systemQty = acc.balance;
-                break;
-            }
+    for (var i = 0; i < inventoryData.length; i++) {
+        if (inventoryData[i].product_type === itemName &&
+            inventoryData[i].product_size === itemSize &&
+            inventoryData[i].product_spec === itemSpec) {
+            systemQty = inventoryData[i].current_quantity;
+            break;
         }
     }
+    row.querySelector('input[name="store_system_quantity[]"]').value = systemQty;
     
-    document.getElementById('system_quantity').value = systemQty;
-    calcDifference();
+    // آخر جرد
+    var key = itemName + '_' + itemSize + '_' + itemSpec;
+    var lastAudit = lastAudits[key];
+    var lastAuditSpan = row.querySelector('.store-last-audit');
+    if (lastAudit) {
+        lastAuditSpan.innerText = lastAudit.date + ' (' + lastAudit.difference + ')';
+    } else {
+        lastAuditSpan.innerText = 'لا يوجد';
+    }
+    
+    calcStoreRow(rowId);
 }
 
-// حساب الفرق
-function calcDifference() {
-    var systemQty = parseFloat(document.getElementById('system_quantity').value) || 0;
-    var actualQty = parseFloat(document.getElementById('actual_quantity').value) || 0;
+function calcStoreRow(rowId) {
+    var row = document.getElementById(rowId);
+    var systemQty = parseFloat(row.querySelector('input[name="store_system_quantity[]"]').value) || 0;
+    var actualQty = parseFloat(row.querySelector('input[name="store_actual_quantity[]"]').value) || 0;
     var diff = actualQty - systemQty;
     
-    var alertDiv = document.getElementById('difference_alert');
-    var diffValue = document.getElementById('difference_value');
-    var diffTypeDisplay = document.getElementById('difference_type_display');
+    var diffSpan = row.querySelector('.store-diff');
+    if (diff < 0) {
+        diffSpan.innerHTML = '<span class="badge bg-danger">' + diff.toFixed(2) + '</span>';
+    } else if (diff > 0) {
+        diffSpan.innerHTML = '<span class="badge bg-warning text-dark">+' + diff.toFixed(2) + '</span>';
+    } else {
+        diffSpan.innerHTML = '<span class="badge bg-success">0</span>';
+    }
     
-    if (document.getElementById('actual_quantity').value === '') {
-        alertDiv.style.display = 'none';
+    updateStoreSummary();
+}
+
+function updateStoreSummary() {
+    var rows = document.querySelectorAll('.store-row');
+    var count = rows.length;
+    var shortage = 0;
+    var surplus = 0;
+    
+    rows.forEach(function(row) {
+        var systemQty = parseFloat(row.querySelector('input[name="store_system_quantity[]"]').value) || 0;
+        var actualQty = parseFloat(row.querySelector('input[name="store_actual_quantity[]"]').value) || 0;
+        var diff = actualQty - systemQty;
+        if (diff < 0) shortage += Math.abs(diff);
+        else if (diff > 0) surplus += diff;
+    });
+    
+    document.getElementById('store_count').innerText = count;
+    document.getElementById('store_shortage').innerText = shortage.toFixed(2);
+    document.getElementById('store_surplus').innerText = surplus.toFixed(2);
+    document.getElementById('storeSummary').style.display = count > 0 ? 'block' : 'none';
+}
+
+function loadAllInventory() {
+    document.getElementById('storeAuditBody').innerHTML = '';
+    inventoryData.forEach(function(inv) {
+        addStoreRow(inv);
+    });
+}
+
+// ==================== جرد الخزينة ====================
+var treasuryRowCounter = 0;
+
+function addTreasuryRow(data = null) {
+    treasuryRowCounter++;
+    var rowId = 'treasury_row_' + treasuryRowCounter;
+    var tbody = document.getElementById('treasuryAuditBody');
+    
+    var row = document.createElement('tr');
+    row.id = rowId;
+    row.className = 'treasury-row';
+    
+    row.innerHTML = `
+        <td>
+            <div class="input-group input-group-sm">
+                <input type="text" name="treasury_person_name[]" class="form-control form-control-sm" list="persons_list_audit" onchange="updateTreasuryRow('${rowId}')">
+                <button type="button" class="btn btn-outline-success btn-sm" onclick="openAddAccountModal('${rowId}')">➕</button>
+            </div>
+        </td>
+        <td>
+            <select name="treasury_account_type[]" class="form-select form-select-sm" onchange="updateTreasuryRow('${rowId}')">
+                <option value="">اختر...</option>
+                <option value="كاش">كاش</option>
+                <option value="فودافون كاش">فودافون كاش</option>
+                <option value="انستا باي">انستا باي</option>
+                <option value="شيك">شيك</option>
+            </select>
+        </td>
+        <td><input type="number" name="treasury_system_quantity[]" class="form-control form-control-sm" readonly></td>
+        <td><input type="number" step="0.01" name="treasury_actual_quantity[]" class="form-control form-control-sm" oninput="calcTreasuryRow('${rowId}')"></td>
+        <td><span class="treasury-diff">0</span></td>
+        <td><span class="treasury-last-audit text-muted small">-</span></td>
+        <td><button type="button" class="btn btn-sm btn-danger" onclick="document.getElementById('${rowId}').remove(); updateTreasurySummary();">🗑️</button></td>
+    `;
+    
+    tbody.appendChild(row);
+    
+    if (data) {
+        row.querySelector('input[name="treasury_person_name[]"]').value = data.person_name || '';
+        row.querySelector('select[name="treasury_account_type[]"]').value = data.account_type || '';
+        row.querySelector('input[name="treasury_system_quantity[]"]').value = data.balance || 0;
+        updateTreasuryRow(rowId);
+    }
+}
+
+function updateTreasuryRow(rowId) {
+    var row = document.getElementById(rowId);
+    var personName = row.querySelector('input[name="treasury_person_name[]"]').value;
+    var accountType = row.querySelector('select[name="treasury_account_type[]"]').value;
+    
+    var systemQty = 0;
+    for (var i = 0; i < accountsData.length; i++) {
+        if (accountsData[i].person_name === personName &&
+            accountsData[i].account_type === accountType) {
+            systemQty = accountsData[i].balance;
+            break;
+        }
+    }
+    row.querySelector('input[name="treasury_system_quantity[]"]').value = systemQty;
+    
+    var key = personName + '_' + accountType;
+    var lastAudit = lastAudits[key];
+    var lastAuditSpan = row.querySelector('.treasury-last-audit');
+    if (lastAudit) {
+        lastAuditSpan.innerText = lastAudit.date + ' (' + lastAudit.difference + ')';
+    } else {
+        lastAuditSpan.innerText = 'لا يوجد';
+    }
+    
+    calcTreasuryRow(rowId);
+}
+
+function calcTreasuryRow(rowId) {
+    var row = document.getElementById(rowId);
+    var systemQty = parseFloat(row.querySelector('input[name="treasury_system_quantity[]"]').value) || 0;
+    var actualQty = parseFloat(row.querySelector('input[name="treasury_actual_quantity[]"]').value) || 0;
+    var diff = actualQty - systemQty;
+    
+    var diffSpan = row.querySelector('.treasury-diff');
+    if (diff < 0) {
+        diffSpan.innerHTML = '<span class="badge bg-danger">' + diff.toFixed(2) + '</span>';
+    } else if (diff > 0) {
+        diffSpan.innerHTML = '<span class="badge bg-warning text-dark">+' + diff.toFixed(2) + '</span>';
+    } else {
+        diffSpan.innerHTML = '<span class="badge bg-success">0</span>';
+    }
+    
+    updateTreasurySummary();
+}
+
+function updateTreasurySummary() {
+    var rows = document.querySelectorAll('.treasury-row');
+    var count = rows.length;
+    var shortage = 0;
+    var surplus = 0;
+    
+    rows.forEach(function(row) {
+        var systemQty = parseFloat(row.querySelector('input[name="treasury_system_quantity[]"]').value) || 0;
+        var actualQty = parseFloat(row.querySelector('input[name="treasury_actual_quantity[]"]').value) || 0;
+        var diff = actualQty - systemQty;
+        if (diff < 0) shortage += Math.abs(diff);
+        else if (diff > 0) surplus += diff;
+    });
+    
+    document.getElementById('treasury_count').innerText = count;
+    document.getElementById('treasury_shortage').innerText = shortage.toFixed(2);
+    document.getElementById('treasury_surplus').innerText = surplus.toFixed(2);
+    document.getElementById('treasurySummary').style.display = count > 0 ? 'block' : 'none';
+}
+
+function loadAllAccounts() {
+    document.getElementById('treasuryAuditBody').innerHTML = '';
+    accountsData.forEach(function(acc) {
+        addTreasuryRow(acc);
+    });
+}
+
+// ==================== Modals للإضافة الجديدة ====================
+var currentRowId = null;
+var currentFieldType = null;
+
+function openAddCategoryModal(rowId) {
+    currentRowId = rowId;
+    currentFieldType = 'category';
+    new bootstrap.Modal(document.getElementById('addCategoryModal')).show();
+}
+
+function openAddSizeModal(rowId) {
+    currentRowId = rowId;
+    currentFieldType = 'size';
+    new bootstrap.Modal(document.getElementById('addSizeModal')).show();
+}
+
+function openAddThicknessModal(rowId) {
+    currentRowId = rowId;
+    currentFieldType = 'thickness';
+    new bootstrap.Modal(document.getElementById('addThicknessModal')).show();
+}
+
+function openAddAccountModal(rowId) {
+    currentRowId = rowId;
+    new bootstrap.Modal(document.getElementById('addAccountModal')).show();
+}
+
+// حفظ الصنف الجديد
+function saveNewCategory() {
+    var name = document.getElementById('newCategoryName').value;
+    if (!name) return;
+    
+    fetch('{{ url_for("add_quick_category") }}', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({name: name})
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            // إضافة للقوائم
+            categoriesList.push(name);
+            // إضافة للـ select في الصف الحالي
+            var row = document.getElementById(currentRowId);
+            var select = row.querySelector('select[name="store_item_name[]"]');
+            var option = document.createElement('option');
+            option.value = name;
+            option.text = name;
+            option.selected = true;
+            select.appendChild(option);
+            
+            // إضافة لكل الـ selects التانية
+            document.querySelectorAll('select[name="store_item_name[]"]').forEach(function(sel) {
+                var opt = document.createElement('option');
+                opt.value = name;
+                opt.text = name;
+                sel.appendChild(opt);
+            });
+            
+            bootstrap.Modal.getInstance(document.getElementById('addCategoryModal')).hide();
+            document.getElementById('newCategoryName').value = '';
+            updateStoreRow(currentRowId);
+        }
+    });
+}
+
+function saveNewSize() {
+    var name = document.getElementById('newSizeName').value;
+    if (!name) return;
+    
+    fetch('{{ url_for("add_quick_size") }}', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({name: name})
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            sizesList.push(name);
+            var row = document.getElementById(currentRowId);
+            var select = row.querySelector('select[name="store_item_size[]"]');
+            var option = document.createElement('option');
+            option.value = name;
+            option.text = name;
+            option.selected = true;
+            select.appendChild(option);
+            
+            document.querySelectorAll('select[name="store_item_size[]"]').forEach(function(sel) {
+                var opt = document.createElement('option');
+                opt.value = name;
+                opt.text = name;
+                sel.appendChild(opt);
+            });
+            
+            bootstrap.Modal.getInstance(document.getElementById('addSizeModal')).hide();
+            document.getElementById('newSizeName').value = '';
+            updateStoreRow(currentRowId);
+        }
+    });
+}
+
+function saveNewThickness() {
+    var name = document.getElementById('newThicknessName').value;
+    if (!name) return;
+    
+    fetch('{{ url_for("add_quick_thickness") }}', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({name: name})
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            thicknessesList.push(name);
+            var row = document.getElementById(currentRowId);
+            var select = row.querySelector('select[name="store_item_spec[]"]');
+            var option = document.createElement('option');
+            option.value = name;
+            option.text = name;
+            option.selected = true;
+            select.appendChild(option);
+            
+            document.querySelectorAll('select[name="store_item_spec[]"]').forEach(function(sel) {
+                var opt = document.createElement('option');
+                opt.value = name;
+                opt.text = name;
+                sel.appendChild(opt);
+            });
+            
+            bootstrap.Modal.getInstance(document.getElementById('addThicknessModal')).hide();
+            document.getElementById('newThicknessName').value = '';
+            updateStoreRow(currentRowId);
+        }
+    });
+}
+
+function saveNewAccount() {
+    var personName = document.getElementById('newAccountPerson').value;
+    var accountType = document.getElementById('newAccountType').value;
+    if (!personName || !accountType) {
+        alert('الرجاء إدخال الاسم والنوع');
         return;
     }
     
-    alertDiv.style.display = 'block';
-    diffValue.innerText = Math.abs(diff).toFixed(2);
-    
-    if (diff < 0) {
-        diffTypeDisplay.innerText = ' - ناقص ⚠️';
-        alertDiv.className = 'alert alert-danger';
-    } else if (diff > 0) {
-        diffTypeDisplay.innerText = ' - زيادة ✅';
-        alertDiv.className = 'alert alert-warning';
-    } else {
-        diffTypeDisplay.innerText = ' - متطابق ✅';
-        alertDiv.className = 'alert alert-success';
-    }
-}
-
-// تشغيل الدالة عند فتح الصفحة
-document.addEventListener('DOMContentLoaded', function() {
-    toggleAuditFields();
-});
-</script>
-
-{% endblock %}
+    fetch('{{ url_for("add_quick_account") }}', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({person_name: personName, account_type: accountType})
+    })
+    .then(response
