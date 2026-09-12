@@ -105,6 +105,14 @@
                         </li>
                         {% endif %}
 
+                        {% if current_user.role in ['meg', 'admin', 'mariam', 'sayed'] %}
+                        <li class="nav-item">
+                            <a class="nav-link text-white" href="{{ url_for('inventory_audit') }}">
+                                <i class="fas fa-clipboard-check ms-2"></i> الجرد
+                            </a>
+                        </li>
+                        {% endif %}
+
                         {% if current_user.role in ['meg', 'admin', 'mariam', 'ahmed', 'eid', 'abdo', 'sayed'] %}
                         <li class="nav-item">
                             <a class="nav-link text-white" href="{{ url_for('treasury_index') }}">
@@ -133,6 +141,14 @@
                         <li class="nav-item">
                             <a class="nav-link text-white" href="{{ url_for('reports_index') }}">
                                 <i class="fas fa-chart-bar ms-2"></i> التقارير
+                            </a>
+                        </li>
+                        {% endif %}
+
+                        {% if current_user.role in ['sayed', 'dina'] %}
+                        <li class="nav-item">
+                            <a class="nav-link text-white" href="{{ url_for('almasa_index') }}">
+                                <i class="fas fa-building ms-2"></i> شركة الماسة
                             </a>
                         </li>
                         {% endif %}
