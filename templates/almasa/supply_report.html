@@ -1,0 +1,90 @@
+{% extends "base_almasa.html" %}
+
+{% block title %}تقرير {{ supply.name }}{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h2 class="fw-bold text-warning">📊 تقرير التوريدة: {{ supply.name }}</h2>
+    <a href="{{ url_for('almasa_supply_detail', supply_id=supply.id) }}" class="btn btn-outline-secondary">← رجوع</a>
+</div>
+
+<!-- العمليات -->
+<div class="card border-0 shadow-sm mb-4">
+    <div class="card-header bg-light fw-bold">⚙️ العمليات</div>
+    <div class="card-body">
+        {% if operations %}
+        <div class="table-responsive">
+            <table class="table table-sm table-striped">
+                <thead>
+                    <tr><th>من</th><th>إلى</th><th>الأيام</th><th>سعر المورد</th><th>سعر العميل</th><th>إجمالي المورد</th><th>إجمالي العميل</th></tr>
+                </thead>
+                <tbody>
+                    {% for op in operations %}
+                    <tr>
+                        <td>{{ op.start_date.strftime('%Y-%m-%d') }}</td>
+                        <td>{{ op.end_date.strftime('%Y-%m-%d') if op.end_date else '-' }}</td>
+                        <td>{{ op.days_count }}</td>
+                        <td>{{ op.supplier_daily_rate }}</td>
+                        <td>{{ op.customer_daily_rate }}</td>
+                        <td>{{ op.supplier_total }}</td>
+                        <td>{{ op.customer_total }}</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+                <tfoot>
+                    <tr class="fw-bold">
+                        <td colspan="5">الإجمالي</td>
+                        <td>{{ total_supplier }}</td>
+                        <td>{{ total_customer }}</td>
+                    </tr>
+                </tfoot>
+            </table>
+        </div>
+        {% else %}
+        <p class="text-muted mb-0">لا توجد عمليات</p>
+        {% endif %}
+    </div>
+</div>
+
+<!-- المصاريف -->
+<div class="card border-0 shadow-sm mb-4">
+    <div class="card-header bg-light fw-bold">💸 المصاريف</div>
+    <div class="card-body">
+        {% if expenses %}
+        <table class="table table-sm">
+            <thead><tr><th>التاريخ</th><th>النوع</th><th>المبلغ</th></tr></thead>
+            <tbody>
+                {% for exp in expenses %}
+                <tr><td>{{ exp.date.strftime('%Y-%m-%d') }}</td><td>{{ exp.expense_type }}</td><td>{{ exp.amount }}</td></tr>
+                {% endfor %}
+            </tbody>
+            <tfoot><tr class="fw-bold"><td colspan="2">إجمالي المصاريف</td><td>{{ total_expenses }}</td></tr></tfoot>
+        </table>
+        {% else %}
+        <p class="text-muted mb-0">لا توجد مصاريف</p>
+        {% endif %}
+    </div>
+</div>
+
+<!-- توزيعة الشيك -->
+<div class="card border-0 shadow-sm">
+    <div class="card-header text-white fw-bold" style="background: linear-gradient(90deg, #e65100, #ef6c00);">
+        📊 توزيعة الشيك
+    </div>
+    <div class="card-body">
+        <table class="table table-bordered">
+            <tbody>
+                <tr><td class="fw-bold">إجمالي العميل (الشيك)</td><td>{{ check_amount }}</td></tr>
+                <tr class="table-warning"><td class="fw-bold">ضريبة 14%</td><td>{{ tax_14 }}</td></tr>
+                <tr class="table-warning"><td class="fw-bold">ضريبة 8.5%</td><td>{{ tax_85 }}</td></tr>
+                <tr><td class="fw-bold">الصافي بعد الضرايب</td><td>{{ net_after_tax }}</td></tr>
+                <tr><td class="fw-bold">المصاريف</td><td>{{ total_expenses }}</td></tr>
+                <tr><td class="fw-bold">الصافي بعد المصاريف</td><td>{{ net_after_expenses }}</td></tr>
+                <tr class="table-danger"><td class="fw-bold">فلوس المورد</td><td>{{ total_supplier }}</td></tr>
+                <tr class="table-success"><td class="fw-bold">صافي الماسة</td><td>{{ our_profit }}</td></tr>
+                <tr class="table-info"><td class="fw-bold">صافي الفرد (الفتح / أحمد)</td><td>{{ per_person }}</td></tr>
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}
