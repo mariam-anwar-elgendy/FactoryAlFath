@@ -27,7 +27,7 @@ class User(UserMixin, db.Model):
     def check_password(self, password):
         return check_password_hash(self.password_hash, password)
 
-# ==================== التصنيفات والمقاسات ====================
+# ==================== التصنيفات والمقاسات والسماكات ====================
 class Category(db.Model):
     __tablename__ = 'categories'
     id = db.Column(db.Integer, primary_key=True)
@@ -90,7 +90,7 @@ class FactoryDiary(db.Model):
     created_by = db.Column(db.Integer, db.ForeignKey('users.id'))
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
 
-# ==================== المحل ====================
+# ==================== المحل - المبيعات ====================
 class StoreSale(db.Model):
     __tablename__ = 'store_sales'
     id = db.Column(db.Integer, primary_key=True)
@@ -116,6 +116,7 @@ class StoreSale(db.Model):
     def remaining(self):
         return self.total - self.paid_amount
 
+# ==================== المحل - المشتريات ====================
 class StorePurchase(db.Model):
     __tablename__ = 'store_purchases'
     id = db.Column(db.Integer, primary_key=True)
@@ -141,6 +142,7 @@ class StorePurchase(db.Model):
     def remaining(self):
         return self.total - self.paid_amount
 
+# ==================== بنود المبيعات ====================
 class StoreSaleItem(db.Model):
     __tablename__ = 'store_sale_items'
     id = db.Column(db.Integer, primary_key=True)
@@ -152,6 +154,7 @@ class StoreSaleItem(db.Model):
     unit_price = db.Column(db.Float, default=0)
     total = db.Column(db.Float, default=0)
 
+# ==================== بنود المشتريات ====================
 class StorePurchaseItem(db.Model):
     __tablename__ = 'store_purchase_items'
     id = db.Column(db.Integer, primary_key=True)
@@ -163,6 +166,7 @@ class StorePurchaseItem(db.Model):
     unit_price = db.Column(db.Float, default=0)
     total = db.Column(db.Float, default=0)
 
+# ==================== المخزون ====================
 class StoreInventory(db.Model):
     __tablename__ = 'store_inventory'
     id = db.Column(db.Integer, primary_key=True)
@@ -172,6 +176,7 @@ class StoreInventory(db.Model):
     current_quantity = db.Column(db.Float, default=0)
     min_quantity = db.Column(db.Float, default=0)
 
+# ==================== الاستلام ====================
 class StoreReceiving(db.Model):
     __tablename__ = 'store_receiving'
     id = db.Column(db.Integer, primary_key=True)
@@ -185,6 +190,7 @@ class StoreReceiving(db.Model):
     created_by = db.Column(db.Integer, db.ForeignKey('users.id'))
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
 
+# ==================== المرتجعات ====================
 class StoreReturn(db.Model):
     __tablename__ = 'store_returns'
     id = db.Column(db.Integer, primary_key=True)
@@ -199,6 +205,7 @@ class StoreReturn(db.Model):
     created_by = db.Column(db.Integer, db.ForeignKey('users.id'))
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
 
+# ==================== يوميات المحل ====================
 class StoreDiary(db.Model):
     __tablename__ = 'store_diary'
     id = db.Column(db.Integer, primary_key=True)
@@ -208,6 +215,7 @@ class StoreDiary(db.Model):
     created_by = db.Column(db.Integer, db.ForeignKey('users.id'))
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
 
+# ==================== الدفعات ====================
 class Payment(db.Model):
     __tablename__ = 'payments'
     id = db.Column(db.Integer, primary_key=True)
@@ -283,24 +291,21 @@ class ActivityLog(db.Model):
 
 # ==================== الجرد (المخزون + الخزينة) ====================
 class InventoryAudit(db.Model):
-    """جرد المخزون والخزينة"""
     __tablename__ = 'inventory_audits'
     id = db.Column(db.Integer, primary_key=True)
     audit_date = db.Column(db.Date, nullable=False)
     audit_type = db.Column(db.String(20), nullable=False)  # 'store' / 'treasury'
-    item_name = db.Column(db.String(200))  # اسم الصنف أو اسم الحساب
-    item_size = db.Column(db.String(50))  # المقاس (للمخزون بس)
-    item_spec = db.Column(db.String(50))  # المواصفات (للمخزون بس)
-    account_type = db.Column(db.String(50))  # نوع الحساب (للخزينة بس)
+    item_name = db.Column(db.String(200))
+    item_size = db.Column(db.String(50))
+    item_spec = db.Column(db.String(50))
+    account_type = db.Column(db.String(50))
     system_quantity = db.Column(db.Float, default=0)
     actual_quantity = db.Column(db.Float, default=0)
     difference = db.Column(db.Float, default=0)
-    difference_type = db.Column(db.String(20))  # 'ناقص' / 'زيادة' / 'متطابق'
-    is_settled = db.Column(db.Boolean, default=False)
+    difference_type = db.Column(db.String(20))
     notes = db.Column(db.Text)
     created_by = db.Column(db.Integer, db.ForeignKey('users.id'))
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
-
 
 # ====================================================================
 # ==================== شركة الماسة - الأنواع الثلاثة ====================
