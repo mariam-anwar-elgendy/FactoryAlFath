@@ -119,7 +119,6 @@ def log_activity(user_id, action, details=''):
         db.session.commit()
     except Exception as e:
         print(f"Error logging activity: {e}")
-
 # ==================== تهيئة قاعدة البيانات ====================
 def init_db():
     with app.app_context():
@@ -134,26 +133,39 @@ def init_db():
         except Exception as e:
             db.session.rollback()
         
-        # Migration لعمليات الونش (مشاركة)
+        # ==================== Migration لعمليات الونش (مشاركة) ====================
         try:
+            # الحقول الأساسية الجديدة
             db.session.execute(db.text('ALTER TABLE almasa_operations ADD COLUMN IF NOT EXISTS rental_value FLOAT DEFAULT 0'))
             db.session.execute(db.text('ALTER TABLE almasa_operations ADD COLUMN IF NOT EXISTS supply_value FLOAT DEFAULT 0'))
             db.session.execute(db.text('ALTER TABLE almasa_operations ADD COLUMN IF NOT EXISTS rental_total FLOAT DEFAULT 0'))
             db.session.execute(db.text('ALTER TABLE almasa_operations ADD COLUMN IF NOT EXISTS supply_total FLOAT DEFAULT 0'))
-            db.session.execute(db.text('ALTER TABLE almasa_operations ADD COLUMN IF NOT EXISTS project_location VARCHAR(200)'))
-            db.session.execute(db.text('ALTER TABLE almasa_operations ADD COLUMN IF NOT EXISTS invoice_date DATE'))
-            db.session.execute(db.text('ALTER TABLE almasa_operations ADD COLUMN IF NOT EXISTS payment_method VARCHAR(20)'))
+            # ✅ الحقول الإضافية (اللي كانت ناقصة)
+            db.session.execute(db.text('ALTER TABLE almasa_operations ADD COLUMN IF NOT EXISTS extra_hours FLOAT DEFAULT 0'))
+            db.session.execute(db.text('ALTER TABLE almasa_operations ADD COLUMN IF NOT EXISTS hour_rate FLOAT DEFAULT 0'))
+            db.session.execute(db.text('ALTER TABLE almasa_operations ADD COLUMN IF NOT EXISTS travel_days FLOAT DEFAULT 0'))
+            db.session.execute(db.text('ALTER TABLE almasa_operations ADD COLUMN IF NOT EXISTS travel_rate FLOAT DEFAULT 0'))
+            # الضرايب
             db.session.execute(db.text('ALTER TABLE almasa_operations ADD COLUMN IF NOT EXISTS tax_14_enabled BOOLEAN DEFAULT FALSE'))
             db.session.execute(db.text('ALTER TABLE almasa_operations ADD COLUMN IF NOT EXISTS tax_14_value FLOAT DEFAULT 14'))
             db.session.execute(db.text('ALTER TABLE almasa_operations ADD COLUMN IF NOT EXISTS tax_85_enabled BOOLEAN DEFAULT FALSE'))
             db.session.execute(db.text('ALTER TABLE almasa_operations ADD COLUMN IF NOT EXISTS tax_85_value FLOAT DEFAULT 8.5'))
+            # بيانات الفاتورة
+            db.session.execute(db.text('ALTER TABLE almasa_operations ADD COLUMN IF NOT EXISTS invoice_number VARCHAR(50)'))
+            db.session.execute(db.text('ALTER TABLE almasa_operations ADD COLUMN IF NOT EXISTS invoice_date DATE'))
+            db.session.execute(db.text('ALTER TABLE almasa_operations ADD COLUMN IF NOT EXISTS project_name VARCHAR(200)'))
+            db.session.execute(db.text('ALTER TABLE almasa_operations ADD COLUMN IF NOT EXISTS project_location VARCHAR(200)'))
+            db.session.execute(db.text('ALTER TABLE almasa_operations ADD COLUMN IF NOT EXISTS payment_method VARCHAR(20)'))
+            # حالة الشيك
             db.session.execute(db.text('ALTER TABLE almasa_operations ADD COLUMN IF NOT EXISTS check_received BOOLEAN DEFAULT FALSE'))
             db.session.execute(db.text('ALTER TABLE almasa_operations ADD COLUMN IF NOT EXISTS check_received_date DATE'))
             db.session.commit()
-            print("✅ تم إضافة حقول almasa_operations")
+            print("✅ تم إضافة كل حقول almasa_operations")
         except Exception as e:
             db.session.rollback()
+            print(f"⚠️ خطأ almasa_operations: {e}")
         
+        # نقل البيانات القديمة
         try:
             db.session.execute(db.text('''
                 UPDATE almasa_operations 
@@ -168,26 +180,35 @@ def init_db():
             print("✅ تم نقل بيانات almasa_operations")
         except Exception as e:
             db.session.rollback()
+            print(f"⚠️ نقل بيانات almasa_operations: {e}")
         
-        # Migration لعمليات الونش الخاص
+        # ==================== Migration لعمليات الونش الخاص ====================
         try:
             db.session.execute(db.text('ALTER TABLE almasa_private_operations ADD COLUMN IF NOT EXISTS rental_value FLOAT DEFAULT 0'))
             db.session.execute(db.text('ALTER TABLE almasa_private_operations ADD COLUMN IF NOT EXISTS supply_value FLOAT DEFAULT 0'))
             db.session.execute(db.text('ALTER TABLE almasa_private_operations ADD COLUMN IF NOT EXISTS rental_total FLOAT DEFAULT 0'))
             db.session.execute(db.text('ALTER TABLE almasa_private_operations ADD COLUMN IF NOT EXISTS supply_total FLOAT DEFAULT 0'))
-            db.session.execute(db.text('ALTER TABLE almasa_private_operations ADD COLUMN IF NOT EXISTS project_location VARCHAR(200)'))
-            db.session.execute(db.text('ALTER TABLE almasa_private_operations ADD COLUMN IF NOT EXISTS invoice_date DATE'))
-            db.session.execute(db.text('ALTER TABLE almasa_private_operations ADD COLUMN IF NOT EXISTS payment_method VARCHAR(20)'))
+            # ✅ الحقول الإضافية
+            db.session.execute(db.text('ALTER TABLE almasa_private_operations ADD COLUMN IF NOT EXISTS extra_hours FLOAT DEFAULT 0'))
+            db.session.execute(db.text('ALTER TABLE almasa_private_operations ADD COLUMN IF NOT EXISTS hour_rate FLOAT DEFAULT 0'))
+            db.session.execute(db.text('ALTER TABLE almasa_private_operations ADD COLUMN IF NOT EXISTS travel_days FLOAT DEFAULT 0'))
+            db.session.execute(db.text('ALTER TABLE almasa_private_operations ADD COLUMN IF NOT EXISTS travel_rate FLOAT DEFAULT 0'))
             db.session.execute(db.text('ALTER TABLE almasa_private_operations ADD COLUMN IF NOT EXISTS tax_14_enabled BOOLEAN DEFAULT FALSE'))
             db.session.execute(db.text('ALTER TABLE almasa_private_operations ADD COLUMN IF NOT EXISTS tax_14_value FLOAT DEFAULT 14'))
             db.session.execute(db.text('ALTER TABLE almasa_private_operations ADD COLUMN IF NOT EXISTS tax_85_enabled BOOLEAN DEFAULT FALSE'))
             db.session.execute(db.text('ALTER TABLE almasa_private_operations ADD COLUMN IF NOT EXISTS tax_85_value FLOAT DEFAULT 8.5'))
+            db.session.execute(db.text('ALTER TABLE almasa_private_operations ADD COLUMN IF NOT EXISTS invoice_number VARCHAR(50)'))
+            db.session.execute(db.text('ALTER TABLE almasa_private_operations ADD COLUMN IF NOT EXISTS invoice_date DATE'))
+            db.session.execute(db.text('ALTER TABLE almasa_private_operations ADD COLUMN IF NOT EXISTS project_name VARCHAR(200)'))
+            db.session.execute(db.text('ALTER TABLE almasa_private_operations ADD COLUMN IF NOT EXISTS project_location VARCHAR(200)'))
+            db.session.execute(db.text('ALTER TABLE almasa_private_operations ADD COLUMN IF NOT EXISTS payment_method VARCHAR(20)'))
             db.session.execute(db.text('ALTER TABLE almasa_private_operations ADD COLUMN IF NOT EXISTS check_received BOOLEAN DEFAULT FALSE'))
             db.session.execute(db.text('ALTER TABLE almasa_private_operations ADD COLUMN IF NOT EXISTS check_received_date DATE'))
             db.session.commit()
-            print("✅ تم إضافة حقول almasa_private_operations")
+            print("✅ تم إضافة كل حقول almasa_private_operations")
         except Exception as e:
             db.session.rollback()
+            print(f"⚠️ خطأ almasa_private_operations: {e}")
         
         try:
             db.session.execute(db.text('''
@@ -203,26 +224,35 @@ def init_db():
             print("✅ تم نقل بيانات almasa_private_operations")
         except Exception as e:
             db.session.rollback()
+            print(f"⚠️ نقل بيانات almasa_private_operations: {e}")
         
-        # Migration لعمليات التوريدات
+        # ==================== Migration لعمليات التوريدات ====================
         try:
             db.session.execute(db.text('ALTER TABLE almasa_supply_operations ADD COLUMN IF NOT EXISTS rental_value FLOAT DEFAULT 0'))
             db.session.execute(db.text('ALTER TABLE almasa_supply_operations ADD COLUMN IF NOT EXISTS supply_value FLOAT DEFAULT 0'))
             db.session.execute(db.text('ALTER TABLE almasa_supply_operations ADD COLUMN IF NOT EXISTS rental_total FLOAT DEFAULT 0'))
             db.session.execute(db.text('ALTER TABLE almasa_supply_operations ADD COLUMN IF NOT EXISTS supply_total FLOAT DEFAULT 0'))
-            db.session.execute(db.text('ALTER TABLE almasa_supply_operations ADD COLUMN IF NOT EXISTS project_location VARCHAR(200)'))
-            db.session.execute(db.text('ALTER TABLE almasa_supply_operations ADD COLUMN IF NOT EXISTS invoice_date DATE'))
-            db.session.execute(db.text('ALTER TABLE almasa_supply_operations ADD COLUMN IF NOT EXISTS payment_method VARCHAR(20)'))
+            # ✅ الحقول الإضافية
+            db.session.execute(db.text('ALTER TABLE almasa_supply_operations ADD COLUMN IF NOT EXISTS extra_hours FLOAT DEFAULT 0'))
+            db.session.execute(db.text('ALTER TABLE almasa_supply_operations ADD COLUMN IF NOT EXISTS hour_rate FLOAT DEFAULT 0'))
+            db.session.execute(db.text('ALTER TABLE almasa_supply_operations ADD COLUMN IF NOT EXISTS travel_days FLOAT DEFAULT 0'))
+            db.session.execute(db.text('ALTER TABLE almasa_supply_operations ADD COLUMN IF NOT EXISTS travel_rate FLOAT DEFAULT 0'))
             db.session.execute(db.text('ALTER TABLE almasa_supply_operations ADD COLUMN IF NOT EXISTS tax_14_enabled BOOLEAN DEFAULT FALSE'))
             db.session.execute(db.text('ALTER TABLE almasa_supply_operations ADD COLUMN IF NOT EXISTS tax_14_value FLOAT DEFAULT 14'))
             db.session.execute(db.text('ALTER TABLE almasa_supply_operations ADD COLUMN IF NOT EXISTS tax_85_enabled BOOLEAN DEFAULT FALSE'))
             db.session.execute(db.text('ALTER TABLE almasa_supply_operations ADD COLUMN IF NOT EXISTS tax_85_value FLOAT DEFAULT 8.5'))
+            db.session.execute(db.text('ALTER TABLE almasa_supply_operations ADD COLUMN IF NOT EXISTS invoice_number VARCHAR(50)'))
+            db.session.execute(db.text('ALTER TABLE almasa_supply_operations ADD COLUMN IF NOT EXISTS invoice_date DATE'))
+            db.session.execute(db.text('ALTER TABLE almasa_supply_operations ADD COLUMN IF NOT EXISTS project_name VARCHAR(200)'))
+            db.session.execute(db.text('ALTER TABLE almasa_supply_operations ADD COLUMN IF NOT EXISTS project_location VARCHAR(200)'))
+            db.session.execute(db.text('ALTER TABLE almasa_supply_operations ADD COLUMN IF NOT EXISTS payment_method VARCHAR(20)'))
             db.session.execute(db.text('ALTER TABLE almasa_supply_operations ADD COLUMN IF NOT EXISTS check_received BOOLEAN DEFAULT FALSE'))
             db.session.execute(db.text('ALTER TABLE almasa_supply_operations ADD COLUMN IF NOT EXISTS check_received_date DATE'))
             db.session.commit()
-            print("✅ تم إضافة حقول almasa_supply_operations")
+            print("✅ تم إضافة كل حقول almasa_supply_operations")
         except Exception as e:
             db.session.rollback()
+            print(f"⚠️ خطأ almasa_supply_operations: {e}")
         
         try:
             db.session.execute(db.text('''
@@ -238,8 +268,9 @@ def init_db():
             print("✅ تم نقل بيانات almasa_supply_operations")
         except Exception as e:
             db.session.rollback()
+            print(f"⚠️ نقل بيانات almasa_supply_operations: {e}")
         
-        # Migration للمصاريف
+        # ==================== Migration للمصاريف ====================
         try:
             db.session.execute(db.text('ALTER TABLE almasa_expenses ADD COLUMN IF NOT EXISTS operation_id INTEGER'))
             db.session.execute(db.text('ALTER TABLE almasa_expenses ADD COLUMN IF NOT EXISTS paid_by VARCHAR(100)'))
@@ -261,7 +292,7 @@ def init_db():
         except Exception as e:
             db.session.rollback()
         
-        # Migration للشيكات
+        # ==================== Migration للشيكات ====================
         try:
             db.session.execute(db.text('ALTER TABLE almasa_checks ADD COLUMN IF NOT EXISTS operation_id INTEGER'))
             db.session.execute(db.text('ALTER TABLE almasa_checks ADD COLUMN IF NOT EXISTS issue_date DATE'))
@@ -275,7 +306,21 @@ def init_db():
             db.session.commit()
         except Exception as e:
             db.session.rollback()
-
+        
+        # ==================== Migration للشات ====================
+        # الجداول الجديدة هتتعمل بـ db.create_all() فوق
+        # بس محتاجين نتأكد إن الأعمدة الجديدة موجودة
+        try:
+            db.session.execute(db.text('ALTER TABLE chat_messages ADD COLUMN IF NOT EXISTS is_deleted BOOLEAN DEFAULT FALSE'))
+            db.session.execute(db.text('ALTER TABLE chat_messages ADD COLUMN IF NOT EXISTS is_read BOOLEAN DEFAULT FALSE'))
+            db.session.execute(db.text('ALTER TABLE chat_messages ADD COLUMN IF NOT EXISTS group_id INTEGER'))
+            db.session.execute(db.text('ALTER TABLE chat_messages ADD COLUMN IF NOT EXISTS recipient_id INTEGER'))
+            db.session.commit()
+            print("✅ تم إضافة حقول chat_messages")
+        except Exception as e:
+            db.session.rollback()
+        
+        # ==================== إنشاء المستخدمين ====================
         users_data = [
             {'username': 'meg', 'password': '262004', 'full_name': 'MEG', 'role': 'meg', 'is_hidden': True},
             {'username': 'f', 'password': '*1997#', 'full_name': 'Admin', 'role': 'admin', 'is_hidden': False},
