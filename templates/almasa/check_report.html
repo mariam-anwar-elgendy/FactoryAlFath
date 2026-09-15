@@ -5,7 +5,13 @@
 {% block content %}
 <div class="d-flex justify-content-between align-items-center mb-4">
     <h2 class="fw-bold text-primary">📋 تقرير الشيك {{ check.check_number }}</h2>
-    <a href="{{ url_for('almasa_crane_detail', crane_id=crane.id) }}" class="btn btn-outline-secondary">← رجوع</a>
+    <div>
+        {% if report_type == 'private' %}
+        <a href="{{ url_for('almasa_private_crane_detail', crane_id=crane.id) }}" class="btn btn-outline-secondary">← رجوع</a>
+        {% else %}
+        <a href="{{ url_for('almasa_crane_detail', crane_id=crane.id) }}" class="btn btn-outline-secondary">← رجوع</a>
+        {% endif %}
+    </div>
 </div>
 
 <!-- بيانات الشيك -->
@@ -17,8 +23,8 @@
         <div class="row">
             <div class="col-md-3 mb-2"><strong>رقم الشيك:</strong> {{ check.check_number or '-' }}</div>
             <div class="col-md-3 mb-2"><strong>الشركة:</strong> {{ check.company_name or '-' }}</div>
+            <div class="col-md-3 mb-2"><strong>تاريخ الإصدار:</strong> {{ check.issue_date.strftime('%Y-%m-%d') if check.issue_date else '-' }}</div>
             <div class="col-md-3 mb-2"><strong>تاريخ الاستحقاق:</strong> {{ check.due_date.strftime('%Y-%m-%d') if check.due_date else '-' }}</div>
-            <div class="col-md-3 mb-2"><strong>الونش:</strong> {{ crane.name }}</div>
         </div>
     </div>
 </div>
@@ -32,40 +38,41 @@
             <table class="table table-sm table-striped">
                 <thead>
                     <tr>
+                        <th>رقم الفاتورة</th>
+                        <th>المشروع</th>
                         <th>من</th>
                         <th>إلى</th>
-                        <th>عدد الأيام</th>
-                        <th>الفعلي اليومي</th>
-                        <th>الافتراضي اليومي</th>
-                        <th>إجمالي الفعلي</th>
-                        <th>إجمالي الافتراضي</th>
+                        <th>الأيام</th>
+                        <th>إجمالي التأجير</th>
+                        <th>إجمالي التوريد</th>
+                        <th>ملاحظات</th>
                     </tr>
                 </thead>
                 <tbody>
                     {% for op in operations %}
                     <tr>
+                        <td>{{ op.invoice_number or '-' }}</td>
+                        <td>{{ op.project_name or '-' }}</td>
                         <td>{{ op.start_date.strftime('%Y-%m-%d') }}</td>
                         <td>{{ op.end_date.strftime('%Y-%m-%d') if op.end_date else '-' }}</td>
                         <td>{{ op.days_count }}</td>
-                        <td>{{ op.actual_daily_value }}</td>
-                        <td>{{ op.default_daily_value }}</td>
-                        <td>{{ op.actual_total }}</td>
-                        <td>{{ op.default_total }}</td>
+                        <td>{{ op.rental_total }}</td>
+                        <td>{{ op.supply_total }}</td>
+                        <td>{{ op.notes or '-' }}</td>
                     </tr>
                     {% endfor %}
                 </tbody>
                 <tfoot>
-                    <tr class="fw-bold">
+                    <tr class="fw-bold table-secondary">
                         <td colspan="5">الإجمالي</td>
-                        <td>{{ total_actual }}</td>
-                        <td>{{ total_default }}</td>
+                        <td>{{ total_rental }}</td>
+                        <td>{{ total_supply }}</td>
+                        <td></td>
                     </tr>
                 </tfoot>
             </table>
         </div>
-        {% else %}
-        <p class="text-muted mb-0">لا توجد عمليات</p>
-        {% endif %}
+        {% else %}<p class="text-muted mb-0">لا توجد عمليات</p>{% endif %}
     </div>
 </div>
 
@@ -75,82 +82,84 @@
     <div class="card-body">
         {% if expenses %}
         <table class="table table-sm">
-            <thead>
-                <tr><th>التاريخ</th><th>النوع</th><th>المبلغ</th></tr>
-            </thead>
+            <thead><tr><th>التاريخ</th><th>النوع</th><th>المبلغ</th><th>دفعه</th></tr></thead>
             <tbody>
                 {% for exp in expenses %}
                 <tr>
                     <td>{{ exp.date.strftime('%Y-%m-%d') }}</td>
                     <td>{{ exp.expense_type }}</td>
                     <td>{{ exp.amount }}</td>
+                    <td>{% if exp.paid_by %}<span class="badge bg-info">{{ exp.paid_by }}</span>{% else %}-{% endif %}</td>
                 </tr>
                 {% endfor %}
             </tbody>
-            <tfoot>
-                <tr class="fw-bold"><td colspan="2">إجمالي المصاريف</td><td>{{ total_expenses }}</td></tr>
-            </tfoot>
+            <tfoot><tr class="fw-bold"><td colspan="2">إجمالي المصاريف</td><td>{{ total_expenses }}</td><td></td></tr></tfoot>
         </table>
-        {% else %}
-        <p class="text-muted mb-0">لا توجد مصاريف</p>
-        {% endif %}
+        {% else %}<p class="text-muted mb-0">لا توجد مصاريف</p>{% endif %}
     </div>
 </div>
 
-<!-- توزيعة الشيك -->
+<!-- ✅ الأرباح -->
 <div class="card border-0 shadow-sm mb-4">
     <div class="card-header text-white fw-bold" style="background: linear-gradient(90deg, #e65100, #ef6c00);">
-        📊 توزيعة الشيك
+        📊 الأرباح
     </div>
     <div class="card-body">
         <div class="row">
-            <div class="col-md-6">
-                <table class="table table-bordered">
-                    <tbody>
-                        <tr><td class="fw-bold">إجمالي الفعلي</td><td>{{ total_actual }}</td></tr>
-                        <tr><td class="fw-bold">إجمالي الافتراضي</td><td>{{ total_default }}</td></tr>
-                        <tr><td class="fw-bold">الشيك = الفعلي + 14%</td><td>{{ check_amount }}</td></tr>
-                        <tr class="table-warning"><td class="fw-bold">ضريبة 14%</td><td>{{ tax_14 }}</td></tr>
-                        <tr class="table-warning"><td class="fw-bold">ضريبة 8.5% (من الافتراضي)</td><td>{{ net_default + total_expenses - total_default }}</td></tr>
-                        <tr><td class="fw-bold">المصاريف</td><td>{{ total_expenses }}</td></tr>
-                    </tbody>
-                </table>
+            <!-- الأرباح الإدارية -->
+            <div class="col-md-6 mb-3">
+                <div class="card bg-light h-100">
+                    <div class="card-body">
+                        <h6 class="fw-bold text-primary">📈 الأرباح الإدارية</h6>
+                        <p class="text-muted small mb-2">= إجمالي التأجير - إجمالي التوريد</p>
+                        <table class="table table-sm table-bordered mb-0">
+                            <tbody>
+                                <tr><td>إجمالي التأجير</td><td>{{ total_rental }}</td></tr>
+                                <tr><td>إجمالي التوريد</td><td>{{ total_supply }}</td></tr>
+                                <tr class="table-success fw-bold"><td>الأرباح الإدارية</td><td>{{ admin_profit }}</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
             </div>
-            <div class="col-md-6">
-                <table class="table table-bordered">
-                    <tbody>
-                        <tr class="table-success"><td class="fw-bold">الصافي الفعلي (الفعلي - مصاريف)</td><td>{{ net_actual }}</td></tr>
-                        <tr class="table-success"><td class="fw-bold">الصافي الافتراضي (الافتراضي - 8.5% - مصاريف)</td><td>{{ net_default }}</td></tr>
-                        <tr class="table-info"><td class="fw-bold">الفرق (الفعلي - الافتراضي) ÷ 2</td><td>{{ basic_diff }}</td></tr>
-                    </tbody>
-                </table>
+            <!-- الأرباح التوريدية -->
+            <div class="col-md-6 mb-3">
+                <div class="card bg-light h-100">
+                    <div class="card-body">
+                        <h6 class="fw-bold text-success">📉 الأرباح التوريدية</h6>
+                        <p class="text-muted small mb-2">= إجمالي التوريد - المصاريف - الضريبة 8.5%</p>
+                        <table class="table table-sm table-bordered mb-0">
+                            <tbody>
+                                <tr><td>إجمالي التوريد</td><td>{{ total_supply }}</td></tr>
+                                <tr><td>المصاريف</td><td>{{ total_expenses }}</td></tr>
+                                <tr><td>الضريبة 8.5%</td><td>{{ tax_85_amount or 0 }}</td></tr>
+                                <tr class="table-success fw-bold"><td>الأرباح التوريدية</td><td>{{ supply_profit }}</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
             </div>
         </div>
-    </div>
-</div>
-
-<!-- توزيع الأرباح على الشركاء -->
-<div class="card border-0 shadow-sm mb-4">
-    <div class="card-header text-white fw-bold" style="background: linear-gradient(90deg, #1b5e20, #2e7d32);">
-        👥 توزيع الأرباح على الشركاء
-    </div>
-    <div class="card-body">
+        
+        <div class="alert alert-info mt-3">
+            <strong>💰 إجمالي الأرباح =</strong> {{ admin_profit + supply_profit }}
+        </div>
+        
+        <!-- توزيع الأرباح -->
         {% if report_type == 'private' %}
-        <!-- ونش خاص - كله لصاحب الونش -->
         <div class="alert alert-success">
             <h5>💰 صاحب الونش: {{ crane.owner_name }}</h5>
             <p class="mb-0 fs-4">الصافي النهائي: <strong>{{ owner_share }}</strong></p>
         </div>
         {% else %}
-        <!-- ونش مشاركة - توزيع على الشركاء -->
-        <table class="table table-striped">
+        <table class="table table-striped mt-3">
             <thead>
                 <tr>
                     <th>الشريك</th>
                     <th>النسبة</th>
-                    <th>الصافي الفعلي للفرد</th>
-                    <th>الصافي الافتراضي للفرد</th>
-                    <th>الصافي النهائي للفرد</th>
+                    <th>حصة الأرباح الإدارية</th>
+                    <th>حصة الأرباح التوريدية</th>
+                    <th>الإجمالي</th>
                 </tr>
             </thead>
             <tbody>
@@ -158,9 +167,7 @@
                 <tr>
                     <td>
                         {{ pp.partner.name }}
-                        {% if pp.partner.is_basic %}
-                        <span class="badge bg-success">أساسي</span>
-                        {% endif %}
+                        {% if pp.partner.is_basic %}<span class="badge bg-success">أساسي</span>{% endif %}
                     </td>
                     <td>{{ pp.partner.percentage }}%</td>
                     <td>{{ pp.actual_share }}</td>
