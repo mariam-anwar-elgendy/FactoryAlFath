@@ -1,0 +1,193 @@
+{% extends "base_almasa.html" %}
+
+{% block title %}تقرير الأرباح - {{ supply.name }}{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h2 class="fw-bold text-warning">📈 تقرير الأرباح - {{ supply.name }}</h2>
+    <div>
+        <a href="{{ url_for('almasa_supply_detail', supply_id=supply.id) }}" class="btn btn-outline-secondary">← رجوع للتوريدة</a>
+        <a href="{{ url_for('almasa_reports') }}" class="btn btn-outline-primary">📊 كل التقارير</a>
+    </div>
+</div>
+
+<!-- بيانات التوريدة -->
+<div class="card border-0 shadow-sm mb-4">
+    <div class="card-header text-white fw-bold" style="background: linear-gradient(90deg, #e65100, #ef6c00);">
+        📦 بيانات التوريدة
+    </div>
+    <div class="card-body">
+        <div class="row">
+            <div class="col-md-3 mb-2"><strong>اسم التوريدة:</strong> {{ supply.name }}</div>
+            <div class="col-md-3 mb-2"><strong>المورد:</strong> {{ supply.supplier_name or '-' }}</div>
+            <div class="col-md-3 mb-2"><strong>العميل:</strong> {{ supply.customer_name or '-' }}</div>
+            <div class="col-md-3 mb-2"><strong>عدد العمليات:</strong> {{ operations|length }}</div>
+        </div>
+    </div>
+</div>
+
+<!-- ✅ ملخص الأرباح الإدارية -->
+<div class="card border-0 shadow-sm mb-4">
+    <div class="card-header text-white fw-bold" style="background: linear-gradient(135deg, #e65100, #ef6c00);">
+        📈 ملخص الأرباح الإدارية
+    </div>
+    <div class="card-body">
+        <div class="row g-3">
+            <div class="col-md-3">
+                <div class="card bg-light h-100">
+                    <div class="card-body text-center">
+                        <h6 class="text-muted">إجمالي العميل</h6>
+                        <h3 class="fw-bold text-warning">{{ total_rental }}</h3>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="card bg-light h-100">
+                    <div class="card-body text-center">
+                        <h6 class="text-muted">إجمالي المورد</h6>
+                        <h3 class="fw-bold text-secondary">{{ total_supply }}</h3>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="card bg-light h-100">
+                    <div class="card-body text-center">
+                        <h6 class="text-muted">المصاريف</h6>
+                        <h3 class="fw-bold text-danger">{{ total_expenses }}</h3>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="card h-100" style="background: linear-gradient(135deg, #e65100, #ef6c00); color: white;">
+                    <div class="card-body text-center">
+                        <h6>الأرباح الإدارية</h6>
+                        <h3 class="fw-bold">{{ admin_profit }}</h3>
+                        <small>العميل - المورد - المصاريف - ضريبة</small>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- ✅ تفاصيل الحسابات -->
+<div class="card border-0 shadow-sm mb-4">
+    <div class="card-header bg-light fw-bold">📊 تفاصيل الحسابات</div>
+    <div class="card-body">
+        <table class="table table-bordered">
+            <tbody>
+                <tr>
+                    <td class="fw-bold">إجمالي سعر العميل</td>
+                    <td class="text-warning fw-bold">{{ total_rental }}</td>
+                </tr>
+                <tr>
+                    <td class="fw-bold">(-) إجمالي سعر المورد</td>
+                    <td class="text-secondary fw-bold">{{ total_supply }}</td>
+                </tr>
+                <tr>
+                    <td class="fw-bold">(-) المصاريف</td>
+                    <td class="text-danger fw-bold">{{ total_expenses }}</td>
+                </tr>
+                <tr>
+                    <td class="fw-bold">(-) ضريبة 8.5% (من سعر العميل)</td>
+                    <td class="text-warning fw-bold">{{ tax_85_amount or 0 }}</td>
+                </tr>
+                <tr class="table-success">
+                    <td class="fw-bold fs-5">= الأرباح الإدارية</td>
+                    <td class="fw-bold fs-5 text-success">{{ admin_profit }}</td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<!-- ✅ إجمالي الأرباح -->
+<div class="alert alert-warning mb-4">
+    <h5 class="fw-bold mb-0">💰 إجمالي الأرباح: {{ admin_profit }}</h5>
+    <small>الأرباح الإدارية (سعر العميل - سعر المورد - المصاريف - ضريبة 8.5%)</small>
+</div>
+
+<!-- ✅ ملخص الضرايب -->
+<div class="card border-0 shadow-sm mb-4">
+    <div class="card-header bg-light fw-bold">📊 الضرايب</div>
+    <div class="card-body">
+        <div class="row g-3">
+            <div class="col-md-6">
+                <div class="card bg-light h-100">
+                    <div class="card-body text-center">
+                        <h6 class="text-muted">إجمالي ضريبة 14%</h6>
+                        <h4 class="fw-bold text-danger">{{ tax_14_amount or 0 }}</h4>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-6">
+                <div class="card bg-light h-100">
+                    <div class="card-body text-center">
+                        <h6 class="text-muted">إجمالي ضريبة 8.5%</h6>
+                        <h4 class="fw-bold text-warning">{{ tax_85_amount or 0 }}</h4>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- ✅ تفاصيل العمليات -->
+<div class="card border-0 shadow-sm">
+    <div class="card-header bg-light fw-bold">⚙️ تفاصيل العمليات</div>
+    <div class="card-body">
+        {% if operations %}
+        <div class="table-responsive">
+            <table class="table table-sm table-striped">
+                <thead>
+                    <tr>
+                        <th>رقم الفاتورة</th>
+                        <th>المشروع</th>
+                        <th>من</th>
+                        <th>إلى</th>
+                        <th>الأيام</th>
+                        <th>سعر المورد</th>
+                        <th>سعر العميل</th>
+                        <th>إجمالي المورد</th>
+                        <th>إجمالي العميل</th>
+                        <th>ضريبة 8.5%</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for op in operations %}
+                    <tr>
+                        <td>{{ op.invoice_number or '-' }}</td>
+                        <td>{{ op.project_name or '-' }}</td>
+                        <td>{{ op.start_date.strftime('%Y-%m-%d') }}</td>
+                        <td>{{ op.end_date.strftime('%Y-%m-%d') if op.end_date else '-' }}</td>
+                        <td>{{ op.days_count }}</td>
+                        <td>{{ op.supply_value }}</td>
+                        <td>{{ op.rental_value }}</td>
+                        <td class="text-secondary">{{ op.supply_total }}</td>
+                        <td class="text-warning fw-bold">{{ op.rental_total }}</td>
+                        <td>
+                            {% if op.tax_85_enabled %}
+                                <span class="badge bg-warning text-dark">
+                                    {{ (op.rental_total * op.tax_85_value / 100)|round(2) }}
+                                </span>
+                            {% else %}-{% endif %}
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+                <tfoot>
+                    <tr class="fw-bold table-secondary">
+                        <td colspan="7">الإجمالي</td>
+                        <td>{{ total_supply }}</td>
+                        <td>{{ total_rental }}</td>
+                        <td>{{ tax_85_amount or 0 }}</td>
+                    </tr>
+                </tfoot>
+            </table>
+        </div>
+        {% else %}
+        <p class="text-muted mb-0">لا توجد عمليات</p>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}
