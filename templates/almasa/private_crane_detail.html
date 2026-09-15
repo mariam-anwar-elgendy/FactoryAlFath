@@ -157,10 +157,9 @@
 
 <!-- الشيكات -->
 <div class="card border-0 shadow-sm">
-    <div class="card-header bg-light fw-bold d-flex justify-content-between align-items-center">
-        <span>💰 الشيكات</span>
-        <button class="btn btn-sm btn-success" data-bs-toggle="modal" data-bs-target="#addCheckModal">➕ إضافة شيك</button>
-    </div>
+    <div class="card-header bg-light fw-bold">
+    💰 الشيكات
+</div>
     <div class="card-body">
         {% if checks %}
         <div class="table-responsive">
@@ -276,42 +275,6 @@
   </div>
 </div>
 
-<!-- ==================== مودال إضافة شيك ==================== -->
-<div class="modal fade" id="addCheckModal" tabindex="-1">
-  <div class="modal-dialog modal-lg">
-    <div class="modal-content">
-      <form method="POST" action="{{ url_for('almasa_add_private_check') }}">
-        <input type="hidden" name="crane_id" value="{{ crane.id }}">
-        <div class="modal-header bg-success text-white"><h5 class="modal-title">➕ إضافة شيك</h5><button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button></div>
-        <div class="modal-body">
-          <div class="row">
-            <div class="col-md-6 mb-3"><label class="form-label fw-bold">رقم الشيك</label><input type="text" name="check_number" class="form-control"></div>
-            <div class="col-md-6 mb-3"><label class="form-label fw-bold">اسم الشركة</label><input type="text" name="company_name" class="form-control"></div>
-          </div>
-          <div class="mb-3"><label class="form-label fw-bold">تاريخ الاستحقاق</label><input type="date" name="due_date" class="form-control" required></div>
-          <div class="mb-3">
-            <label class="form-label fw-bold">اختر العمليات</label>
-            {% if operations %}
-            <div class="border p-2" style="max-height: 300px; overflow-y: auto;">
-              {% for op in operations %}
-              <div class="form-check">
-                <input class="form-check-input" type="checkbox" name="operation_ids[]" value="{{ op.id }}" id="pop{{ op.id }}">
-                <label class="form-check-label" for="pop{{ op.id }}">
-                  {% if op.invoice_number %}<strong>فاتورة: {{ op.invoice_number }}</strong> - {% endif %}
-                  من {{ op.start_date.strftime('%Y-%m-%d') }} {% if op.end_date %}إلى {{ op.end_date.strftime('%Y-%m-%d') }}{% endif %}
-                  - {{ op.days_count }} يوم - التأجير: {{ op.rental_total }}
-                </label>
-              </div>
-              {% endfor %}
-            </div>
-            {% else %}<p class="text-muted">لا توجد عمليات</p>{% endif %}
-          </div>
-        </div>
-        <div class="modal-footer"><button type="button" class="btn btn-secondary" data-bs-dismiss="modal">إلغاء</button><button type="submit" class="btn btn-success">حفظ</button></div>
-      </form>
-    </div>
-  </div>
-</div>
 
 <!-- ==================== مودالات استلام الشيك ==================== -->
 {% for op in operations if not op.check_received %}
