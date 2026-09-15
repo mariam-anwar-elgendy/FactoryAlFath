@@ -65,3 +65,74 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     }
 });
+
+// ========== تحديث عدّاد الشات (كل 10 ثواني) ==========
+document.addEventListener('DOMContentLoaded', function() {
+    const navbarBadge = document.querySelector('.navbar-badge');
+    const sidebarBadge = document.querySelector('.sidebar-chat-badge');
+    
+    // لو مفيش badges، مش محتاجين نعمل حاجة
+    if (!navbarBadge && !sidebarBadge) return;
+
+    function updateChatBadge() {
+        fetch('/chat/unread-count')
+            .then(response => response.json())
+            .then(data => {
+                if (navbarBadge) {
+                    if (data.total > 0) {
+                        navbarBadge.innerText = data.total;
+                        navbarBadge.style.display = 'inline-block';
+                    } else {
+                        navbarBadge.style.display = 'none';
+                    }
+                }
+                if (sidebarBadge) {
+                    if (data.total > 0) {
+                        sidebarBadge.innerText = data.total;
+                        sidebarBadge.style.display = 'inline-block';
+                    } else {
+                        sidebarBadge.style.display = 'none';
+                    }
+                }
+            })
+            .catch(error => {
+                // نتجاهل الأخطاء (مثلاً لو المستخدم مش مسجل دخول)
+            });
+    }
+
+    updateChatBadge();
+    setInterval(updateChatBadge, 10000);
+});
+
+// ========== تحسينات الموبايل للنماذج ==========
+document.addEventListener('DOMContentLoaded', function() {
+    // تصغير الخط في الحقول على الموبايل تلقائياً
+    if (window.innerWidth <= 768) {
+        document.querySelectorAll('input, select, textarea').forEach(function(input) {
+            // منع الـ zoom التلقائي على iOS
+            if (input.type !== 'checkbox' && input.type !== 'radio' && input.type !== 'file') {
+                if (!input.style.fontSize) {
+                    input.style.fontSize = '16px';
+                }
+            }
+        });
+    }
+});
+
+// ========== منع الـ zoom التلقائي على iOS ==========
+document.addEventListener('DOMContentLoaded', function() {
+    // منع pinch zoom على iOS
+    document.addEventListener('gesturestart', function(e) {
+        e.preventDefault();
+    });
+    
+    // منع double-tap zoom
+    let lastTouchEnd = 0;
+    document.addEventListener('touchend', function(e) {
+        const now = (new Date()).getTime();
+        if (now - lastTouchEnd <= 300) {
+            e.preventDefault();
+        }
+        lastTouchEnd = now;
+    }, false);
+});
