@@ -27,7 +27,7 @@ class User(UserMixin, db.Model):
     def check_password(self, password):
         return check_password_hash(self.password_hash, password)
 
-# ==================== التصنيفات والمقاسات والسماكات ====================
+# ==================== التصنيفات ====================
 class Category(db.Model):
     __tablename__ = 'categories'
     id = db.Column(db.Integer, primary_key=True)
@@ -90,7 +90,7 @@ class FactoryDiary(db.Model):
     created_by = db.Column(db.Integer, db.ForeignKey('users.id'))
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
 
-# ==================== المحل - المبيعات ====================
+# ==================== المحل ====================
 class StoreSale(db.Model):
     __tablename__ = 'store_sales'
     id = db.Column(db.Integer, primary_key=True)
@@ -116,7 +116,6 @@ class StoreSale(db.Model):
     def remaining(self):
         return self.total - self.paid_amount
 
-# ==================== المحل - المشتريات ====================
 class StorePurchase(db.Model):
     __tablename__ = 'store_purchases'
     id = db.Column(db.Integer, primary_key=True)
@@ -142,7 +141,6 @@ class StorePurchase(db.Model):
     def remaining(self):
         return self.total - self.paid_amount
 
-# ==================== بنود المبيعات ====================
 class StoreSaleItem(db.Model):
     __tablename__ = 'store_sale_items'
     id = db.Column(db.Integer, primary_key=True)
@@ -154,7 +152,6 @@ class StoreSaleItem(db.Model):
     unit_price = db.Column(db.Float, default=0)
     total = db.Column(db.Float, default=0)
 
-# ==================== بنود المشتريات ====================
 class StorePurchaseItem(db.Model):
     __tablename__ = 'store_purchase_items'
     id = db.Column(db.Integer, primary_key=True)
@@ -166,7 +163,6 @@ class StorePurchaseItem(db.Model):
     unit_price = db.Column(db.Float, default=0)
     total = db.Column(db.Float, default=0)
 
-# ==================== المخزون ====================
 class StoreInventory(db.Model):
     __tablename__ = 'store_inventory'
     id = db.Column(db.Integer, primary_key=True)
@@ -176,7 +172,6 @@ class StoreInventory(db.Model):
     current_quantity = db.Column(db.Float, default=0)
     min_quantity = db.Column(db.Float, default=0)
 
-# ==================== الاستلام ====================
 class StoreReceiving(db.Model):
     __tablename__ = 'store_receiving'
     id = db.Column(db.Integer, primary_key=True)
@@ -190,7 +185,6 @@ class StoreReceiving(db.Model):
     created_by = db.Column(db.Integer, db.ForeignKey('users.id'))
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
 
-# ==================== المرتجعات ====================
 class StoreReturn(db.Model):
     __tablename__ = 'store_returns'
     id = db.Column(db.Integer, primary_key=True)
@@ -205,7 +199,6 @@ class StoreReturn(db.Model):
     created_by = db.Column(db.Integer, db.ForeignKey('users.id'))
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
 
-# ==================== يوميات المحل ====================
 class StoreDiary(db.Model):
     __tablename__ = 'store_diary'
     id = db.Column(db.Integer, primary_key=True)
@@ -215,7 +208,6 @@ class StoreDiary(db.Model):
     created_by = db.Column(db.Integer, db.ForeignKey('users.id'))
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
 
-# ==================== الدفعات ====================
 class Payment(db.Model):
     __tablename__ = 'payments'
     id = db.Column(db.Integer, primary_key=True)
@@ -289,12 +281,11 @@ class ActivityLog(db.Model):
     details = db.Column(db.Text)
     timestamp = db.Column(db.DateTime, default=datetime.utcnow)
 
-# ==================== الجرد (المخزون + الخزينة) ====================
 class InventoryAudit(db.Model):
     __tablename__ = 'inventory_audits'
     id = db.Column(db.Integer, primary_key=True)
     audit_date = db.Column(db.Date, nullable=False)
-    audit_type = db.Column(db.String(20), nullable=False)  # 'store' / 'treasury'
+    audit_type = db.Column(db.String(20), nullable=False)
     item_name = db.Column(db.String(200))
     item_size = db.Column(db.String(50))
     item_spec = db.Column(db.String(50))
@@ -308,11 +299,11 @@ class InventoryAudit(db.Model):
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
 
 # ====================================================================
-# ==================== شركة الماسة - الأنواع الثلاثة ====================
+# ==================== شركة الماسة ====================
 # ====================================================================
 
 # --------------------------------------------------------------------
-# النوع 1: ونش مشاركة براس المال
+# النوع 1: ونش مشاركة
 # --------------------------------------------------------------------
 class AlMasaCrane(db.Model):
     __tablename__ = 'almasa_cranes'
@@ -341,11 +332,26 @@ class AlMasaOperation(db.Model):
     crane_id = db.Column(db.Integer, db.ForeignKey('almasa_cranes.id'), nullable=False)
     start_date = db.Column(db.Date, nullable=False)
     end_date = db.Column(db.Date)
-    actual_daily_value = db.Column(db.Float, default=0)
-    default_daily_value = db.Column(db.Float, default=0)
+    supply_value = db.Column(db.Float, default=0)
+    rental_value = db.Column(db.Float, default=0)
+    supply_total = db.Column(db.Float, default=0)
+    rental_total = db.Column(db.Float, default=0)
     days_count = db.Column(db.Integer, default=0)
-    actual_total = db.Column(db.Float, default=0)
-    default_total = db.Column(db.Float, default=0)
+    extra_hours = db.Column(db.Float, default=0)
+    hour_rate = db.Column(db.Float, default=0)
+    travel_days = db.Column(db.Float, default=0)
+    travel_rate = db.Column(db.Float, default=0)
+    tax_14_enabled = db.Column(db.Boolean, default=False)
+    tax_14_value = db.Column(db.Float, default=14)
+    tax_85_enabled = db.Column(db.Boolean, default=False)
+    tax_85_value = db.Column(db.Float, default=8.5)
+    invoice_number = db.Column(db.String(50))
+    invoice_date = db.Column(db.Date)
+    project_name = db.Column(db.String(200))
+    project_location = db.Column(db.String(200))
+    payment_method = db.Column(db.String(20))
+    check_received = db.Column(db.Boolean, default=False)
+    check_received_date = db.Column(db.Date)
     notes = db.Column(db.Text)
     created_by = db.Column(db.Integer, db.ForeignKey('users.id'))
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
@@ -354,9 +360,11 @@ class AlMasaCheck(db.Model):
     __tablename__ = 'almasa_checks'
     id = db.Column(db.Integer, primary_key=True)
     crane_id = db.Column(db.Integer, db.ForeignKey('almasa_cranes.id'), nullable=False)
+    operation_id = db.Column(db.Integer, db.ForeignKey('almasa_operations.id'))
     check_number = db.Column(db.String(50))
     company_name = db.Column(db.String(150))
     amount = db.Column(db.Float, default=0)
+    issue_date = db.Column(db.Date)
     due_date = db.Column(db.Date)
     status = db.Column(db.String(20), default='معلق')
     created_by = db.Column(db.Integer, db.ForeignKey('users.id'))
@@ -372,15 +380,17 @@ class AlMasaExpense(db.Model):
     __tablename__ = 'almasa_expenses'
     id = db.Column(db.Integer, primary_key=True)
     crane_id = db.Column(db.Integer, db.ForeignKey('almasa_cranes.id'), nullable=False)
+    operation_id = db.Column(db.Integer, db.ForeignKey('almasa_operations.id'))
     date = db.Column(db.Date, nullable=False)
     expense_type = db.Column(db.String(50))
     amount = db.Column(db.Float, default=0)
+    paid_by = db.Column(db.String(100))
     notes = db.Column(db.Text)
     created_by = db.Column(db.Integer, db.ForeignKey('users.id'))
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
 
 # --------------------------------------------------------------------
-# النوع 2: ونش خاص (شخص واحد)
+# النوع 2: ونش خاص
 # --------------------------------------------------------------------
 class AlMasaPrivateCrane(db.Model):
     __tablename__ = 'almasa_private_cranes'
@@ -399,11 +409,26 @@ class AlMasaPrivateOperation(db.Model):
     crane_id = db.Column(db.Integer, db.ForeignKey('almasa_private_cranes.id'), nullable=False)
     start_date = db.Column(db.Date, nullable=False)
     end_date = db.Column(db.Date)
-    actual_daily_value = db.Column(db.Float, default=0)
-    default_daily_value = db.Column(db.Float, default=0)
+    supply_value = db.Column(db.Float, default=0)
+    rental_value = db.Column(db.Float, default=0)
+    supply_total = db.Column(db.Float, default=0)
+    rental_total = db.Column(db.Float, default=0)
     days_count = db.Column(db.Integer, default=0)
-    actual_total = db.Column(db.Float, default=0)
-    default_total = db.Column(db.Float, default=0)
+    extra_hours = db.Column(db.Float, default=0)
+    hour_rate = db.Column(db.Float, default=0)
+    travel_days = db.Column(db.Float, default=0)
+    travel_rate = db.Column(db.Float, default=0)
+    tax_14_enabled = db.Column(db.Boolean, default=False)
+    tax_14_value = db.Column(db.Float, default=14)
+    tax_85_enabled = db.Column(db.Boolean, default=False)
+    tax_85_value = db.Column(db.Float, default=8.5)
+    invoice_number = db.Column(db.String(50))
+    invoice_date = db.Column(db.Date)
+    project_name = db.Column(db.String(200))
+    project_location = db.Column(db.String(200))
+    payment_method = db.Column(db.String(20))
+    check_received = db.Column(db.Boolean, default=False)
+    check_received_date = db.Column(db.Date)
     notes = db.Column(db.Text)
     created_by = db.Column(db.Integer, db.ForeignKey('users.id'))
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
@@ -412,9 +437,11 @@ class AlMasaPrivateCheck(db.Model):
     __tablename__ = 'almasa_private_checks'
     id = db.Column(db.Integer, primary_key=True)
     crane_id = db.Column(db.Integer, db.ForeignKey('almasa_private_cranes.id'), nullable=False)
+    operation_id = db.Column(db.Integer, db.ForeignKey('almasa_private_operations.id'))
     check_number = db.Column(db.String(50))
     company_name = db.Column(db.String(150))
     amount = db.Column(db.Float, default=0)
+    issue_date = db.Column(db.Date)
     due_date = db.Column(db.Date)
     status = db.Column(db.String(20), default='معلق')
     created_by = db.Column(db.Integer, db.ForeignKey('users.id'))
@@ -430,9 +457,11 @@ class AlMasaPrivateExpense(db.Model):
     __tablename__ = 'almasa_private_expenses'
     id = db.Column(db.Integer, primary_key=True)
     crane_id = db.Column(db.Integer, db.ForeignKey('almasa_private_cranes.id'), nullable=False)
+    operation_id = db.Column(db.Integer, db.ForeignKey('almasa_private_operations.id'))
     date = db.Column(db.Date, nullable=False)
     expense_type = db.Column(db.String(50))
     amount = db.Column(db.Float, default=0)
+    paid_by = db.Column(db.String(100))
     notes = db.Column(db.Text)
     created_by = db.Column(db.Integer, db.ForeignKey('users.id'))
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
@@ -458,10 +487,25 @@ class AlMasaSupplyOperation(db.Model):
     start_date = db.Column(db.Date, nullable=False)
     end_date = db.Column(db.Date)
     days_count = db.Column(db.Integer, default=0)
-    supplier_daily_rate = db.Column(db.Float, default=0)
-    customer_daily_rate = db.Column(db.Float, default=0)
-    supplier_total = db.Column(db.Float, default=0)
-    customer_total = db.Column(db.Float, default=0)
+    supply_value = db.Column(db.Float, default=0)
+    rental_value = db.Column(db.Float, default=0)
+    supply_total = db.Column(db.Float, default=0)
+    rental_total = db.Column(db.Float, default=0)
+    extra_hours = db.Column(db.Float, default=0)
+    hour_rate = db.Column(db.Float, default=0)
+    travel_days = db.Column(db.Float, default=0)
+    travel_rate = db.Column(db.Float, default=0)
+    tax_14_enabled = db.Column(db.Boolean, default=False)
+    tax_14_value = db.Column(db.Float, default=14)
+    tax_85_enabled = db.Column(db.Boolean, default=False)
+    tax_85_value = db.Column(db.Float, default=8.5)
+    invoice_number = db.Column(db.String(50))
+    invoice_date = db.Column(db.Date)
+    project_name = db.Column(db.String(200))
+    project_location = db.Column(db.String(200))
+    payment_method = db.Column(db.String(20))
+    check_received = db.Column(db.Boolean, default=False)
+    check_received_date = db.Column(db.Date)
     notes = db.Column(db.Text)
     created_by = db.Column(db.Integer, db.ForeignKey('users.id'))
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
@@ -470,15 +514,17 @@ class AlMasaSupplyExpense(db.Model):
     __tablename__ = 'almasa_supply_expenses'
     id = db.Column(db.Integer, primary_key=True)
     supply_id = db.Column(db.Integer, db.ForeignKey('almasa_supplies.id'), nullable=False)
+    operation_id = db.Column(db.Integer, db.ForeignKey('almasa_supply_operations.id'))
     date = db.Column(db.Date, nullable=False)
     expense_type = db.Column(db.String(50))
     amount = db.Column(db.Float, default=0)
+    paid_by = db.Column(db.String(100))
     notes = db.Column(db.Text)
     created_by = db.Column(db.Integer, db.ForeignKey('users.id'))
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
 
 # --------------------------------------------------------------------
-# حساب الشريك / العميل (منفصل)
+# حساب الشريك / العميل
 # --------------------------------------------------------------------
 class AlMasaPartnerAccount(db.Model):
     __tablename__ = 'almasa_partner_accounts'
