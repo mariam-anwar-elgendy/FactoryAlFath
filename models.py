@@ -299,46 +299,6 @@ class InventoryAudit(db.Model):
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
 
 # ====================================================================
-# ==================== الشات ====================
-# ====================================================================
-
-class ChatMessage(db.Model):
-    __tablename__ = 'chat_messages'
-    id = db.Column(db.Integer, primary_key=True)
-    sender_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
-    recipient_id = db.Column(db.Integer, db.ForeignKey('users.id'))  # للشات الفردي
-    group_id = db.Column(db.Integer, db.ForeignKey('chat_groups.id'))  # للشات الجماعي
-    message = db.Column(db.Text)  # ممكن يكون NULL لو الرسالة محذوفة
-    is_deleted = db.Column(db.Boolean, default=False)  # علامة "تم الحذف"
-    is_read = db.Column(db.Boolean, default=False)
-    created_at = db.Column(db.DateTime, default=datetime.utcnow)
-    sender = db.relationship('User', foreign_keys=[sender_id], backref='sent_messages')
-    recipient = db.relationship('User', foreign_keys=[recipient_id], backref='received_messages')
-
-    @property
-    def display_message(self):
-        if self.is_deleted:
-            return '🚫 تم حذف هذه الرسالة'
-        return self.message or ''
-
-class ChatGroup(db.Model):
-    __tablename__ = 'chat_groups'
-    id = db.Column(db.Integer, primary_key=True)
-    name = db.Column(db.String(100), nullable=False)
-    created_by = db.Column(db.Integer, db.ForeignKey('users.id'))
-    created_at = db.Column(db.DateTime, default=datetime.utcnow)
-    members = db.relationship('ChatGroupMember', backref='group', lazy=True, cascade='all, delete-orphan')
-    messages = db.relationship('ChatMessage', backref='group', lazy=True, cascade='all, delete-orphan')
-
-class ChatGroupMember(db.Model):
-    __tablename__ = 'chat_group_members'
-    id = db.Column(db.Integer, primary_key=True)
-    group_id = db.Column(db.Integer, db.ForeignKey('chat_groups.id'), nullable=False)
-    user_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
-    joined_at = db.Column(db.DateTime, default=datetime.utcnow)
-    user = db.relationship('User', backref='chat_groups')
-
-# ====================================================================
 # ==================== شركة الماسة ====================
 # ====================================================================
 
@@ -577,3 +537,44 @@ class AlMasaPartnerAccount(db.Model):
     notes = db.Column(db.Text)
     created_by = db.Column(db.Integer, db.ForeignKey('users.id'))
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
+
+# ====================================================================
+# ==================== الشات ====================
+# ====================================================================
+
+# ⚠️ مهم: ChatGroup و ChatGroupMember قبل ChatMessage
+class ChatGroup(db.Model):
+    __tablename__ = 'chat_groups'
+    id = db.Column(db.Integer, primary_key=True)
+    name = db.Column(db.String(100), nullable=False)
+    created_by = db.Column(db.Integer, db.ForeignKey('users.id'))
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    members = db.relationship('ChatGroupMember', backref='group', lazy=True, cascade='all, delete-orphan')
+    messages = db.relationship('ChatMessage', backref='group', lazy=True, cascade='all, delete-orphan')
+
+class ChatGroupMember(db.Model):
+    __tablename__ = 'chat_group_members'
+    id = db.Column(db.Integer, primary_key=True)
+    group_id = db.Column(db.Integer, db.ForeignKey('chat_groups.id'), nullable=False)
+    user_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
+    joined_at = db.Column(db.DateTime, default=datetime.utcnow)
+    user = db.relationship('User', backref='chat_groups')
+
+class ChatMessage(db.Model):
+    __tablename__ = 'chat_messages'
+    id = db.Column(db.Integer, primary_key=True)
+    sender_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
+    recipient_id = db.Column(db.Integer, db.ForeignKey('users.id'))
+    group_id = db.Column(db.Integer, db.ForeignKey('chat_groups.id'))
+    message = db.Column(db.Text)
+    is_deleted = db.Column(db.Boolean, default=False)
+    is_read = db.Column(db.Boolean, default=False)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    sender = db.relationship('User', foreign_keys=[sender_id], backref='sent_messages')
+    recipient = db.relationship('User', foreign_keys=[recipient_id], backref='received_messages')
+
+    @property
+    def display_message(self):
+        if self.is_deleted:
+            return '🚫 تم حذف هذه الرسالة'
+        return self.message or ''
