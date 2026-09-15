@@ -12,8 +12,8 @@
     <div class="col-md-3">
         <div class="card border-0 shadow-sm">
             <div class="card-body text-center">
-                <h6 class="text-muted">إجمالي الفعلي</h6>
-                <h4 class="fw-bold">{{ total_actual }}</h4>
+                <h6 class="text-muted">إجمالي التأجير</h6>
+                <h4 class="fw-bold text-primary">{{ total_rental }}</h4>
             </div>
         </div>
     </div>
@@ -28,16 +28,16 @@
     <div class="col-md-3">
         <div class="card border-0 shadow-sm">
             <div class="card-body text-center">
-                <h6 class="text-muted">الصافي الفعلي</h6>
-                <h4 class="fw-bold text-success">{{ net_actual }}</h4>
+                <h6 class="text-muted">الصافي لصاحب الونش</h6>
+                <h4 class="fw-bold text-success">{{ owner_share }}</h4>
             </div>
         </div>
     </div>
     <div class="col-md-3">
         <div class="card border-0 shadow-sm">
             <div class="card-body text-center">
-                <h6 class="text-muted">الصافي النهائي</h6>
-                <h4 class="fw-bold text-primary">{{ owner_share }}</h4>
+                <h6 class="text-muted">عدد العمليات</h6>
+                <h4 class="fw-bold text-info">{{ operations|length }}</h4>
             </div>
         </div>
     </div>
