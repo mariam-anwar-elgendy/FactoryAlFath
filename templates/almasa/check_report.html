@@ -72,7 +72,9 @@
                 </tfoot>
             </table>
         </div>
-        {% else %}<p class="text-muted mb-0">لا توجد عمليات</p>{% endif %}
+        {% else %}
+        <p class="text-muted mb-0">لا توجد عمليات</p>
+        {% endif %}
     </div>
 </div>
 
@@ -82,20 +84,30 @@
     <div class="card-body">
         {% if expenses %}
         <table class="table table-sm">
-            <thead><tr><th>التاريخ</th><th>النوع</th><th>المبلغ</th><th>دفعه</th></tr></thead>
+            <thead>
+                <tr><th>التاريخ</th><th>النوع</th><th>المبلغ</th><th>دفعه</th></tr>
+            </thead>
             <tbody>
                 {% for exp in expenses %}
                 <tr>
                     <td>{{ exp.date.strftime('%Y-%m-%d') }}</td>
                     <td>{{ exp.expense_type }}</td>
                     <td>{{ exp.amount }}</td>
-                    <td>{% if exp.paid_by %}<span class="badge bg-info">{{ exp.paid_by }}</span>{% else %}-{% endif %}</td>
+                    <td>
+                        {% if exp.paid_by %}
+                        <span class="badge bg-info">{{ exp.paid_by }}</span>
+                        {% else %}-{% endif %}
+                    </td>
                 </tr>
                 {% endfor %}
             </tbody>
-            <tfoot><tr class="fw-bold"><td colspan="2">إجمالي المصاريف</td><td>{{ total_expenses }}</td><td></td></tr></tfoot>
+            <tfoot>
+                <tr class="fw-bold"><td colspan="2">إجمالي المصاريف</td><td>{{ total_expenses }}</td><td></td></tr>
+            </tfoot>
         </table>
-        {% else %}<p class="text-muted mb-0">لا توجد مصاريف</p>{% endif %}
+        {% else %}
+        <p class="text-muted mb-0">لا توجد مصاريف</p>
+        {% endif %}
     </div>
 </div>
 
