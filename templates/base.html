@@ -52,6 +52,10 @@
             font-size: 0.65rem;
             padding: 2px 6px;
         }
+        .navbar-badge {
+            font-size: 0.6rem;
+            padding: 2px 5px;
+        }
     </style>
 </head>
 <body>
@@ -64,10 +68,11 @@
                 🏭 مصنع الفتح
             </a>
             <div class="d-flex align-items-center text-white">
+                <!-- ✅ زرار الشات -->
                 <a href="{{ url_for('chat_index') }}" class="btn btn-outline-light btn-sm me-2 position-relative">
                     <i class="fas fa-comments"></i>
                     {% if unread_messages_count and unread_messages_count > 0 %}
-                    <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger">
+                    <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger navbar-badge">
                         {{ unread_messages_count }}
                     </span>
                     {% endif %}
@@ -103,9 +108,7 @@
                         <li class="nav-item">
                             <a class="nav-link text-white" href="{{ url_for('chat_index') }}">
                                 <i class="fas fa-comments ms-2"></i> الشات
-                                {% if unread_messages_count and unread_messages_count > 0 %}
-                                <span class="badge bg-danger">{{ unread_messages_count }}</span>
-                                {% endif %}
+                                <span class="badge bg-danger sidebar-chat-badge" style="display:none;">0</span>
                             </a>
                         </li>
 
@@ -253,6 +256,40 @@
             document.getElementById('sidebar').classList.remove('show');
             document.getElementById('sidebarBackdrop').classList.remove('show');
         });
+
+        // ✅ تحديث عدّاد الرسائل كل 10 ثواني
+        function updateChatBadge() {
+            fetch('{{ url_for("chat_unread_count") }}')
+                .then(response => response.json())
+                .then(data => {
+                    // النافبار
+                    const navBadge = document.querySelector('.navbar-badge');
+                    if (navBadge) {
+                        if (data.total > 0) {
+                            navBadge.innerText = data.total;
+                            navBadge.style.display = 'inline-block';
+                        } else {
+                            navBadge.style.display = 'none';
+                        }
+                    }
+                    // السايد بار
+                    const sidebarBadge = document.querySelector('.sidebar-chat-badge');
+                    if (sidebarBadge) {
+                        if (data.total > 0) {
+                            sidebarBadge.innerText = data.total;
+                            sidebarBadge.style.display = 'inline-block';
+                        } else {
+                            sidebarBadge.style.display = 'none';
+                        }
+                    }
+                })
+                .catch(error => console.error('Error:', error));
+        }
+        
+        {% if current_user.is_authenticated %}
+        updateChatBadge();
+        setInterval(updateChatBadge, 10000);
+        {% endif %}
     </script>
     {% block extra_js %}{% endblock %}
 </body>
