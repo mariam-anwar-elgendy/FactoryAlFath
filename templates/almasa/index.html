@@ -7,76 +7,123 @@
     <h2 class="fw-bold text-primary">🏗️ شركة الماسة</h2>
 </div>
 
-<!-- ✅ الإجماليات العامة -->
-<div class="row mb-4">
-    <div class="col-md-3 mb-3">
+<!-- ✅ الإحصائيات الرئيسية -->
+<div class="row g-3 mb-4">
+    <div class="col-md-3 col-6">
         <div class="card border-0 shadow-sm h-100 bg-light">
             <div class="card-body text-center">
                 <div style="font-size: 2rem;">🏗️</div>
                 <h5 class="fw-bold mt-2">{{ partnership_cranes|length }}</h5>
-                <p class="text-muted mb-0">أوناش مشاركة</p>
-                <hr>
-                <h6 class="text-primary fw-bold">{{ total_partnership }}</h6>
+                <p class="text-muted mb-0 small">أوناش مشاركة</p>
+                <hr class="my-2">
+                <h6 class="text-primary fw-bold mb-0">{{ total_partnership }}</h6>
+                <small class="text-muted">إجمالي</small>
             </div>
         </div>
     </div>
-    <div class="col-md-3 mb-3">
+    <div class="col-md-3 col-6">
         <div class="card border-0 shadow-sm h-100 bg-light">
             <div class="card-body text-center">
                 <div style="font-size: 2rem;">🚛</div>
                 <h5 class="fw-bold mt-2">{{ private_cranes|length }}</h5>
-                <p class="text-muted mb-0">أوناش خاصة</p>
-                <hr>
-                <h6 class="text-success fw-bold">{{ total_private }}</h6>
+                <p class="text-muted mb-0 small">أوناش خاصة</p>
+                <hr class="my-2">
+                <h6 class="text-success fw-bold mb-0">{{ total_private }}</h6>
+                <small class="text-muted">إجمالي</small>
             </div>
         </div>
     </div>
-    <div class="col-md-3 mb-3">
+    <div class="col-md-3 col-6">
         <div class="card border-0 shadow-sm h-100 bg-light">
             <div class="card-body text-center">
                 <div style="font-size: 2rem;">📦</div>
                 <h5 class="fw-bold mt-2">{{ supplies|length }}</h5>
-                <p class="text-muted mb-0">توريدات</p>
-                <hr>
-                <h6 class="text-warning fw-bold">{{ total_supply }}</h6>
+                <p class="text-muted mb-0 small">توريدات</p>
+                <hr class="my-2">
+                <h6 class="text-warning fw-bold mb-0">{{ total_supply }}</h6>
+                <small class="text-muted">إجمالي</small>
             </div>
         </div>
     </div>
-    <div class="col-md-3 mb-3">
+    <div class="col-md-3 col-6">
         <div class="card border-0 shadow-sm h-100 bg-light">
             <div class="card-body text-center">
                 <div style="font-size: 2rem;">💰</div>
                 <h5 class="fw-bold mt-2">{{ grand_total }}</h5>
-                <p class="text-muted mb-0">الإجمالي العام</p>
-                <hr>
-                <a href="{{ url_for('almasa_unpaid_operations') }}" class="btn btn-sm btn-danger">
-                    غير مدفوع: {{ total_unpaid }}
+                <p class="text-muted mb-0 small">الإجمالي العام</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- ✅ الإجماليات المهمة -->
+<div class="row g-3 mb-4">
+    <div class="col-md-4">
+        <div class="card border-0 shadow-sm h-100" style="background: linear-gradient(135deg, #dc3545, #c82333); color: white;">
+            <div class="card-body text-center">
+                <div style="font-size: 2rem;">💸</div>
+                <h5 class="fw-bold mt-2">إجمالي اللي ليكي عند الناس</h5>
+                <h3 class="fw-bold mb-0">{{ total_unpaid }}</h3>
+                <small>العمليات غير المدفوعة</small>
+                <br>
+                <a href="{{ url_for('almasa_unpaid_operations') }}" class="btn btn-light btn-sm mt-2">
+                    عرض التفاصيل
                 </a>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="card border-0 shadow-sm h-100" style="background: linear-gradient(135deg, #28a745, #1e7e34); color: white;">
+            <div class="card-body text-center">
+                <div style="font-size: 2rem;">✅</div>
+                <h5 class="fw-bold mt-2">إجمالي اللي استلمناه</h5>
+                <h3 class="fw-bold mb-0">{{ total_paid or 0 }}</h3>
+                <small>العمليات المدفوعة</small>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="card border-0 shadow-sm h-100" style="background: linear-gradient(135deg, #17a2b8, #117a8b); color: white;">
+            <div class="card-body text-center">
+                <div style="font-size: 2rem;">📊</div>
+                <h5 class="fw-bold mt-2">إجمالي الأرباح</h5>
+                <h3 class="fw-bold mb-0">{{ total_profit or 0 }}</h3>
+                <small>الأرباح الإدارية + التوريدية</small>
             </div>
         </div>
     </div>
 </div>
 
 <!-- أزرار سريعة -->
-<div class="row mb-4">
-    <div class="col-md-3 mb-2">
-        <a href="{{ url_for('almasa_cranes') }}" class="btn btn-primary w-100 py-3">🏗️ الأوناش (مشاركة)</a>
+<div class="row g-2 mb-4">
+    <div class="col-md-3 col-6">
+        <a href="{{ url_for('almasa_cranes') }}" class="btn btn-primary w-100 py-3">
+            🏗️ الأوناش (مشاركة)
+        </a>
     </div>
-    <div class="col-md-3 mb-2">
-        <a href="{{ url_for('almasa_private_cranes') }}" class="btn btn-success w-100 py-3">🚛 أوناش خاصة</a>
+    <div class="col-md-3 col-6">
+        <a href="{{ url_for('almasa_private_cranes') }}" class="btn btn-success w-100 py-3">
+            🚛 أوناش خاصة
+        </a>
     </div>
-    <div class="col-md-3 mb-2">
-        <a href="{{ url_for('almasa_supplies') }}" class="btn btn-warning w-100 py-3">📦 توريدات</a>
+    <div class="col-md-3 col-6">
+        <a href="{{ url_for('almasa_supplies') }}" class="btn btn-warning w-100 py-3">
+            📦 توريدات
+        </a>
     </div>
-    <div class="col-md-3 mb-2">
-        <a href="{{ url_for('almasa_partner_accounts') }}" class="btn btn-info w-100 py-3">👤 حساب الشريك</a>
+    <div class="col-md-3 col-6">
+        <a href="{{ url_for('almasa_partner_accounts') }}" class="btn btn-info w-100 py-3">
+            👤 حساب الشريك
+        </a>
     </div>
 </div>
 
 <!-- قائمة الأوناش (مشاركة) -->
 <div class="card border-0 shadow-sm mb-4">
-    <div class="card-header text-white fw-bold" style="background: linear-gradient(90deg, #1a237e, #283593);">
-        🏗️ الأوناش (مشاركة)
+    <div class="card-header text-white fw-bold d-flex justify-content-between align-items-center" 
+         style="background: linear-gradient(90deg, #1a237e, #283593);">
+        <span>🏗️ الأوناش (مشاركة)</span>
+        <a href="{{ url_for('almasa_cranes') }}" class="btn btn-sm btn-light">عرض الكل</a>
     </div>
     <div class="card-body">
         {% if partnership_cranes %}
@@ -88,6 +135,7 @@
                         <th>الشركاء</th>
                         <th>العمليات</th>
                         <th>الإجمالي</th>
+                        <th>غير مدفوع</th>
                         <th>إجراءات</th>
                     </tr>
                 </thead>
@@ -97,7 +145,16 @@
                         <td>{{ crane.name }}</td>
                         <td>{{ crane.partners|length }}</td>
                         <td>{{ crane.operations|length }}</td>
-                        <td class="fw-bold">{{ crane.operations|sum(attribute='rental_total') }}</td>
+                        <td class="fw-bold text-primary">{{ crane.operations|sum(attribute='rental_total') or 0 }}</td>
+                        <td class="text-danger">
+                            {% set unpaid = [] %}
+                            {% for op in crane.operations %}
+                                {% if not op.check_received %}
+                                    {% set _ = unpaid.append(op.rental_total or 0) %}
+                                {% endif %}
+                            {% endfor %}
+                            {{ unpaid|sum or 0 }}
+                        </td>
                         <td>
                             <a href="{{ url_for('almasa_crane_detail', crane_id=crane.id) }}" class="btn btn-sm btn-primary">عرض</a>
                             <a href="{{ url_for('almasa_crane_report', crane_id=crane.id) }}" class="btn btn-sm btn-info">📊</a>
@@ -115,8 +172,10 @@
 
 <!-- قائمة الأوناش الخاصة -->
 <div class="card border-0 shadow-sm mb-4">
-    <div class="card-header text-white fw-bold" style="background: linear-gradient(90deg, #1b5e20, #2e7d32);">
-        🚛 الأوناش الخاصة
+    <div class="card-header text-white fw-bold d-flex justify-content-between align-items-center" 
+         style="background: linear-gradient(90deg, #1b5e20, #2e7d32);">
+        <span>🚛 الأوناش الخاصة</span>
+        <a href="{{ url_for('almasa_private_cranes') }}" class="btn btn-sm btn-light">عرض الكل</a>
     </div>
     <div class="card-body">
         {% if private_cranes %}
@@ -128,6 +187,7 @@
                         <th>صاحب الونش</th>
                         <th>العمليات</th>
                         <th>الإجمالي</th>
+                        <th>غير مدفوع</th>
                         <th>إجراءات</th>
                     </tr>
                 </thead>
@@ -137,7 +197,16 @@
                         <td>{{ crane.name }}</td>
                         <td>{{ crane.owner_name }}</td>
                         <td>{{ crane.operations|length }}</td>
-                        <td class="fw-bold">{{ crane.operations|sum(attribute='rental_total') }}</td>
+                        <td class="fw-bold text-success">{{ crane.operations|sum(attribute='rental_total') or 0 }}</td>
+                        <td class="text-danger">
+                            {% set unpaid = [] %}
+                            {% for op in crane.operations %}
+                                {% if not op.check_received %}
+                                    {% set _ = unpaid.append(op.rental_total or 0) %}
+                                {% endif %}
+                            {% endfor %}
+                            {{ unpaid|sum or 0 }}
+                        </td>
                         <td>
                             <a href="{{ url_for('almasa_private_crane_detail', crane_id=crane.id) }}" class="btn btn-sm btn-success">عرض</a>
                             <a href="{{ url_for('almasa_private_crane_report', crane_id=crane.id) }}" class="btn btn-sm btn-info">📊</a>
@@ -155,8 +224,10 @@
 
 <!-- قائمة التوريدات -->
 <div class="card border-0 shadow-sm">
-    <div class="card-header text-white fw-bold" style="background: linear-gradient(90deg, #e65100, #ef6c00);">
-        📦 التوريدات من خارج لخارج
+    <div class="card-header text-white fw-bold d-flex justify-content-between align-items-center" 
+         style="background: linear-gradient(90deg, #e65100, #ef6c00);">
+        <span>📦 التوريدات من خارج لخارج</span>
+        <a href="{{ url_for('almasa_supplies') }}" class="btn btn-sm btn-light">عرض الكل</a>
     </div>
     <div class="card-body">
         {% if supplies %}
@@ -169,6 +240,7 @@
                         <th>العميل</th>
                         <th>العمليات</th>
                         <th>الإجمالي</th>
+                        <th>غير مدفوع</th>
                         <th>إجراءات</th>
                     </tr>
                 </thead>
@@ -179,7 +251,16 @@
                         <td>{{ supply.supplier_name or '-' }}</td>
                         <td>{{ supply.customer_name or '-' }}</td>
                         <td>{{ supply.operations|length }}</td>
-                        <td class="fw-bold">{{ supply.operations|sum(attribute='rental_total') }}</td>
+                        <td class="fw-bold text-warning">{{ supply.operations|sum(attribute='rental_total') or 0 }}</td>
+                        <td class="text-danger">
+                            {% set unpaid = [] %}
+                            {% for op in supply.operations %}
+                                {% if not op.check_received %}
+                                    {% set _ = unpaid.append(op.rental_total or 0) %}
+                                {% endif %}
+                            {% endfor %}
+                            {{ unpaid|sum or 0 }}
+                        </td>
                         <td>
                             <a href="{{ url_for('almasa_supply_detail', supply_id=supply.id) }}" class="btn btn-sm btn-warning">عرض</a>
                             <a href="{{ url_for('almasa_supply_report', supply_id=supply.id) }}" class="btn btn-sm btn-info">📊</a>
