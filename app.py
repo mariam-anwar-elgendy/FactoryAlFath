@@ -2373,7 +2373,7 @@ def almasa_add_operation():
     end_date = datetime.strptime(request.form.get('end_date'), '%Y-%m-%d').date() if request.form.get('end_date') else None
     supply_value = float(request.form.get('supply_value', 0))
     rental_value = float(request.form.get('rental_value', 0))
-    days_count = int(request.form.get('days_count', 0))
+    days_count = float(request.form.get('days_count', 0))
     extra_hours = float(request.form.get('extra_hours', 0))
     hour_rate = float(request.form.get('hour_rate', 0))
     travel_days = float(request.form.get('travel_days', 0))
