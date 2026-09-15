@@ -1,0 +1,163 @@
+{% extends "base_almasa.html" %}
+
+{% block title %}تقرير الأرباح التوريدية{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h2 class="fw-bold text-success">📉 تقرير الأرباح التوريدية - شركة الماسة</h2>
+    <div>
+        <a href="{{ url_for('almasa_reports') }}" class="btn btn-outline-primary">📊 كل التقارير</a>
+        <a href="{{ url_for('almasa_index') }}" class="btn btn-outline-secondary">← الرئيسية</a>
+    </div>
+</div>
+
+<!-- ✅ الإجمالي العام -->
+<div class="card border-0 shadow-sm mb-4">
+    <div class="card-header text-white fw-bold" style="background: linear-gradient(135deg, #1b5e20, #2e7d32);">
+        💰 الإجمالي العام للأرباح التوريدية
+    </div>
+    <div class="card-body text-center">
+        <h1 class="fw-bold text-success display-5">{{ grand_supply_profit }}</h1>
+        <p class="text-muted mb-0">إجمالي الأرباح التوريدية لكل الأوناش (مشاركة + خاصة)</p>
+    </div>
+</div>
+
+<!-- ✅ ملخص الأرباح حسب النوع -->
+<div class="row g-3 mb-4">
+    <div class="col-md-6">
+        <div class="card border-0 shadow-sm h-100">
+            <div class="card-header text-white fw-bold text-center" style="background: linear-gradient(90deg, #1a237e, #283593);">
+                🏗️ أوناش مشاركة
+            </div>
+            <div class="card-body text-center">
+                <h3 class="fw-bold text-primary">{{ partnership_supply_profit }}</h3>
+                <small class="text-muted">عدد الأوناش: {{ partnership_cranes|length }}</small>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-6">
+        <div class="card border-0 shadow-sm h-100">
+            <div class="card-header text-white fw-bold text-center" style="background: linear-gradient(90deg, #1b5e20, #2e7d32);">
+                🚛 أوناش خاصة
+            </div>
+            <div class="card-body text-center">
+                <h3 class="fw-bold text-success">{{ private_supply_profit }}</h3>
+                <small class="text-muted">عدد الأوناش: {{ private_cranes|length }}</small>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- ⚠️ ملاحظة مهمة -->
+<div class="alert alert-info mb-4">
+    <strong>ℹ️ ملاحظة:</strong> التوريدات ليس لها أرباح توريدية — الأرباح الإدارية فقط.
+</div>
+
+<!-- ✅ تفاصيل الأوناش (مشاركة) -->
+<div class="card border-0 shadow-sm mb-4">
+    <div class="card-header text-white fw-bold" style="background: linear-gradient(90deg, #1a237e, #283593);">
+        🏗️ تفاصيل الأوناش (مشاركة)
+    </div>
+    <div class="card-body">
+        {% if partnership_details %}
+        <div class="table-responsive">
+            <table class="table table-striped align-middle">
+                <thead class="table-primary">
+                    <tr>
+                        <th>الونش</th>
+                        <th>الشركاء</th>
+                        <th>العمليات</th>
+                        <th>إجمالي التوريد</th>
+                        <th>المصاريف</th>
+                        <th>ضريبة 8.5%</th>
+                        <th>الأرباح التوريدية</th>
+                        <th>إجراءات</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for item in partnership_details %}
+                    <tr>
+                        <td class="fw-bold">{{ item.crane.name }}</td>
+                        <td>{{ item.crane.partners|length }}</td>
+                        <td>{{ item.crane.operations|length }}</td>
+                        <td>{{ item.total_supply }}</td>
+                        <td class="text-danger">{{ item.total_expenses }}</td>
+                        <td class="text-warning">{{ item.tax_85_amount }}</td>
+                        <td class="fw-bold text-success">{{ item.supply_profit }}</td>
+                        <td>
+                            <a href="{{ url_for('almasa_crane_profit_report', crane_id=item.crane.id) }}" class="btn btn-sm btn-primary">
+                                📈 تفاصيل
+                            </a>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+                <tfoot>
+                    <tr class="fw-bold table-secondary">
+                        <td colspan="6">الإجمالي</td>
+                        <td class="text-success">{{ partnership_supply_profit }}</td>
+                        <td></td>
+                    </tr>
+                </tfoot>
+            </table>
+        </div>
+        {% else %}
+        <div class="alert alert-info mb-0">لا توجد أوناش مشاركة</div>
+        {% endif %}
+    </div>
+</div>
+
+<!-- ✅ تفاصيل الأوناش الخاصة -->
+<div class="card border-0 shadow-sm">
+    <div class="card-header text-white fw-bold" style="background: linear-gradient(90deg, #1b5e20, #2e7d32);">
+        🚛 تفاصيل الأوناش الخاصة
+    </div>
+    <div class="card-body">
+        {% if private_details %}
+        <div class="table-responsive">
+            <table class="table table-striped align-middle">
+                <thead class="table-success">
+                    <tr>
+                        <th>الونش</th>
+                        <th>صاحب الونش</th>
+                        <th>العمليات</th>
+                        <th>إجمالي التوريد</th>
+                        <th>المصاريف</th>
+                        <th>ضريبة 8.5%</th>
+                        <th>الأرباح التوريدية</th>
+                        <th>إجراءات</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for item in private_details %}
+                    <tr>
+                        <td class="fw-bold">{{ item.crane.name }}</td>
+                        <td>{{ item.crane.owner_name }}</td>
+                        <td>{{ item.crane.operations|length }}</td>
+                        <td>{{ item.total_supply }}</td>
+                        <td class="text-danger">{{ item.total_expenses }}</td>
+                        <td class="text-warning">{{ item.tax_85_amount }}</td>
+                        <td class="fw-bold text-success">{{ item.supply_profit }}</td>
+                        <td>
+                            <a href="{{ url_for('almasa_private_crane_profit_report', crane_id=item.crane.id) }}" class="btn btn-sm btn-success">
+                                📈 تفاصيل
+                            </a>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+                <tfoot>
+                    <tr class="fw-bold table-secondary">
+                        <td colspan="6">الإجمالي</td>
+                        <td class="text-success">{{ private_supply_profit }}</td>
+                        <td></td>
+                    </tr>
+                </tfoot>
+            </table>
+        </div>
+        {% else %}
+        <div class="alert alert-info mb-0">لا توجد أوناش خاصة</div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}
