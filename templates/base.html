@@ -45,6 +45,13 @@
                 overflow-y: auto;
             }
         }
+        .nav-link {
+            position: relative;
+        }
+        .nav-link .badge {
+            font-size: 0.65rem;
+            padding: 2px 6px;
+        }
     </style>
 </head>
 <body>
@@ -57,6 +64,14 @@
                 🏭 مصنع الفتح
             </a>
             <div class="d-flex align-items-center text-white">
+                <a href="{{ url_for('chat_index') }}" class="btn btn-outline-light btn-sm me-2 position-relative">
+                    <i class="fas fa-comments"></i>
+                    {% if unread_messages_count and unread_messages_count > 0 %}
+                    <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger">
+                        {{ unread_messages_count }}
+                    </span>
+                    {% endif %}
+                </a>
                 <span class="me-3 d-none d-md-inline"><i class="fas fa-user"></i> {{ current_user.full_name }}</span>
                 <a href="{{ url_for('logout') }}" class="btn btn-outline-light btn-sm">
                     <i class="fas fa-sign-out-alt"></i> خروج
@@ -81,6 +96,16 @@
                         <li class="nav-item">
                             <a class="nav-link text-white" href="{{ url_for('dashboard') }}">
                                 <i class="fas fa-home ms-2"></i> الرئيسية
+                            </a>
+                        </li>
+
+                        <!-- ✅ الشات -->
+                        <li class="nav-item">
+                            <a class="nav-link text-white" href="{{ url_for('chat_index') }}">
+                                <i class="fas fa-comments ms-2"></i> الشات
+                                {% if unread_messages_count and unread_messages_count > 0 %}
+                                <span class="badge bg-danger">{{ unread_messages_count }}</span>
+                                {% endif %}
                             </a>
                         </li>
 
