@@ -4,18 +4,24 @@
 
 {% block extra_css %}
 <style>
+    /* ==================== الشات Container ==================== */
     .chat-container {
-        height: calc(100vh - 180px);
+        height: calc(100vh - 200px);
+        min-height: 500px;
         background: #fff;
         border-radius: 10px;
         overflow: hidden;
         box-shadow: 0 2px 10px rgba(0,0,0,0.1);
     }
+    
+    /* ==================== Sidebar ==================== */
     .chat-sidebar {
         background: #f0f2f5;
         border-left: 1px solid #ddd;
         height: 100%;
         overflow-y: auto;
+        display: flex;
+        flex-direction: column;
     }
     .chat-sidebar-header {
         background: #7C3AED;
@@ -24,6 +30,18 @@
         position: sticky;
         top: 0;
         z-index: 10;
+    }
+    .chat-sidebar-header input {
+        border-radius: 20px;
+        border: none;
+        padding: 8px 15px;
+    }
+    .chat-section-title {
+        padding: 10px 15px 5px;
+        font-size: 0.75rem;
+        font-weight: bold;
+        color: #666;
+        text-transform: uppercase;
     }
     .chat-user-item {
         padding: 12px 15px;
@@ -56,6 +74,17 @@
     .chat-avatar.group {
         background: #FF9800;
     }
+    .chat-avatar.online::after {
+        content: '';
+        position: absolute;
+        bottom: 0;
+        right: 0;
+        width: 12px;
+        height: 12px;
+        background: #25D366;
+        border: 2px solid white;
+        border-radius: 50%;
+    }
     .chat-user-info {
         flex: 1;
         overflow: hidden;
@@ -64,6 +93,9 @@
         font-weight: 600;
         font-size: 0.95rem;
         margin-bottom: 2px;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
     }
     .chat-user-last {
         font-size: 0.8rem;
@@ -72,6 +104,21 @@
         overflow: hidden;
         text-overflow: ellipsis;
     }
+    .unread-badge {
+        background: #25D366;
+        color: white;
+        border-radius: 50%;
+        min-width: 22px;
+        height: 22px;
+        padding: 0 6px;
+        font-size: 0.7rem;
+        font-weight: bold;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+    
+    /* ==================== Main Chat ==================== */
     .chat-main {
         height: 100%;
         display: flex;
@@ -81,51 +128,52 @@
     .chat-header {
         background: #7C3AED;
         color: white;
-        padding: 15px;
+        padding: 12px 15px;
         display: flex;
         align-items: center;
         gap: 10px;
+        flex-shrink: 0;
+    }
+    .chat-header-info {
+        flex: 1;
     }
     .chat-messages {
         flex: 1;
         overflow-y: auto;
-        padding: 20px;
-        background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='100' height='100' viewBox='0 0 100 100'%3E%3Cpath fill='%23f0f0f0' d='M50 0h50v100H0V50h50z'/%3E%3C/svg%3E");
+        padding: 15px 20px;
+        background: #efeae2;
+    }
+    .message-row {
+        display: flex;
+        margin-bottom: 8px;
+    }
+    .message-row.sent {
+        justify-content: flex-start;
+    }
+    .message-row.received {
+        justify-content: flex-end;
     }
     .message-bubble {
         max-width: 70%;
-        margin-bottom: 10px;
         padding: 8px 12px;
         border-radius: 10px;
         word-wrap: break-word;
         position: relative;
         font-size: 0.9rem;
+        box-shadow: 0 1px 2px rgba(0,0,0,0.1);
     }
     .message-sent {
         background: #dcf8c6;
-        margin-right: auto;
-        margin-left: 0;
         border-top-right-radius: 2px;
     }
     .message-received {
         background: white;
-        margin-left: auto;
-        margin-right: 0;
         border-top-left-radius: 2px;
     }
     .message-deleted {
-        background: #f0f0f0;
+        background: #f0f0f0 !important;
         color: #999;
         font-style: italic;
-    }
-    .message-meta {
-        font-size: 0.7rem;
-        color: #666;
-        margin-top: 4px;
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-        gap: 5px;
     }
     .message-sender {
         font-weight: 600;
@@ -133,26 +181,55 @@
         font-size: 0.8rem;
         margin-bottom: 3px;
     }
+    .message-text {
+        margin-bottom: 4px;
+        line-height: 1.4;
+    }
+    .message-meta {
+        font-size: 0.7rem;
+        color: #666;
+        display: flex;
+        justify-content: flex-end;
+        align-items: center;
+        gap: 5px;
+    }
     .message-delete-btn {
         opacity: 0;
         transition: opacity 0.2s;
         cursor: pointer;
         color: #dc3545;
-        font-size: 0.8rem;
+        font-size: 0.75rem;
+        padding: 0 3px;
     }
     .message-bubble:hover .message-delete-btn {
         opacity: 1;
     }
+    .message-status {
+        color: #4fc3f7;
+    }
+    .message-status.read {
+        color: #2196F3;
+    }
+    
+    /* ==================== Input Area ==================== */
     .chat-input-area {
         background: #f0f2f5;
         padding: 10px 15px;
         border-top: 1px solid #ddd;
+        flex-shrink: 0;
     }
     .chat-input-area input {
         border-radius: 20px;
         border: 1px solid #ddd;
         padding: 10px 15px;
+        font-size: 0.95rem;
     }
+    .chat-input-area input:focus {
+        box-shadow: none;
+        border-color: #7C3AED;
+    }
+    
+    /* ==================== Empty State ==================== */
     .empty-chat {
         display: flex;
         align-items: center;
@@ -160,19 +237,47 @@
         height: 100%;
         flex-direction: column;
         color: #666;
+        text-align: center;
     }
     .empty-chat i {
-        font-size: 4rem;
+        font-size: 5rem;
         color: #ccc;
         margin-bottom: 15px;
     }
-    .unread-badge {
-        background: #25D366;
-        color: white;
-        border-radius: 50%;
-        padding: 2px 7px;
-        font-size: 0.7rem;
-        font-weight: bold;
+    
+    /* ==================== Mobile ==================== */
+    @media (max-width: 767.98px) {
+        .chat-sidebar {
+            position: absolute;
+            top: 0;
+            right: 0;
+            width: 85%;
+            height: 100%;
+            z-index: 100;
+            transform: translateX(100%);
+            transition: transform 0.3s;
+        }
+        .chat-sidebar.show {
+            transform: translateX(0);
+        }
+        .chat-main {
+            width: 100%;
+        }
+    }
+    
+    /* ==================== Scrollbar ==================== */
+    .chat-messages::-webkit-scrollbar,
+    .chat-sidebar::-webkit-scrollbar {
+        width: 6px;
+    }
+    .chat-messages::-webkit-scrollbar-thumb,
+    .chat-sidebar::-webkit-scrollbar-thumb {
+        background: #ccc;
+        border-radius: 3px;
+    }
+    .chat-messages::-webkit-scrollbar-track,
+    .chat-sidebar::-webkit-scrollbar-track {
+        background: transparent;
     }
 </style>
 {% endblock %}
@@ -190,63 +295,93 @@
 <div class="chat-container">
     <div class="row g-0 h-100">
         <!-- Sidebar -->
-        <div class="col-md-4 col-lg-3 chat-sidebar">
+        <div class="col-md-4 col-lg-3 chat-sidebar" id="chatSidebar">
             <div class="chat-sidebar-header">
                 <input type="text" id="searchUsers" class="form-control form-control-sm" placeholder="🔍 بحث...">
             </div>
             
             <!-- Groups -->
             {% if user_groups %}
-            <div class="px-3 py-2 small text-muted fw-bold">المجموعات</div>
+            <div class="chat-section-title">👥 المجموعات</div>
             {% for group in user_groups %}
-            <div class="chat-user-item group-item" data-group-id="{{ group.id }}" onclick="openGroup({{ group.id }}, '{{ group.name }}')">
-                <div class="chat-avatar group">👥</div>
+            <div class="chat-user-item group-item" 
+                 data-group-id="{{ group.id }}" 
+                 data-name="{{ group.name }}"
+                 onclick="openGroup(this)">
+                <div class="chat-avatar group">
+                    <i class="fas fa-users"></i>
+                </div>
                 <div class="chat-user-info">
                     <div class="chat-user-name">{{ group.name }}</div>
                     <div class="chat-user-last">{{ group.members|length }} عضو</div>
                 </div>
+                <span class="unread-badge group-unread" id="group-unread-{{ group.id }}" style="display:none;">0</span>
             </div>
             {% endfor %}
             {% endif %}
             
             <!-- Users -->
-            <div class="px-3 py-2 small text-muted fw-bold">المستخدمين</div>
+            <div class="chat-section-title">👤 المستخدمين</div>
             {% for user in all_users %}
-            <div class="chat-user-item user-item" data-user-id="{{ user.id }}" data-name="{{ user.full_name }}" onclick="openUser({{ user.id }}, '{{ user.full_name }}')">
+            <div class="chat-user-item user-item" 
+                 data-user-id="{{ user.id }}" 
+                 data-name="{{ user.full_name }}"
+                 onclick="openUser(this)">
                 <div class="chat-avatar">{{ user.full_name[0] if user.full_name else '?' }}</div>
                 <div class="chat-user-info">
                     <div class="chat-user-name">{{ user.full_name }}</div>
-                    <div class="chat-user-last">{{ user.role }}</div>
+                    <div class="chat-user-last">
+                        {% if user.role == 'meg' %}MEG
+                        {% elif user.role == 'admin' %}مدير
+                        {% elif user.role == 'mariam' %}مريم
+                        {% elif user.role == 'rehab' %}رحاب
+                        {% elif user.role == 'mohamed' %}محمد
+                        {% elif user.role == 'ahmed' %}الحاج أحمد
+                        {% elif user.role == 'eid' %}عيد
+                        {% elif user.role == 'abdo' %}عبدالله
+                        {% elif user.role == 'sayed' %}سيد
+                        {% elif user.role == 'dina' %}دينا
+                        {% else %}{{ user.role }}{% endif %}
+                    </div>
                 </div>
-                <span class="unread-badge" id="unread-{{ user.id }}" style="display:none;">0</span>
+                <span class="unread-badge user-unread" id="user-unread-{{ user.id }}" style="display:none;">0</span>
             </div>
             {% endfor %}
         </div>
         
         <!-- Main Chat -->
         <div class="col-md-8 col-lg-9 chat-main">
-            <div id="chatHeader" class="chat-header" style="display:none;">
+            <!-- Empty State -->
+            <div class="empty-chat" id="emptyChat">
+                <i class="fas fa-comments"></i>
+                <h5>اختر محادثة للبدء</h5>
+                <p class="text-muted">اختر مستخدم أو مجموعة من القائمة</p>
+            </div>
+            
+            <!-- Chat Header -->
+            <div class="chat-header" id="chatHeader" style="display:none;">
                 <div class="chat-avatar" id="chatHeaderAvatar">?</div>
-                <div>
+                <div class="chat-header-info">
                     <div class="fw-bold" id="chatHeaderName">-</div>
                     <small id="chatHeaderStatus" class="text-white-50">متصل</small>
                 </div>
+                <button class="btn btn-sm btn-outline-light d-md-none" onclick="toggleSidebar()">
+                    <i class="fas fa-bars"></i>
+                </button>
             </div>
             
-            <div class="chat-messages" id="chatMessages">
-                <div class="empty-chat" id="emptyChat">
-                    <i class="fas fa-comments"></i>
-                    <h5>اختر محادثة للبدء</h5>
-                    <p class="text-muted">اختر مستخدم أو مجموعة من القائمة</p>
-                </div>
+            <!-- Messages -->
+            <div class="chat-messages" id="chatMessages" style="display:none;">
+                <!-- الرسائل هتتضاف هنا -->
             </div>
             
+            <!-- Input Area -->
             <div class="chat-input-area" id="chatInputArea" style="display:none;">
                 <form id="sendMessageForm" onsubmit="sendMessage(event); return false;">
                     <div class="input-group">
                         <input type="text" id="messageInput" class="form-control" placeholder="اكتب رسالة..." autocomplete="off" required>
-                        <button type="submit" class="btn btn-purple">
-                            <i class="fas fa-paper-plane"></i> إرسال
+                        <button type="submit" class="btn btn-purple" id="sendBtn">
+                            <i class="fas fa-paper-plane"></i>
                         </button>
                     </div>
                 </form>
@@ -256,6 +391,7 @@
 </div>
 
 <!-- Modal إنشاء مجموعة -->
+{% if current_user.role in ['meg', 'admin', 'sayed'] %}
 <div class="modal fade" id="createGroupModal" tabindex="-1">
     <div class="modal-dialog">
         <div class="modal-content">
@@ -267,7 +403,7 @@
                 <div class="modal-body">
                     <div class="mb-3">
                         <label class="form-label fw-bold">اسم المجموعة</label>
-                        <input type="text" name="name" class="form-control" required>
+                        <input type="text" name="name" class="form-control" required placeholder="مثال: فريق المصنع">
                     </div>
                     <div class="mb-3">
                         <label class="form-label fw-bold">الأعضاء</label>
@@ -291,10 +427,13 @@
         </div>
     </div>
 </div>
+{% endif %}
 {% endblock %}
 
 {% block extra_js %}
 <script>
+// ==================== Global State ====================
+const CURRENT_USER_ID = {{ current_user.id }};
 let currentChat = {
     type: null,  // 'user' أو 'group'
     id: null,
@@ -302,56 +441,82 @@ let currentChat = {
 };
 let pollingInterval = null;
 let lastMessageId = 0;
+let isFirstLoad = true;
 
-function openUser(userId, userName) {
-    currentChat = { type: 'user', id: userId, name: userName };
+// ==================== Open User Chat ====================
+function openUser(el) {
+    const userId = el.getAttribute('data-user-id');
+    const userName = el.getAttribute('data-name');
+    
+    currentChat = { type: 'user', id: parseInt(userId), name: userName };
     
     // تحديث الواجهة
-    document.querySelectorAll('.chat-user-item').forEach(el => el.classList.remove('active'));
-    document.querySelector(`.user-item[data-user-id="${userId}"]`).classList.add('active');
+    document.querySelectorAll('.chat-user-item').forEach(item => item.classList.remove('active'));
+    el.classList.add('active');
     
-    document.getElementById('chatHeader').style.display = 'flex';
-    document.getElementById('chatInputArea').style.display = 'block';
+    // إظهار الشات
     document.getElementById('emptyChat').style.display = 'none';
+    document.getElementById('chatHeader').style.display = 'flex';
+    document.getElementById('chatMessages').style.display = 'block';
+    document.getElementById('chatInputArea').style.display = 'block';
+    
+    // تحديث الهيدر
     document.getElementById('chatHeaderName').innerText = userName;
     document.getElementById('chatHeaderAvatar').innerText = userName[0] || '?';
     document.getElementById('chatHeaderAvatar').className = 'chat-avatar';
+    document.getElementById('chatHeaderStatus').innerText = 'متصل';
     
     // إفراغ الرسائل
     document.getElementById('chatMessages').innerHTML = '';
     lastMessageId = 0;
+    isFirstLoad = true;
     
     // تحميل الرسائل
-    loadMessages();
+    loadMessages(true);
     
     // بدء Polling
-    if (pollingInterval) clearInterval(pollingInterval);
-    pollingInterval = setInterval(loadMessages, 5000);
+    startPolling();
+    
+    // تصفير العدّاد
+    clearUnreadBadge('user', userId);
+    
+    // Focus على input
+    setTimeout(() => document.getElementById('messageInput').focus(), 100);
 }
 
-function openGroup(groupId, groupName) {
-    currentChat = { type: 'group', id: groupId, name: groupName };
+// ==================== Open Group Chat ====================
+function openGroup(el) {
+    const groupId = el.getAttribute('data-group-id');
+    const groupName = el.getAttribute('data-name');
     
-    document.querySelectorAll('.chat-user-item').forEach(el => el.classList.remove('active'));
-    document.querySelector(`.group-item[data-group-id="${groupId}"]`).classList.add('active');
+    currentChat = { type: 'group', id: parseInt(groupId), name: groupName };
     
-    document.getElementById('chatHeader').style.display = 'flex';
-    document.getElementById('chatInputArea').style.display = 'block';
+    document.querySelectorAll('.chat-user-item').forEach(item => item.classList.remove('active'));
+    el.classList.add('active');
+    
     document.getElementById('emptyChat').style.display = 'none';
+    document.getElementById('chatHeader').style.display = 'flex';
+    document.getElementById('chatMessages').style.display = 'block';
+    document.getElementById('chatInputArea').style.display = 'block';
+    
     document.getElementById('chatHeaderName').innerText = groupName;
-    document.getElementById('chatHeaderAvatar').innerText = '👥';
+    document.getElementById('chatHeaderAvatar').innerHTML = '<i class="fas fa-users"></i>';
     document.getElementById('chatHeaderAvatar').className = 'chat-avatar group';
+    document.getElementById('chatHeaderStatus').innerText = 'مجموعة';
     
     document.getElementById('chatMessages').innerHTML = '';
     lastMessageId = 0;
+    isFirstLoad = true;
     
-    loadMessages();
+    loadMessages(true);
+    startPolling();
+    clearUnreadBadge('group', groupId);
     
-    if (pollingInterval) clearInterval(pollingInterval);
-    pollingInterval = setInterval(loadMessages, 5000);
+    setTimeout(() => document.getElementById('messageInput').focus(), 100);
 }
 
-function loadMessages() {
+// ==================== Load Messages ====================
+function loadMessages(showLoading = false) {
     if (!currentChat.type) return;
     
     let url;
@@ -372,25 +537,26 @@ function loadMessages() {
                 scrollToBottom();
             }
         })
-        .catch(error => console.error('Error:', error));
+        .catch(error => console.error('Error loading messages:', error));
 }
 
+// ==================== Append Message ====================
 function appendMessage(msg) {
     const messagesContainer = document.getElementById('chatMessages');
     
     // لو الرسالة موجودة بالفعل
     if (document.getElementById('msg-' + msg.id)) return;
     
-    const div = document.createElement('div');
-    div.id = 'msg-' + msg.id;
-    const isSent = msg.sender_id === {{ current_user.id }};
+    const isSent = msg.sender_id === CURRENT_USER_ID;
     
-    let bubbleClass = isSent ? 'message-sent' : 'message-received';
-    if (msg.is_deleted) bubbleClass += ' message-deleted';
+    const row = document.createElement('div');
+    row.className = 'message-row ' + (isSent ? 'sent' : 'received');
+    row.id = 'msg-' + msg.id;
     
+    // المحتوى
     let senderHtml = '';
     if (currentChat.type === 'group' && !isSent) {
-        senderHtml = `<div class="message-sender">${msg.sender_name}</div>`;
+        senderHtml = `<div class="message-sender">${escapeHtml(msg.sender_name)}</div>`;
     }
     
     let deleteBtn = '';
@@ -398,19 +564,32 @@ function appendMessage(msg) {
         deleteBtn = `<span class="message-delete-btn" onclick="deleteMessage(${msg.id})" title="حذف">🗑️</span>`;
     }
     
-    div.className = 'message-bubble ' + bubbleClass;
-    div.innerHTML = `
-        ${senderHtml}
-        <div>${msg.message}</div>
-        <div class="message-meta">
-            <span>${msg.time}</span>
-            ${deleteBtn}
+    let bubbleClass = isSent ? 'message-sent' : 'message-received';
+    if (msg.is_deleted) bubbleClass += ' message-deleted';
+    
+    let statusIcon = '';
+    if (isSent && !msg.is_deleted) {
+        statusIcon = msg.is_read 
+            ? '<i class="fas fa-check-double message-status read"></i>' 
+            : '<i class="fas fa-check message-status"></i>';
+    }
+    
+    row.innerHTML = `
+        <div class="message-bubble ${bubbleClass}">
+            ${senderHtml}
+            <div class="message-text">${escapeHtml(msg.message)}</div>
+            <div class="message-meta">
+                <span>${msg.time}</span>
+                ${statusIcon}
+                ${deleteBtn}
+            </div>
         </div>
     `;
     
-    messagesContainer.appendChild(div);
+    messagesContainer.appendChild(row);
 }
 
+// ==================== Send Message ====================
 function sendMessage(event) {
     event.preventDefault();
     const input = document.getElementById('messageInput');
@@ -422,6 +601,10 @@ function sendMessage(event) {
     formData.append('type', currentChat.type);
     formData.append('id', currentChat.id);
     
+    // تعطيل الزرار
+    const sendBtn = document.getElementById('sendBtn');
+    sendBtn.disabled = true;
+    
     fetch('{{ url_for("chat_send") }}', {
         method: 'POST',
         body: formData
@@ -431,12 +614,23 @@ function sendMessage(event) {
         if (data.success) {
             input.value = '';
             loadMessages();
+        } else {
+            alert('فشل إرسال الرسالة');
         }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        alert('فشل إرسال الرسالة');
+    })
+    .finally(() => {
+        sendBtn.disabled = false;
+        input.focus();
     });
 }
 
+// ==================== Delete Message ====================
 function deleteMessage(msgId) {
-    if (!confirm('حذف الرسالة؟')) return;
+    if (!confirm('هل أنت متأكد من حذف الرسالة؟')) return;
     
     fetch(`/chat/delete-message/${msgId}`, {
         method: 'POST'
@@ -444,34 +638,122 @@ function deleteMessage(msgId) {
     .then(response => response.json())
     .then(data => {
         if (data.success) {
-            // تحديث الرسالة في الواجهة
-            const msgDiv = document.getElementById('msg-' + msgId);
-            if (msgDiv) {
-                msgDiv.classList.add('message-deleted');
-                msgDiv.querySelector('div').innerText = '🚫 تم حذف هذه الرسالة';
-                const deleteBtn = msgDiv.querySelector('.message-delete-btn');
+            const msgRow = document.getElementById('msg-' + msgId);
+            if (msgRow) {
+                const bubble = msgRow.querySelector('.message-bubble');
+                bubble.classList.add('message-deleted');
+                bubble.querySelector('.message-text').innerText = '🚫 تم حذف هذه الرسالة';
+                const deleteBtn = bubble.querySelector('.message-delete-btn');
                 if (deleteBtn) deleteBtn.remove();
+                const statusIcon = bubble.querySelector('.message-status');
+                if (statusIcon) statusIcon.remove();
             }
+        } else {
+            alert('فشل حذف الرسالة');
         }
-    });
+    })
+    .catch(error => console.error('Error:', error));
 }
 
+// ==================== Polling ====================
+function startPolling() {
+    if (pollingInterval) clearInterval(pollingInterval);
+    pollingInterval = setInterval(() => {
+        if (currentChat.type) {
+            loadMessages();
+            updateUnreadCounts();
+        }
+    }, 5000);
+}
+
+// ==================== Scroll to Bottom ====================
 function scrollToBottom() {
     const messagesContainer = document.getElementById('chatMessages');
-    messagesContainer.scrollTop = messagesContainer.scrollHeight;
+    if (messagesContainer) {
+        messagesContainer.scrollTop = messagesContainer.scrollHeight;
+    }
 }
 
-// بحث
+// ==================== Escape HTML ====================
+function escapeHtml(text) {
+    if (!text) return '';
+    const div = document.createElement('div');
+    div.innerText = text;
+    return div.innerHTML;
+}
+
+// ==================== Clear Unread Badge ====================
+function clearUnreadBadge(type, id) {
+    let badgeId;
+    if (type === 'user') badgeId = 'user-unread-' + id;
+    else badgeId = 'group-unread-' + id;
+    
+    const badge = document.getElementById(badgeId);
+    if (badge) {
+        badge.style.display = 'none';
+        badge.innerText = '0';
+    }
+}
+
+// ==================== Update Unread Counts ====================
+function updateUnreadCounts() {
+    fetch('{{ url_for("chat_unread_count") }}')
+        .then(response => response.json())
+        .then(data => {
+            // تحديث عدّاد السايد بار
+            const sidebarBadges = document.querySelectorAll('.nav-link .badge');
+            sidebarBadges.forEach(badge => {
+                if (data.total > 0) {
+                    badge.innerText = data.total;
+                    badge.style.display = 'inline-block';
+                } else {
+                    badge.style.display = 'none';
+                }
+            });
+            
+            // تحديث عدّادات المستخدمين
+            if (data.by_user) {
+                Object.keys(data.by_user).forEach(userId => {
+                    const badge = document.getElementById('user-unread-' + userId);
+                    if (badge) {
+                        const count = data.by_user[userId];
+                        if (count > 0) {
+                            badge.innerText = count;
+                            badge.style.display = 'flex';
+                        } else {
+                            badge.style.display = 'none';
+                        }
+                    }
+                });
+            }
+        })
+        .catch(error => console.error('Error:', error));
+}
+
+// ==================== Search ====================
 document.getElementById('searchUsers').addEventListener('input', function(e) {
-    const search = e.target.value.toLowerCase();
+    const search = e.target.value.toLowerCase().trim();
+    
     document.querySelectorAll('.user-item').forEach(el => {
-        const name = el.getAttribute('data-name').toLowerCase();
+        const name = (el.getAttribute('data-name') || '').toLowerCase();
         el.style.display = name.includes(search) ? 'flex' : 'none';
     });
+    
     document.querySelectorAll('.group-item').forEach(el => {
-        const name = el.querySelector('.chat-user-name').innerText.toLowerCase();
+        const name = (el.getAttribute('data-name') || '').toLowerCase();
         el.style.display = name.includes(search) ? 'flex' : 'none';
     });
+});
+
+// ==================== Toggle Sidebar (Mobile) ====================
+function toggleSidebar() {
+    document.getElementById('chatSidebar').classList.toggle('show');
+}
+
+// ==================== Init ====================
+document.addEventListener('DOMContentLoaded', function() {
+    // تحديث العدّادات أول ما الصفحة تفتح
+    updateUnreadCounts();
 });
 </script>
 {% endblock %}
