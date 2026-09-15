@@ -123,39 +123,153 @@ def init_db():
     with app.app_context():
         db.create_all()
         
-        # تحديث هيكل قاعدة البيانات تلقائياً
+        # Migration للمستخدمين
         try:
             db.session.execute(db.text('ALTER TABLE users ADD COLUMN IF NOT EXISTS phone VARCHAR(20)'))
             db.session.execute(db.text('ALTER TABLE users ADD COLUMN IF NOT EXISTS last_activity TIMESTAMP'))
             db.session.execute(db.text('ALTER TABLE store_receiving ADD COLUMN IF NOT EXISTS supplier VARCHAR(100)'))
             db.session.commit()
-            print("✅ تم إضافة الحقول الجديدة")
         except Exception as e:
             db.session.rollback()
-            print(f"⚠️ ملاحظة الحقول: {e}")
+        
+        # ✅ Migration لعمليات الونش (مشاركة)
+        try:
+            db.session.execute(db.text('ALTER TABLE almasa_operations ADD COLUMN IF NOT EXISTS rental_value FLOAT DEFAULT 0'))
+            db.session.execute(db.text('ALTER TABLE almasa_operations ADD COLUMN IF NOT EXISTS supply_value FLOAT DEFAULT 0'))
+            db.session.execute(db.text('ALTER TABLE almasa_operations ADD COLUMN IF NOT EXISTS rental_total FLOAT DEFAULT 0'))
+            db.session.execute(db.text('ALTER TABLE almasa_operations ADD COLUMN IF NOT EXISTS supply_total FLOAT DEFAULT 0'))
+            db.session.execute(db.text('ALTER TABLE almasa_operations ADD COLUMN IF NOT EXISTS project_location VARCHAR(200)'))
+            db.session.execute(db.text('ALTER TABLE almasa_operations ADD COLUMN IF NOT EXISTS invoice_date DATE'))
+            db.session.execute(db.text('ALTER TABLE almasa_operations ADD COLUMN IF NOT EXISTS payment_method VARCHAR(20)'))
+            db.session.execute(db.text('ALTER TABLE almasa_operations ADD COLUMN IF NOT EXISTS tax_14_enabled BOOLEAN DEFAULT FALSE'))
+            db.session.execute(db.text('ALTER TABLE almasa_operations ADD COLUMN IF NOT EXISTS tax_14_value FLOAT DEFAULT 14'))
+            db.session.execute(db.text('ALTER TABLE almasa_operations ADD COLUMN IF NOT EXISTS tax_85_enabled BOOLEAN DEFAULT FALSE'))
+            db.session.execute(db.text('ALTER TABLE almasa_operations ADD COLUMN IF NOT EXISTS tax_85_value FLOAT DEFAULT 8.5'))
+            db.session.execute(db.text('ALTER TABLE almasa_operations ADD COLUMN IF NOT EXISTS check_received BOOLEAN DEFAULT FALSE'))
+            db.session.execute(db.text('ALTER TABLE almasa_operations ADD COLUMN IF NOT EXISTS check_received_date DATE'))
+            db.session.commit()
+            print("✅ تم إضافة حقول almasa_operations")
+        except Exception as e:
+            db.session.rollback()
         
         try:
-            db.session.execute(db.text('ALTER TABLE store_sales DROP COLUMN IF EXISTS product_type CASCADE'))
-            db.session.execute(db.text('ALTER TABLE store_sales DROP COLUMN IF EXISTS product_size CASCADE'))
-            db.session.execute(db.text('ALTER TABLE store_sales DROP COLUMN IF EXISTS product_spec CASCADE'))
-            db.session.execute(db.text('ALTER TABLE store_sales DROP COLUMN IF EXISTS quantity CASCADE'))
-            db.session.execute(db.text('ALTER TABLE store_sales DROP COLUMN IF EXISTS unit_price CASCADE'))
-            db.session.execute(db.text('ALTER TABLE store_sales DROP COLUMN IF EXISTS total CASCADE'))
-            db.session.execute(db.text('ALTER TABLE store_sales DROP COLUMN IF EXISTS paid_amount CASCADE'))
-            db.session.execute(db.text('ALTER TABLE store_sales DROP COLUMN IF EXISTS remaining_amount CASCADE'))
+            db.session.execute(db.text('''
+                UPDATE almasa_operations 
+                SET rental_value = actual_daily_value,
+                    supply_value = default_daily_value,
+                    rental_total = actual_total,
+                    supply_total = default_total
+                WHERE (rental_value IS NULL OR rental_value = 0) 
+                  AND actual_daily_value IS NOT NULL
+            '''))
+            db.session.commit()
+            print("✅ تم نقل بيانات almasa_operations")
+        except Exception as e:
+            db.session.rollback()
+        
+        # ✅ Migration لعمليات الونش الخاص
+        try:
+            db.session.execute(db.text('ALTER TABLE almasa_private_operations ADD COLUMN IF NOT EXISTS rental_value FLOAT DEFAULT 0'))
+            db.session.execute(db.text('ALTER TABLE almasa_private_operations ADD COLUMN IF NOT EXISTS supply_value FLOAT DEFAULT 0'))
+            db.session.execute(db.text('ALTER TABLE almasa_private_operations ADD COLUMN IF NOT EXISTS rental_total FLOAT DEFAULT 0'))
+            db.session.execute(db.text('ALTER TABLE almasa_private_operations ADD COLUMN IF NOT EXISTS supply_total FLOAT DEFAULT 0'))
+            db.session.execute(db.text('ALTER TABLE almasa_private_operations ADD COLUMN IF NOT EXISTS project_location VARCHAR(200)'))
+            db.session.execute(db.text('ALTER TABLE almasa_private_operations ADD COLUMN IF NOT EXISTS invoice_date DATE'))
+            db.session.execute(db.text('ALTER TABLE almasa_private_operations ADD COLUMN IF NOT EXISTS payment_method VARCHAR(20)'))
+            db.session.execute(db.text('ALTER TABLE almasa_private_operations ADD COLUMN IF NOT EXISTS tax_14_enabled BOOLEAN DEFAULT FALSE'))
+            db.session.execute(db.text('ALTER TABLE almasa_private_operations ADD COLUMN IF NOT EXISTS tax_14_value FLOAT DEFAULT 14'))
+            db.session.execute(db.text('ALTER TABLE almasa_private_operations ADD COLUMN IF NOT EXISTS tax_85_enabled BOOLEAN DEFAULT FALSE'))
+            db.session.execute(db.text('ALTER TABLE almasa_private_operations ADD COLUMN IF NOT EXISTS tax_85_value FLOAT DEFAULT 8.5'))
+            db.session.execute(db.text('ALTER TABLE almasa_private_operations ADD COLUMN IF NOT EXISTS check_received BOOLEAN DEFAULT FALSE'))
+            db.session.execute(db.text('ALTER TABLE almasa_private_operations ADD COLUMN IF NOT EXISTS check_received_date DATE'))
+            db.session.commit()
+            print("✅ تم إضافة حقول almasa_private_operations")
+        except Exception as e:
+            db.session.rollback()
+        
+        try:
+            db.session.execute(db.text('''
+                UPDATE almasa_private_operations 
+                SET rental_value = actual_daily_value,
+                    supply_value = default_daily_value,
+                    rental_total = actual_total,
+                    supply_total = default_total
+                WHERE (rental_value IS NULL OR rental_value = 0) 
+                  AND actual_daily_value IS NOT NULL
+            '''))
+            db.session.commit()
+            print("✅ تم نقل بيانات almasa_private_operations")
+        except Exception as e:
+            db.session.rollback()
+        
+        # ✅ Migration لعمليات التوريدات
+        try:
+            db.session.execute(db.text('ALTER TABLE almasa_supply_operations ADD COLUMN IF NOT EXISTS rental_value FLOAT DEFAULT 0'))
+            db.session.execute(db.text('ALTER TABLE almasa_supply_operations ADD COLUMN IF NOT EXISTS supply_value FLOAT DEFAULT 0'))
+            db.session.execute(db.text('ALTER TABLE almasa_supply_operations ADD COLUMN IF NOT EXISTS rental_total FLOAT DEFAULT 0'))
+            db.session.execute(db.text('ALTER TABLE almasa_supply_operations ADD COLUMN IF NOT EXISTS supply_total FLOAT DEFAULT 0'))
+            db.session.execute(db.text('ALTER TABLE almasa_supply_operations ADD COLUMN IF NOT EXISTS project_location VARCHAR(200)'))
+            db.session.execute(db.text('ALTER TABLE almasa_supply_operations ADD COLUMN IF NOT EXISTS invoice_date DATE'))
+            db.session.execute(db.text('ALTER TABLE almasa_supply_operations ADD COLUMN IF NOT EXISTS payment_method VARCHAR(20)'))
+            db.session.execute(db.text('ALTER TABLE almasa_supply_operations ADD COLUMN IF NOT EXISTS tax_14_enabled BOOLEAN DEFAULT FALSE'))
+            db.session.execute(db.text('ALTER TABLE almasa_supply_operations ADD COLUMN IF NOT EXISTS tax_14_value FLOAT DEFAULT 14'))
+            db.session.execute(db.text('ALTER TABLE almasa_supply_operations ADD COLUMN IF NOT EXISTS tax_85_enabled BOOLEAN DEFAULT FALSE'))
+            db.session.execute(db.text('ALTER TABLE almasa_supply_operations ADD COLUMN IF NOT EXISTS tax_85_value FLOAT DEFAULT 8.5'))
+            db.session.execute(db.text('ALTER TABLE almasa_supply_operations ADD COLUMN IF NOT EXISTS check_received BOOLEAN DEFAULT FALSE'))
+            db.session.execute(db.text('ALTER TABLE almasa_supply_operations ADD COLUMN IF NOT EXISTS check_received_date DATE'))
+            db.session.commit()
+            print("✅ تم إضافة حقول almasa_supply_operations")
+        except Exception as e:
+            db.session.rollback()
+        
+        try:
+            db.session.execute(db.text('''
+                UPDATE almasa_supply_operations 
+                SET rental_value = customer_daily_rate,
+                    supply_value = supplier_daily_rate,
+                    rental_total = customer_total,
+                    supply_total = supplier_total
+                WHERE (rental_value IS NULL OR rental_value = 0) 
+                  AND customer_daily_rate IS NOT NULL
+            '''))
+            db.session.commit()
+            print("✅ تم نقل بيانات almasa_supply_operations")
+        except Exception as e:
+            db.session.rollback()
+        
+        # Migration للمصاريف
+        try:
+            db.session.execute(db.text('ALTER TABLE almasa_expenses ADD COLUMN IF NOT EXISTS operation_id INTEGER'))
+            db.session.execute(db.text('ALTER TABLE almasa_expenses ADD COLUMN IF NOT EXISTS paid_by VARCHAR(100)'))
             db.session.commit()
         except Exception as e:
             db.session.rollback()
         
         try:
-            db.session.execute(db.text('ALTER TABLE store_purchases DROP COLUMN IF EXISTS product_type CASCADE'))
-            db.session.execute(db.text('ALTER TABLE store_purchases DROP COLUMN IF EXISTS product_size CASCADE'))
-            db.session.execute(db.text('ALTER TABLE store_purchases DROP COLUMN IF EXISTS product_spec CASCADE'))
-            db.session.execute(db.text('ALTER TABLE store_purchases DROP COLUMN IF EXISTS quantity CASCADE'))
-            db.session.execute(db.text('ALTER TABLE store_purchases DROP COLUMN IF EXISTS unit_price CASCADE'))
-            db.session.execute(db.text('ALTER TABLE store_purchases DROP COLUMN IF EXISTS total CASCADE'))
-            db.session.execute(db.text('ALTER TABLE store_purchases DROP COLUMN IF EXISTS paid_amount CASCADE'))
-            db.session.execute(db.text('ALTER TABLE store_purchases DROP COLUMN IF EXISTS remaining_amount CASCADE'))
+            db.session.execute(db.text('ALTER TABLE almasa_private_expenses ADD COLUMN IF NOT EXISTS operation_id INTEGER'))
+            db.session.execute(db.text('ALTER TABLE almasa_private_expenses ADD COLUMN IF NOT EXISTS paid_by VARCHAR(100)'))
+            db.session.commit()
+        except Exception as e:
+            db.session.rollback()
+        
+        try:
+            db.session.execute(db.text('ALTER TABLE almasa_supply_expenses ADD COLUMN IF NOT EXISTS operation_id INTEGER'))
+            db.session.execute(db.text('ALTER TABLE almasa_supply_expenses ADD COLUMN IF NOT EXISTS paid_by VARCHAR(100)'))
+            db.session.commit()
+        except Exception as e:
+            db.session.rollback()
+        
+        # Migration للشيكات
+        try:
+            db.session.execute(db.text('ALTER TABLE almasa_checks ADD COLUMN IF NOT EXISTS operation_id INTEGER'))
+            db.session.execute(db.text('ALTER TABLE almasa_checks ADD COLUMN IF NOT EXISTS issue_date DATE'))
+            db.session.commit()
+        except Exception as e:
+            db.session.rollback()
+        
+        try:
+            db.session.execute(db.text('ALTER TABLE almasa_private_checks ADD COLUMN IF NOT EXISTS operation_id INTEGER'))
+            db.session.execute(db.text('ALTER TABLE almasa_private_checks ADD COLUMN IF NOT EXISTS issue_date DATE'))
             db.session.commit()
         except Exception as e:
             db.session.rollback()
@@ -800,13 +914,9 @@ def store_transactions():
     sizes = Size.query.order_by(Size.value.asc()).all()
     thicknesses = Thickness.query.order_by(Thickness.value.asc()).all()
     return render_template('store/transactions.html',
-                           sales=sales,
-                           purchases=purchases,
-                           customers=customers,
-                           suppliers=suppliers,
-                           categories=categories,
-                           sizes=sizes,
-                           thicknesses=thicknesses)
+                           sales=sales, purchases=purchases,
+                           customers=customers, suppliers=suppliers,
+                           categories=categories, sizes=sizes, thicknesses=thicknesses)
 
 @app.route('/store/inventory', methods=['GET', 'POST'])
 @custom_login_required
@@ -909,7 +1019,6 @@ def store_diary():
         return redirect(url_for('store_diary'))
     diary = StoreDiary.query.order_by(StoreDiary.date.asc(), StoreDiary.id.asc()).all()
     return render_template('store/diary.html', diary=diary)
-
 # ==================== الجرد (المخزون + الخزينة) ====================
 @app.route('/inventory-audit', methods=['GET', 'POST'])
 @custom_login_required
@@ -926,7 +1035,6 @@ def inventory_audit():
         
         audit_date = datetime.strptime(request.form.get('audit_date'), '%Y-%m-%d').date()
         audit_type = request.form.get('audit_type')
-        
         count = 0
         
         if audit_type == 'store':
@@ -937,11 +1045,8 @@ def inventory_audit():
             actual_quantities = request.form.getlist('store_actual_quantity[]')
             
             for i in range(len(item_names)):
-                if not item_names[i].strip():
+                if not item_names[i].strip() or not actual_quantities[i].strip():
                     continue
-                if not actual_quantities[i].strip():
-                    continue
-                
                 item_name = item_names[i]
                 item_size = item_sizes[i] if i < len(item_sizes) else ''
                 item_spec = item_specs[i] if i < len(item_specs) else ''
@@ -957,30 +1062,19 @@ def inventory_audit():
                     difference_type = 'متطابق'
                 
                 inv = StoreInventory.query.filter_by(
-                    product_type=item_name,
-                    product_size=item_size,
-                    product_spec=item_spec
+                    product_type=item_name, product_size=item_size, product_spec=item_spec
                 ).first()
                 if inv:
                     inv.current_quantity = actual_qty
                 else:
-                    inv = StoreInventory(
-                        product_type=item_name,
-                        product_size=item_size,
-                        product_spec=item_spec,
-                        current_quantity=actual_qty
-                    )
+                    inv = StoreInventory(product_type=item_name, product_size=item_size,
+                                        product_spec=item_spec, current_quantity=actual_qty)
                     db.session.add(inv)
                 
                 if difference != 0:
                     description = f"{difference_type} جرد: {item_name} {item_size} {item_spec} - {abs(difference)}"
-                    db.session.add(StoreDiary(
-                        date=audit_date,
-                        description=description,
-                        amount=0,
-                        created_by=current_user.id,
-                        created_at=datetime.utcnow()
-                    ))
+                    db.session.add(StoreDiary(date=audit_date, description=description, amount=0,
+                                              created_by=current_user.id, created_at=datetime.utcnow()))
                 
                 new_record = InventoryAudit(
                     audit_date=audit_date, audit_type='store',
@@ -999,11 +1093,8 @@ def inventory_audit():
             actual_quantities = request.form.getlist('treasury_actual_quantity[]')
             
             for i in range(len(person_names)):
-                if not person_names[i].strip():
+                if not person_names[i].strip() or not actual_quantities[i].strip():
                     continue
-                if not actual_quantities[i].strip():
-                    continue
-                
                 person_name = person_names[i]
                 account_type = account_types[i] if i < len(account_types) else ''
                 system_qty = float(system_quantities[i]) if system_quantities[i] else 0
@@ -1017,24 +1108,16 @@ def inventory_audit():
                 else:
                     difference_type = 'متطابق'
                 
-                account = TreasuryAccount.query.filter_by(
-                    person_name=person_name,
-                    account_type=account_type
-                ).first()
+                account = TreasuryAccount.query.filter_by(person_name=person_name, account_type=account_type).first()
                 if account:
                     account.balance = actual_qty
                     if difference != 0:
                         txn_type = 'deposit' if difference > 0 else 'withdrawal'
                         db.session.add(TreasuryTransaction(
-                            account_id=account.id,
-                            transaction_type=txn_type,
-                            amount=abs(difference),
-                            source=f"{difference_type} جرد",
-                            payment_method=account_type,
-                            date=audit_date,
-                            notes=f"{difference_type} جرد",
-                            created_by=current_user.id,
-                            created_at=datetime.utcnow()
+                            account_id=account.id, transaction_type=txn_type, amount=abs(difference),
+                            source=f"{difference_type} جرد", payment_method=account_type,
+                            date=audit_date, notes=f"{difference_type} جرد",
+                            created_by=current_user.id, created_at=datetime.utcnow()
                         ))
                 
                 new_record = InventoryAudit(
@@ -1071,11 +1154,9 @@ def add_quick_category():
     name = data.get('name', '').strip()
     if not name:
         return jsonify({'success': False, 'error': 'اسم فارغ'})
-    
     existing = Category.query.filter_by(name=name).first()
     if existing:
         return jsonify({'success': True, 'id': existing.id})
-    
     new_cat = Category(name=name)
     db.session.add(new_cat)
     db.session.commit()
@@ -1090,11 +1171,9 @@ def add_quick_size():
     name = data.get('name', '').strip()
     if not name:
         return jsonify({'success': False, 'error': 'اسم فارغ'})
-    
     existing = Size.query.filter_by(value=name).first()
     if existing:
         return jsonify({'success': True, 'id': existing.id})
-    
     new_size = Size(value=name)
     db.session.add(new_size)
     db.session.commit()
@@ -1109,11 +1188,9 @@ def add_quick_thickness():
     name = data.get('name', '').strip()
     if not name:
         return jsonify({'success': False, 'error': 'اسم فارغ'})
-    
     existing = Thickness.query.filter_by(value=name).first()
     if existing:
         return jsonify({'success': True, 'id': existing.id})
-    
     new_thickness = Thickness(value=name)
     db.session.add(new_thickness)
     db.session.commit()
@@ -1127,23 +1204,12 @@ def add_quick_account():
     data = request.get_json()
     person_name = data.get('person_name', '').strip()
     account_type = data.get('account_type', '').strip()
-    
     if not person_name or not account_type:
         return jsonify({'success': False, 'error': 'بيانات ناقصة'})
-    
-    existing = TreasuryAccount.query.filter_by(
-        person_name=person_name,
-        account_type=account_type
-    ).first()
-    
+    existing = TreasuryAccount.query.filter_by(person_name=person_name, account_type=account_type).first()
     if existing:
         return jsonify({'success': True, 'id': existing.id})
-    
-    new_account = TreasuryAccount(
-        person_name=person_name,
-        account_type=account_type,
-        balance=0
-    )
+    new_account = TreasuryAccount(person_name=person_name, account_type=account_type, balance=0)
     db.session.add(new_account)
     db.session.commit()
     return jsonify({'success': True, 'id': new_account.id})
@@ -1157,10 +1223,8 @@ def add_quick_party():
     party_type = data.get('party_type', 'customer')
     name = data.get('name', '').strip()
     phone = data.get('phone', '').strip()
-    
     if not name:
         return jsonify({'success': False, 'error': 'اسم فارغ'})
-    
     if party_type == 'customer':
         existing = Customer.query.filter_by(name=name).first()
         if existing:
@@ -1171,7 +1235,6 @@ def add_quick_party():
         if existing:
             return jsonify({'success': True, 'id': existing.id})
         new_party = Supplier(name=name, phone=phone)
-    
     db.session.add(new_party)
     db.session.commit()
     return jsonify({'success': True, 'id': new_party.id})
@@ -1212,13 +1275,8 @@ def inventory_audit_export():
         ws.append([
             r.audit_date.strftime('%Y-%m-%d'),
             'مخزون' if r.audit_type == 'store' else 'خزينة',
-            r.item_name or '-',
-            r.item_size or '-',
-            r.item_spec or '-',
-            r.system_quantity,
-            r.actual_quantity,
-            r.difference,
-            r.difference_type
+            r.item_name or '-', r.item_size or '-', r.item_spec or '-',
+            r.system_quantity, r.actual_quantity, r.difference, r.difference_type
         ])
     
     from io import BytesIO
@@ -1231,14 +1289,12 @@ def inventory_audit_export():
                      mimetype='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
 
 
-# ==================== التقرير الشهري ====================
 @app.route('/inventory-audit/monthly')
 @custom_login_required
 @role_required('meg', 'admin', 'mariam', 'sayed')
 def inventory_audit_monthly():
     month = request.args.get('month', datetime.now().strftime('%Y-%m'))
     year, mon = month.split('-')
-    
     from_date = date(int(year), int(mon), 1)
     if int(mon) == 12:
         to_date = date(int(year) + 1, 1, 1)
@@ -1255,8 +1311,7 @@ def inventory_audit_monthly():
     
     return render_template('inventory_audit_monthly.html',
                            records=records, month=month,
-                           total_shortage=total_shortage,
-                           total_surplus=total_surplus)
+                           total_shortage=total_shortage, total_surplus=total_surplus)
 
 # ==================== الخزينة ====================
 @app.route('/treasury')
@@ -1348,15 +1403,9 @@ def treasury_transactions():
             elif transaction_type == 'withdrawal':
                 account.balance -= amount
         new_transaction = TreasuryTransaction(
-            account_id=account_id,
-            transaction_type=transaction_type,
-            amount=amount,
-            source=source,
-            payment_method=payment_method,
-            date=record_date,
-            notes=notes,
-            created_by=current_user.id,
-            created_at=datetime.utcnow()
+            account_id=account_id, transaction_type=transaction_type, amount=amount,
+            source=source, payment_method=payment_method, date=record_date, notes=notes,
+            created_by=current_user.id, created_at=datetime.utcnow()
         )
         db.session.add(new_transaction)
         db.session.commit()
@@ -1370,10 +1419,8 @@ def treasury_transactions():
     customers = Customer.query.order_by(Customer.name.asc()).all()
     suppliers = Supplier.query.order_by(Supplier.name.asc()).all()
     return render_template('treasury/transactions.html',
-                           accounts=accounts,
-                           transactions=transactions,
-                           customers=customers,
-                           suppliers=suppliers)
+                           accounts=accounts, transactions=transactions,
+                           customers=customers, suppliers=suppliers)
 
 @app.route('/treasury/transfers', methods=['GET', 'POST'])
 @custom_login_required
@@ -1411,13 +1458,9 @@ def treasury_transfers():
             if to_persons[i].strip() and amounts[i].strip():
                 transfer = TreasuryTransfer(
                     date=datetime.strptime(date_str, '%Y-%m-%d').date(),
-                    from_person=from_person,
-                    to_person=to_persons[i],
-                    amount=float(amounts[i]),
-                    payment_method=payment_method,
-                    notes=notes,
-                    created_by=current_user.id,
-                    created_at=datetime.utcnow()
+                    from_person=from_person, to_person=to_persons[i],
+                    amount=float(amounts[i]), payment_method=payment_method,
+                    notes=notes, created_by=current_user.id, created_at=datetime.utcnow()
                 )
                 db.session.add(transfer)
         db.session.commit()
@@ -1535,15 +1578,9 @@ def financial_transactions():
                     source = f"من {from_party} إلى {to_party}"
                     txn_type_db = 'transfer'
                 new_txn = TreasuryTransaction(
-                    account_id=account.id,
-                    transaction_type=txn_type_db,
-                    amount=amount,
-                    source=source,
-                    payment_method=payment_method,
-                    date=record_date,
-                    notes=notes,
-                    created_by=current_user.id,
-                    created_at=datetime.utcnow()
+                    account_id=account.id, transaction_type=txn_type_db, amount=amount,
+                    source=source, payment_method=payment_method, date=record_date,
+                    notes=notes, created_by=current_user.id, created_at=datetime.utcnow()
                 )
                 db.session.add(new_txn)
             except Exception as e:
@@ -1557,10 +1594,8 @@ def financial_transactions():
     customers = Customer.query.order_by(Customer.name.asc()).all()
     suppliers = Supplier.query.order_by(Supplier.name.asc()).all()
     return render_template('reports/financial.html',
-                           transactions=transactions,
-                           accounts=accounts,
-                           customers=customers,
-                           suppliers=suppliers)
+                           transactions=transactions, accounts=accounts,
+                           customers=customers, suppliers=suppliers)
 
 # ==================== التقارير ====================
 @app.route('/reports')
@@ -1613,10 +1648,8 @@ def reports_customers():
         total_purchases = sum(s.total for s in sales)
         total_paid = sum(s.paid_amount for s in sales)
         customers_data.append({
-            'customer': c,
-            'total_purchases': total_purchases,
-            'total_paid': total_paid,
-            'remaining': total_purchases - total_paid
+            'customer': c, 'total_purchases': total_purchases,
+            'total_paid': total_paid, 'remaining': total_purchases - total_paid
         })
     return render_template('reports/customers.html', customers_data=customers_data)
 
@@ -1646,10 +1679,8 @@ def reports_suppliers():
         total_purchases = sum(p.total for p in purchases)
         total_paid = sum(p.paid_amount for p in purchases)
         suppliers_data.append({
-            'supplier': s,
-            'total_purchases': total_purchases,
-            'total_paid': total_paid,
-            'remaining': total_purchases - total_paid
+            'supplier': s, 'total_purchases': total_purchases,
+            'total_paid': total_paid, 'remaining': total_purchases - total_paid
         })
     return render_template('reports/suppliers.html', suppliers_data=suppliers_data)
 
@@ -1877,11 +1908,25 @@ def almasa_index():
     partnership_cranes = AlMasaCrane.query.filter_by(crane_type='partnership').order_by(AlMasaCrane.id.asc()).all()
     private_cranes = AlMasaPrivateCrane.query.order_by(AlMasaPrivateCrane.id.asc()).all()
     supplies = AlMasaSupply.query.order_by(AlMasaSupply.id.asc()).all()
+    # ✅ الإجماليات
+    total_partnership = sum(sum(o.rental_total or 0 for o in c.operations) for c in partnership_cranes)
+    total_private = sum(sum(o.rental_total or 0 for o in c.operations) for c in private_cranes)
+    total_supply = sum(sum(o.rental_total or 0 for o in s.operations) for s in supplies)
+    grand_total = total_partnership + total_private + total_supply
+    # ✅ الإجمالي العام للعمليات غير المدفوعة
+    total_unpaid = sum(o.rental_total or 0 for o in AlMasaOperation.query.filter((AlMasaOperation.check_received == False) | (AlMasaOperation.check_received == None)).all())
+    total_unpaid += sum(o.rental_total or 0 for o in AlMasaPrivateOperation.query.filter((AlMasaPrivateOperation.check_received == False) | (AlMasaPrivateOperation.check_received == None)).all())
+    total_unpaid += sum(o.rental_total or 0 for o in AlMasaSupplyOperation.query.filter((AlMasaSupplyOperation.check_received == False) | (AlMasaSupplyOperation.check_received == None)).all())
     return render_template('almasa/index.html',
                            partnership_cranes=partnership_cranes,
-                           private_cranes=private_cranes,
-                           supplies=supplies)
+                           private_cranes=private_cranes, supplies=supplies,
+                           total_partnership=total_partnership,
+                           total_private=total_private,
+                           total_supply=total_supply,
+                           grand_total=grand_total,
+                           total_unpaid=total_unpaid)
 
+# ==================== النوع 1: ونش مشاركة ====================
 @app.route('/almasa/cranes', methods=['GET', 'POST'])
 @custom_login_required
 @role_required('sayed', 'dina', 'admin', 'meg')
@@ -1898,8 +1943,7 @@ def almasa_cranes():
         for i in range(len(partner_names)):
             if partner_names[i].strip():
                 partner = AlMasaPartner(
-                    crane_id=new_crane.id,
-                    name=partner_names[i],
+                    crane_id=new_crane.id, name=partner_names[i],
                     percentage=float(partner_percentages[i]) if partner_percentages[i] else 0,
                     is_basic=True if i < len(is_basic) and is_basic[i] == '1' else False
                 )
@@ -1919,9 +1963,32 @@ def almasa_crane_detail(crane_id):
     checks = AlMasaCheck.query.filter_by(crane_id=crane_id).order_by(AlMasaCheck.due_date.asc()).all()
     expenses = AlMasaExpense.query.filter_by(crane_id=crane_id).order_by(AlMasaExpense.date.asc()).all()
     partners = AlMasaPartner.query.filter_by(crane_id=crane_id).all()
+    # ✅ الإجماليات
+    total_rental = sum(o.rental_total or 0 for o in operations)
+    total_supply = sum(o.supply_total or 0 for o in operations)
+    total_expenses = sum(e.amount or 0 for e in expenses)
+    total_paid = sum(o.rental_total or 0 for o in operations if o.check_received)
+    total_unpaid = sum(o.rental_total or 0 for o in operations if not o.check_received)
+    total_operations = total_rental
     return render_template('almasa/crane_detail.html',
                            crane=crane, operations=operations, checks=checks,
-                           expenses=expenses, partners=partners)
+                           expenses=expenses, partners=partners,
+                           total_rental=total_rental, total_supply=total_supply,
+                           total_expenses=total_expenses,
+                           total_paid=total_paid, total_unpaid=total_unpaid,
+                           total_operations=total_operations)
+
+@app.route('/almasa/cranes/<int:crane_id>/unpaid')
+@custom_login_required
+@role_required('sayed', 'dina', 'admin', 'meg')
+def almasa_crane_unpaid(crane_id):
+    crane = AlMasaCrane.query.get_or_404(crane_id)
+    operations = AlMasaOperation.query.filter_by(crane_id=crane_id).filter(
+        (AlMasaOperation.check_received == False) | (AlMasaOperation.check_received == None)
+    ).order_by(AlMasaOperation.start_date.asc()).all()
+    total_unpaid = sum(o.rental_total or 0 for o in operations)
+    return render_template('almasa/crane_unpaid.html',
+                           crane=crane, operations=operations, total_unpaid=total_unpaid)
 
 @app.route('/almasa/cranes/<int:crane_id>/delete', methods=['POST'])
 @custom_login_required
@@ -1940,15 +2007,38 @@ def almasa_add_operation():
     crane_id = int(request.form.get('crane_id'))
     start_date = datetime.strptime(request.form.get('start_date'), '%Y-%m-%d').date()
     end_date = datetime.strptime(request.form.get('end_date'), '%Y-%m-%d').date() if request.form.get('end_date') else None
-    actual_daily = float(request.form.get('actual_daily_value', 0))
-    default_daily = float(request.form.get('default_daily_value', 0))
+    supply_value = float(request.form.get('supply_value', 0))
+    rental_value = float(request.form.get('rental_value', 0))
     days_count = int(request.form.get('days_count', 0))
-    actual_total = actual_daily * days_count
-    default_total = default_daily * days_count
+    extra_hours = float(request.form.get('extra_hours', 0))
+    hour_rate = float(request.form.get('hour_rate', 0))
+    travel_days = float(request.form.get('travel_days', 0))
+    travel_rate = float(request.form.get('travel_rate', 0))
+    tax_14_enabled = request.form.get('tax_14_enabled') == 'on'
+    tax_14_value = float(request.form.get('tax_14_value', 14))
+    tax_85_enabled = request.form.get('tax_85_enabled') == 'on'
+    tax_85_value = float(request.form.get('tax_85_value', 8.5))
+    invoice_number = request.form.get('invoice_number', '').strip()
+    invoice_date_str = request.form.get('invoice_date')
+    invoice_date = datetime.strptime(invoice_date_str, '%Y-%m-%d').date() if invoice_date_str else None
+    project_name = request.form.get('project_name', '').strip()
+    project_location = request.form.get('project_location', '').strip()
+    payment_method = request.form.get('payment_method', '').strip()
+    extra_value = (extra_hours * hour_rate) + (travel_days * travel_rate)
+    supply_total = (supply_value * days_count) + extra_value
+    rental_total = (rental_value * days_count) + extra_value
     operation = AlMasaOperation(
         crane_id=crane_id, start_date=start_date, end_date=end_date,
-        actual_daily_value=actual_daily, default_daily_value=default_daily,
-        days_count=days_count, actual_total=actual_total, default_total=default_total,
+        supply_value=supply_value, rental_value=rental_value,
+        supply_total=supply_total, rental_total=rental_total,
+        days_count=days_count,
+        extra_hours=extra_hours, hour_rate=hour_rate,
+        travel_days=travel_days, travel_rate=travel_rate,
+        tax_14_enabled=tax_14_enabled, tax_14_value=tax_14_value,
+        tax_85_enabled=tax_85_enabled, tax_85_value=tax_85_value,
+        invoice_number=invoice_number, invoice_date=invoice_date,
+        project_name=project_name, project_location=project_location,
+        payment_method=payment_method,
         created_by=current_user.id
     )
     db.session.add(operation)
@@ -1975,13 +2065,59 @@ def almasa_operation_edit(op_id):
     operation = AlMasaOperation.query.get_or_404(op_id)
     operation.start_date = datetime.strptime(request.form.get('start_date'), '%Y-%m-%d').date()
     operation.end_date = datetime.strptime(request.form.get('end_date'), '%Y-%m-%d').date() if request.form.get('end_date') else None
-    operation.actual_daily_value = float(request.form.get('actual_daily_value', 0))
-    operation.default_daily_value = float(request.form.get('default_daily_value', 0))
+    operation.supply_value = float(request.form.get('supply_value', 0))
+    operation.rental_value = float(request.form.get('rental_value', 0))
     operation.days_count = int(request.form.get('days_count', 0))
-    operation.actual_total = operation.actual_daily_value * operation.days_count
-    operation.default_total = operation.default_daily_value * operation.days_count
+    operation.extra_hours = float(request.form.get('extra_hours', 0))
+    operation.hour_rate = float(request.form.get('hour_rate', 0))
+    operation.travel_days = float(request.form.get('travel_days', 0))
+    operation.travel_rate = float(request.form.get('travel_rate', 0))
+    operation.tax_14_enabled = request.form.get('tax_14_enabled') == 'on'
+    operation.tax_14_value = float(request.form.get('tax_14_value', 14))
+    operation.tax_85_enabled = request.form.get('tax_85_enabled') == 'on'
+    operation.tax_85_value = float(request.form.get('tax_85_value', 8.5))
+    operation.invoice_number = request.form.get('invoice_number', '').strip()
+    invoice_date_str = request.form.get('invoice_date')
+    operation.invoice_date = datetime.strptime(invoice_date_str, '%Y-%m-%d').date() if invoice_date_str else None
+    operation.project_name = request.form.get('project_name', '').strip()
+    operation.project_location = request.form.get('project_location', '').strip()
+    operation.payment_method = request.form.get('payment_method', '').strip()
+    extra_value = (operation.extra_hours * operation.hour_rate) + (operation.travel_days * operation.travel_rate)
+    operation.supply_total = (operation.supply_value * operation.days_count) + extra_value
+    operation.rental_total = (operation.rental_value * operation.days_count) + extra_value
     db.session.commit()
     flash('تم تعديل العملية بنجاح', 'success')
+    return redirect(url_for('almasa_crane_detail', crane_id=operation.crane_id))
+
+@app.route('/almasa/operations/<int:op_id>/update-notes', methods=['POST'])
+@custom_login_required
+@role_required('sayed', 'dina', 'admin', 'meg')
+def almasa_operation_update_notes(op_id):
+    operation = AlMasaOperation.query.get_or_404(op_id)
+    operation.notes = request.form.get('notes', '')
+    db.session.commit()
+    flash('تم تحديث الملاحظات بنجاح', 'success')
+    return redirect(url_for('almasa_crane_detail', crane_id=operation.crane_id))
+
+@app.route('/almasa/operations/<int:op_id>/receive-check', methods=['POST'])
+@custom_login_required
+@role_required('sayed', 'dina', 'admin', 'meg')
+def almasa_operation_receive_check(op_id):
+    operation = AlMasaOperation.query.get_or_404(op_id)
+    check_number = request.form.get('check_number', '').strip()
+    issue_date_str = request.form.get('issue_date')
+    issue_date = datetime.strptime(issue_date_str, '%Y-%m-%d').date() if issue_date_str else date.today()
+    check = AlMasaCheck(
+        crane_id=operation.crane_id, operation_id=op_id,
+        check_number=check_number, company_name=operation.project_name,
+        amount=operation.rental_total + (operation.rental_total * (operation.tax_14_value / 100) if operation.tax_14_enabled else 0),
+        issue_date=issue_date, status='مستلم'
+    )
+    db.session.add(check)
+    operation.check_received = True
+    operation.check_received_date = issue_date
+    db.session.commit()
+    flash('تم تسجيل استلام الشيك بنجاح', 'success')
     return redirect(url_for('almasa_crane_detail', crane_id=operation.crane_id))
 
 @app.route('/almasa/expenses/add', methods=['POST'])
@@ -1989,14 +2125,16 @@ def almasa_operation_edit(op_id):
 @role_required('sayed', 'dina', 'admin', 'meg')
 def almasa_add_expense():
     crane_id = int(request.form.get('crane_id'))
+    operation_id = request.form.get('operation_id')
+    operation_id = int(operation_id) if operation_id else None
     date_str = datetime.strptime(request.form.get('date'), '%Y-%m-%d').date()
     expense_type = request.form.get('expense_type')
     amount = float(request.form.get('amount', 0))
+    paid_by = request.form.get('paid_by', '').strip()
     notes = request.form.get('notes')
-    expense = AlMasaExpense(
-        crane_id=crane_id, date=date_str, expense_type=expense_type,
-        amount=amount, notes=notes, created_by=current_user.id
-    )
+    expense = AlMasaExpense(crane_id=crane_id, operation_id=operation_id, date=date_str,
+                            expense_type=expense_type, amount=amount, paid_by=paid_by,
+                            notes=notes, created_by=current_user.id)
     db.session.add(expense)
     db.session.commit()
     flash('تم إضافة المصروف بنجاح', 'success')
@@ -2021,6 +2159,7 @@ def almasa_expense_edit(exp_id):
     expense.date = datetime.strptime(request.form.get('date'), '%Y-%m-%d').date()
     expense.expense_type = request.form.get('expense_type')
     expense.amount = float(request.form.get('amount', 0))
+    expense.paid_by = request.form.get('paid_by', '').strip()
     expense.notes = request.form.get('notes')
     db.session.commit()
     flash('تم تعديل المصروف بنجاح', 'success')
@@ -2035,21 +2174,22 @@ def almasa_add_check():
     company_name = request.form.get('company_name')
     due_date = datetime.strptime(request.form.get('due_date'), '%Y-%m-%d').date()
     operation_ids = request.form.getlist('operation_ids[]')
-    total_actual = 0
+    total_rental = 0
     for op_id in operation_ids:
         operation = AlMasaOperation.query.get(int(op_id))
         if operation:
-            total_actual += operation.actual_total
-    check_amount = total_actual + (total_actual * 0.14)
-    check = AlMasaCheck(
-        crane_id=crane_id, check_number=check_number, company_name=company_name,
-        amount=check_amount, due_date=due_date, status='معلق'
-    )
+            total_rental += operation.rental_total
+    check_amount = total_rental + (total_rental * 0.14)
+    check = AlMasaCheck(crane_id=crane_id, check_number=check_number, company_name=company_name,
+                        amount=check_amount, due_date=due_date, status='معلق')
     db.session.add(check)
     db.session.flush()
     for op_id in operation_ids:
-        check_op = AlMasaCheckOperation(check_id=check.id, operation_id=int(op_id))
-        db.session.add(check_op)
+        db.session.add(AlMasaCheckOperation(check_id=check.id, operation_id=int(op_id)))
+        op = AlMasaOperation.query.get(int(op_id))
+        if op:
+            op.check_received = True
+            op.check_received_date = due_date
     db.session.commit()
     flash('تم إضافة الشيك بنجاح', 'success')
     return redirect(url_for('almasa_crane_detail', crane_id=crane_id))
@@ -2074,15 +2214,15 @@ def almasa_check_report(check_id):
     crane = AlMasaCrane.query.get(check.crane_id)
     check_operations = AlMasaCheckOperation.query.filter_by(check_id=check_id).all()
     operations_list = []
-    total_actual = 0
-    total_default = 0
+    total_rental = 0
+    total_supply = 0
     total_days = 0
     for co in check_operations:
         operation = AlMasaOperation.query.get(co.operation_id)
         if operation:
             operations_list.append(operation)
-            total_actual += operation.actual_total
-            total_default += operation.default_total
+            total_rental += operation.rental_total
+            total_supply += operation.supply_total
             total_days += operation.days_count
     if operations_list:
         min_date = min(o.start_date for o in operations_list)
@@ -2099,33 +2239,36 @@ def almasa_check_report(check_id):
     partners = AlMasaPartner.query.filter_by(crane_id=check.crane_id).all()
     non_basic = [p for p in partners if not p.is_basic]
     if len(non_basic) == 0:
-        total_default = total_actual
-    check_amount = total_actual + (total_actual * 0.14)
-    tax_14 = total_actual * 0.14
-    net_actual = total_actual - total_expenses
-    net_default = total_default - (total_default * 0.085) - total_expenses
-    basic_diff = (net_actual - net_default) / 2
+        total_supply = total_rental
+    first_op = operations_list[0] if operations_list else None
+    tax_14_value = first_op.tax_14_value if first_op and first_op.tax_14_enabled else 0
+    tax_85_value = first_op.tax_85_value if first_op and first_op.tax_85_enabled else 0
+    check_amount = total_rental + (total_rental * (tax_14_value / 100))
+    tax_14 = total_rental * (tax_14_value / 100)
+    admin_profit = total_rental - total_supply
+    tax_85_amount = total_supply * (tax_85_value / 100)
+    supply_profit = total_supply - total_expenses - tax_85_amount
+    basic_diff = admin_profit / 2
     partners_profit = []
     for p in partners:
         if p.is_basic:
             actual_share = basic_diff
-            default_share = net_default * (p.percentage / 100)
+            default_share = supply_profit * (p.percentage / 100)
         else:
             actual_share = 0
-            default_share = net_default * (p.percentage / 100)
+            default_share = supply_profit * (p.percentage / 100)
         partners_profit.append({
-            'partner': p,
-            'actual_share': actual_share,
-            'default_share': default_share,
-            'total_share': actual_share + default_share
+            'partner': p, 'actual_share': actual_share,
+            'default_share': default_share, 'total_share': actual_share + default_share
         })
     return render_template('almasa/check_report.html',
                            check=check, crane=crane,
                            operations=operations_list, expenses=expenses,
-                           total_actual=total_actual, total_default=total_default,
+                           total_rental=total_rental, total_supply=total_supply,
                            total_days=total_days, total_expenses=total_expenses,
                            check_amount=check_amount, tax_14=tax_14,
-                           net_actual=net_actual, net_default=net_default,
+                           admin_profit=admin_profit, supply_profit=supply_profit,
+                           tax_85_amount=tax_85_amount,
                            basic_diff=basic_diff,
                            partners=partners, partners_profit=partners_profit,
                            report_type='partnership')
@@ -2139,8 +2282,7 @@ def almasa_reports():
     supplies = AlMasaSupply.query.all()
     return render_template('almasa/reports.html',
                            partnership_cranes=partnership_cranes,
-                           private_cranes=private_cranes,
-                           supplies=supplies)
+                           private_cranes=private_cranes, supplies=supplies)
 
 @app.route('/almasa/reports/crane/<int:crane_id>')
 @custom_login_required
@@ -2150,37 +2292,36 @@ def almasa_crane_report(crane_id):
     operations = AlMasaOperation.query.filter_by(crane_id=crane_id).order_by(AlMasaOperation.start_date.asc()).all()
     expenses = AlMasaExpense.query.filter_by(crane_id=crane_id).order_by(AlMasaExpense.date.asc()).all()
     partners = AlMasaPartner.query.filter_by(crane_id=crane_id).all()
-    total_actual = sum(o.actual_total for o in operations)
-    total_default = sum(o.default_total for o in operations)
-    total_expenses = sum(e.amount for e in expenses)
+    total_rental = sum(o.rental_total or 0 for o in operations)
+    total_supply = sum(o.supply_total or 0 for o in operations)
+    total_expenses = sum(e.amount or 0 for e in expenses)
     non_basic = [p for p in partners if not p.is_basic]
     if len(non_basic) == 0:
-        total_default = total_actual
-    net_actual = total_actual - total_expenses
-    net_default = total_default - (total_default * 0.085) - total_expenses
-    basic_diff = (net_actual - net_default) / 2
+        total_supply = total_rental
+    admin_profit = total_rental - total_supply
+    supply_profit = total_supply - total_expenses
+    basic_diff = admin_profit / 2
     partners_profit = []
     for p in partners:
         if p.is_basic:
             actual_share = basic_diff
-            default_share = net_default * (p.percentage / 100)
+            default_share = supply_profit * (p.percentage / 100)
         else:
             actual_share = 0
-            default_share = net_default * (p.percentage / 100)
+            default_share = supply_profit * (p.percentage / 100)
         partners_profit.append({
-            'partner': p,
-            'actual_share': actual_share,
-            'default_share': default_share,
-            'total_share': actual_share + default_share
+            'partner': p, 'actual_share': actual_share,
+            'default_share': default_share, 'total_share': actual_share + default_share
         })
     return render_template('almasa/crane_report.html',
                            crane=crane, operations=operations, expenses=expenses,
-                           partners=partners, total_actual=total_actual,
-                           total_default=total_default, total_expenses=total_expenses,
-                           net_actual=net_actual, net_default=net_default,
+                           partners=partners, total_rental=total_rental,
+                           total_supply=total_supply, total_expenses=total_expenses,
+                           admin_profit=admin_profit, supply_profit=supply_profit,
                            basic_diff=basic_diff, partners_profit=partners_profit,
                            report_type='partnership')
 
+# ==================== النوع 2: ونش خاص ====================
 @app.route('/almasa/private-cranes', methods=['GET', 'POST'])
 @custom_login_required
 @role_required('sayed', 'dina', 'admin', 'meg')
@@ -2205,9 +2346,31 @@ def almasa_private_crane_detail(crane_id):
     operations = AlMasaPrivateOperation.query.filter_by(crane_id=crane_id).order_by(AlMasaPrivateOperation.start_date.asc()).all()
     checks = AlMasaPrivateCheck.query.filter_by(crane_id=crane_id).order_by(AlMasaPrivateCheck.due_date.asc()).all()
     expenses = AlMasaPrivateExpense.query.filter_by(crane_id=crane_id).order_by(AlMasaPrivateExpense.date.asc()).all()
+    total_rental = sum(o.rental_total or 0 for o in operations)
+    total_supply = sum(o.supply_total or 0 for o in operations)
+    total_expenses = sum(e.amount or 0 for e in expenses)
+    total_paid = sum(o.rental_total or 0 for o in operations if o.check_received)
+    total_unpaid = sum(o.rental_total or 0 for o in operations if not o.check_received)
+    total_operations = total_rental
     return render_template('almasa/private_crane_detail.html',
                            crane=crane, operations=operations,
-                           checks=checks, expenses=expenses)
+                           checks=checks, expenses=expenses,
+                           total_rental=total_rental, total_supply=total_supply,
+                           total_expenses=total_expenses,
+                           total_paid=total_paid, total_unpaid=total_unpaid,
+                           total_operations=total_operations)
+
+@app.route('/almasa/private-cranes/<int:crane_id>/unpaid')
+@custom_login_required
+@role_required('sayed', 'dina', 'admin', 'meg')
+def almasa_private_crane_unpaid(crane_id):
+    crane = AlMasaPrivateCrane.query.get_or_404(crane_id)
+    operations = AlMasaPrivateOperation.query.filter_by(crane_id=crane_id).filter(
+        (AlMasaPrivateOperation.check_received == False) | (AlMasaPrivateOperation.check_received == None)
+    ).order_by(AlMasaPrivateOperation.start_date.asc()).all()
+    total_unpaid = sum(o.rental_total or 0 for o in operations)
+    return render_template('almasa/private_crane_unpaid.html',
+                           crane=crane, operations=operations, total_unpaid=total_unpaid)
 
 @app.route('/almasa/private-cranes/<int:crane_id>/delete', methods=['POST'])
 @custom_login_required
@@ -2226,15 +2389,38 @@ def almasa_add_private_operation():
     crane_id = int(request.form.get('crane_id'))
     start_date = datetime.strptime(request.form.get('start_date'), '%Y-%m-%d').date()
     end_date = datetime.strptime(request.form.get('end_date'), '%Y-%m-%d').date() if request.form.get('end_date') else None
-    actual_daily = float(request.form.get('actual_daily_value', 0))
-    default_daily = float(request.form.get('default_daily_value', 0))
+    supply_value = float(request.form.get('supply_value', 0))
+    rental_value = float(request.form.get('rental_value', 0))
     days_count = int(request.form.get('days_count', 0))
-    actual_total = actual_daily * days_count
-    default_total = default_daily * days_count
+    extra_hours = float(request.form.get('extra_hours', 0))
+    hour_rate = float(request.form.get('hour_rate', 0))
+    travel_days = float(request.form.get('travel_days', 0))
+    travel_rate = float(request.form.get('travel_rate', 0))
+    tax_14_enabled = request.form.get('tax_14_enabled') == 'on'
+    tax_14_value = float(request.form.get('tax_14_value', 14))
+    tax_85_enabled = request.form.get('tax_85_enabled') == 'on'
+    tax_85_value = float(request.form.get('tax_85_value', 8.5))
+    invoice_number = request.form.get('invoice_number', '').strip()
+    invoice_date_str = request.form.get('invoice_date')
+    invoice_date = datetime.strptime(invoice_date_str, '%Y-%m-%d').date() if invoice_date_str else None
+    project_name = request.form.get('project_name', '').strip()
+    project_location = request.form.get('project_location', '').strip()
+    payment_method = request.form.get('payment_method', '').strip()
+    extra_value = (extra_hours * hour_rate) + (travel_days * travel_rate)
+    supply_total = (supply_value * days_count) + extra_value
+    rental_total = (rental_value * days_count) + extra_value
     operation = AlMasaPrivateOperation(
         crane_id=crane_id, start_date=start_date, end_date=end_date,
-        actual_daily_value=actual_daily, default_daily_value=default_daily,
-        days_count=days_count, actual_total=actual_total, default_total=default_total,
+        supply_value=supply_value, rental_value=rental_value,
+        supply_total=supply_total, rental_total=rental_total,
+        days_count=days_count,
+        extra_hours=extra_hours, hour_rate=hour_rate,
+        travel_days=travel_days, travel_rate=travel_rate,
+        tax_14_enabled=tax_14_enabled, tax_14_value=tax_14_value,
+        tax_85_enabled=tax_85_enabled, tax_85_value=tax_85_value,
+        invoice_number=invoice_number, invoice_date=invoice_date,
+        project_name=project_name, project_location=project_location,
+        payment_method=payment_method,
         created_by=current_user.id
     )
     db.session.add(operation)
@@ -2261,13 +2447,59 @@ def almasa_private_operation_edit(op_id):
     operation = AlMasaPrivateOperation.query.get_or_404(op_id)
     operation.start_date = datetime.strptime(request.form.get('start_date'), '%Y-%m-%d').date()
     operation.end_date = datetime.strptime(request.form.get('end_date'), '%Y-%m-%d').date() if request.form.get('end_date') else None
-    operation.actual_daily_value = float(request.form.get('actual_daily_value', 0))
-    operation.default_daily_value = float(request.form.get('default_daily_value', 0))
+    operation.supply_value = float(request.form.get('supply_value', 0))
+    operation.rental_value = float(request.form.get('rental_value', 0))
     operation.days_count = int(request.form.get('days_count', 0))
-    operation.actual_total = operation.actual_daily_value * operation.days_count
-    operation.default_total = operation.default_daily_value * operation.days_count
+    operation.extra_hours = float(request.form.get('extra_hours', 0))
+    operation.hour_rate = float(request.form.get('hour_rate', 0))
+    operation.travel_days = float(request.form.get('travel_days', 0))
+    operation.travel_rate = float(request.form.get('travel_rate', 0))
+    operation.tax_14_enabled = request.form.get('tax_14_enabled') == 'on'
+    operation.tax_14_value = float(request.form.get('tax_14_value', 14))
+    operation.tax_85_enabled = request.form.get('tax_85_enabled') == 'on'
+    operation.tax_85_value = float(request.form.get('tax_85_value', 8.5))
+    operation.invoice_number = request.form.get('invoice_number', '').strip()
+    invoice_date_str = request.form.get('invoice_date')
+    operation.invoice_date = datetime.strptime(invoice_date_str, '%Y-%m-%d').date() if invoice_date_str else None
+    operation.project_name = request.form.get('project_name', '').strip()
+    operation.project_location = request.form.get('project_location', '').strip()
+    operation.payment_method = request.form.get('payment_method', '').strip()
+    extra_value = (operation.extra_hours * operation.hour_rate) + (operation.travel_days * operation.travel_rate)
+    operation.supply_total = (operation.supply_value * operation.days_count) + extra_value
+    operation.rental_total = (operation.rental_value * operation.days_count) + extra_value
     db.session.commit()
     flash('تم تعديل العملية بنجاح', 'success')
+    return redirect(url_for('almasa_private_crane_detail', crane_id=operation.crane_id))
+
+@app.route('/almasa/private-operations/<int:op_id>/update-notes', methods=['POST'])
+@custom_login_required
+@role_required('sayed', 'dina', 'admin', 'meg')
+def almasa_private_operation_update_notes(op_id):
+    operation = AlMasaPrivateOperation.query.get_or_404(op_id)
+    operation.notes = request.form.get('notes', '')
+    db.session.commit()
+    flash('تم تحديث الملاحظات بنجاح', 'success')
+    return redirect(url_for('almasa_private_crane_detail', crane_id=operation.crane_id))
+
+@app.route('/almasa/private-operations/<int:op_id>/receive-check', methods=['POST'])
+@custom_login_required
+@role_required('sayed', 'dina', 'admin', 'meg')
+def almasa_private_operation_receive_check(op_id):
+    operation = AlMasaPrivateOperation.query.get_or_404(op_id)
+    check_number = request.form.get('check_number', '').strip()
+    issue_date_str = request.form.get('issue_date')
+    issue_date = datetime.strptime(issue_date_str, '%Y-%m-%d').date() if issue_date_str else date.today()
+    check = AlMasaPrivateCheck(
+        crane_id=operation.crane_id, operation_id=op_id,
+        check_number=check_number, company_name=operation.project_name,
+        amount=operation.rental_total + (operation.rental_total * (operation.tax_14_value / 100) if operation.tax_14_enabled else 0),
+        issue_date=issue_date, status='مستلم'
+    )
+    db.session.add(check)
+    operation.check_received = True
+    operation.check_received_date = issue_date
+    db.session.commit()
+    flash('تم تسجيل استلام الشيك بنجاح', 'success')
     return redirect(url_for('almasa_private_crane_detail', crane_id=operation.crane_id))
 
 @app.route('/almasa/private-expenses/add', methods=['POST'])
@@ -2275,14 +2507,16 @@ def almasa_private_operation_edit(op_id):
 @role_required('sayed', 'dina', 'admin', 'meg')
 def almasa_add_private_expense():
     crane_id = int(request.form.get('crane_id'))
+    operation_id = request.form.get('operation_id')
+    operation_id = int(operation_id) if operation_id else None
     date_str = datetime.strptime(request.form.get('date'), '%Y-%m-%d').date()
     expense_type = request.form.get('expense_type')
     amount = float(request.form.get('amount', 0))
+    paid_by = request.form.get('paid_by', '').strip()
     notes = request.form.get('notes')
-    expense = AlMasaPrivateExpense(
-        crane_id=crane_id, date=date_str, expense_type=expense_type,
-        amount=amount, notes=notes, created_by=current_user.id
-    )
+    expense = AlMasaPrivateExpense(crane_id=crane_id, operation_id=operation_id, date=date_str,
+                                   expense_type=expense_type, amount=amount, paid_by=paid_by,
+                                   notes=notes, created_by=current_user.id)
     db.session.add(expense)
     db.session.commit()
     flash('تم إضافة المصروف بنجاح', 'success')
@@ -2307,50 +2541,11 @@ def almasa_private_expense_edit(exp_id):
     expense.date = datetime.strptime(request.form.get('date'), '%Y-%m-%d').date()
     expense.expense_type = request.form.get('expense_type')
     expense.amount = float(request.form.get('amount', 0))
+    expense.paid_by = request.form.get('paid_by', '').strip()
     expense.notes = request.form.get('notes')
     db.session.commit()
     flash('تم تعديل المصروف بنجاح', 'success')
     return redirect(url_for('almasa_private_crane_detail', crane_id=expense.crane_id))
-
-@app.route('/almasa/private-checks/add', methods=['POST'])
-@custom_login_required
-@role_required('sayed', 'dina', 'admin', 'meg')
-def almasa_add_private_check():
-    crane_id = int(request.form.get('crane_id'))
-    check_number = request.form.get('check_number')
-    company_name = request.form.get('company_name')
-    due_date = datetime.strptime(request.form.get('due_date'), '%Y-%m-%d').date()
-    operation_ids = request.form.getlist('operation_ids[]')
-    total_actual = 0
-    for op_id in operation_ids:
-        operation = AlMasaPrivateOperation.query.get(int(op_id))
-        if operation:
-            total_actual += operation.actual_total
-    check_amount = total_actual + (total_actual * 0.14)
-    check = AlMasaPrivateCheck(
-        crane_id=crane_id, check_number=check_number, company_name=company_name,
-        amount=check_amount, due_date=due_date, status='معلق'
-    )
-    db.session.add(check)
-    db.session.flush()
-    for op_id in operation_ids:
-        check_op = AlMasaPrivateCheckOperation(check_id=check.id, operation_id=int(op_id))
-        db.session.add(check_op)
-    db.session.commit()
-    flash('تم إضافة الشيك بنجاح', 'success')
-    return redirect(url_for('almasa_private_crane_detail', crane_id=crane_id))
-
-@app.route('/almasa/private-checks/<int:check_id>/delete', methods=['POST'])
-@custom_login_required
-@role_required('sayed', 'dina', 'admin', 'meg')
-def almasa_private_check_delete(check_id):
-    check = AlMasaPrivateCheck.query.get_or_404(check_id)
-    crane_id = check.crane_id
-    AlMasaPrivateCheckOperation.query.filter_by(check_id=check_id).delete()
-    db.session.delete(check)
-    db.session.commit()
-    flash('تم حذف الشيك بنجاح', 'success')
-    return redirect(url_for('almasa_private_crane_detail', crane_id=crane_id))
 
 @app.route('/almasa/private-checks/<int:check_id>/report')
 @custom_login_required
@@ -2360,15 +2555,15 @@ def almasa_private_check_report(check_id):
     crane = AlMasaPrivateCrane.query.get(check.crane_id)
     check_operations = AlMasaPrivateCheckOperation.query.filter_by(check_id=check_id).all()
     operations_list = []
-    total_actual = 0
-    total_default = 0
+    total_rental = 0
+    total_supply = 0
     total_days = 0
     for co in check_operations:
         operation = AlMasaPrivateOperation.query.get(co.operation_id)
         if operation:
             operations_list.append(operation)
-            total_actual += operation.actual_total
-            total_default += operation.default_total
+            total_rental += operation.rental_total
+            total_supply += operation.supply_total
             total_days += operation.days_count
     if operations_list:
         min_date = min(o.start_date for o in operations_list)
@@ -2382,21 +2577,20 @@ def almasa_private_check_report(check_id):
     else:
         expenses = []
     total_expenses = sum(e.amount for e in expenses)
-    total_default = total_actual
-    check_amount = total_actual + (total_actual * 0.14)
-    tax_14 = total_actual * 0.14
-    net_actual = total_actual - total_expenses
-    net_default = total_default - (total_default * 0.085) - total_expenses
-    owner_share = net_actual
+    total_supply = total_rental
+    check_amount = total_rental + (total_rental * 0.14)
+    tax_14 = total_rental * 0.14
+    admin_profit = total_rental - total_supply
+    supply_profit = total_supply - total_expenses
+    owner_share = admin_profit + supply_profit
     return render_template('almasa/check_report.html',
                            check=check, crane=crane,
                            operations=operations_list, expenses=expenses,
-                           total_actual=total_actual, total_default=total_default,
+                           total_rental=total_rental, total_supply=total_supply,
                            total_days=total_days, total_expenses=total_expenses,
                            check_amount=check_amount, tax_14=tax_14,
-                           net_actual=net_actual, net_default=net_default,
-                           owner_share=owner_share,
-                           report_type='private')
+                           admin_profit=admin_profit, supply_profit=supply_profit,
+                           owner_share=owner_share, report_type='private')
 
 @app.route('/almasa/reports/private-crane/<int:crane_id>')
 @custom_login_required
@@ -2405,18 +2599,20 @@ def almasa_private_crane_report(crane_id):
     crane = AlMasaPrivateCrane.query.get_or_404(crane_id)
     operations = AlMasaPrivateOperation.query.filter_by(crane_id=crane_id).order_by(AlMasaPrivateOperation.start_date.asc()).all()
     expenses = AlMasaPrivateExpense.query.filter_by(crane_id=crane_id).order_by(AlMasaPrivateExpense.date.asc()).all()
-    total_actual = sum(o.actual_total for o in operations)
-    total_default = total_actual
-    total_expenses = sum(e.amount for e in expenses)
-    net_actual = total_actual - total_expenses
-    net_default = total_default - (total_default * 0.085) - total_expenses
-    owner_share = net_actual
+    total_rental = sum(o.rental_total or 0 for o in operations)
+    total_supply = total_rental
+    total_expenses = sum(e.amount or 0 for e in expenses)
+    admin_profit = total_rental - total_supply
+    supply_profit = total_supply - total_expenses
+    owner_share = admin_profit + supply_profit
     return render_template('almasa/private_crane_report.html',
                            crane=crane, operations=operations, expenses=expenses,
-                           total_actual=total_actual, total_default=total_default,
-                           total_expenses=total_expenses, net_actual=net_actual,
-                           net_default=net_default, owner_share=owner_share)
+                           total_rental=total_rental, total_supply=total_supply,
+                           total_expenses=total_expenses,
+                           admin_profit=admin_profit, supply_profit=supply_profit,
+                           owner_share=owner_share)
 
+# ==================== النوع 3: توريدات ====================
 @app.route('/almasa/supplies', methods=['GET', 'POST'])
 @custom_login_required
 @role_required('sayed', 'dina', 'admin', 'meg')
@@ -2442,8 +2638,18 @@ def almasa_supply_detail(supply_id):
     supply = AlMasaSupply.query.get_or_404(supply_id)
     operations = AlMasaSupplyOperation.query.filter_by(supply_id=supply_id).order_by(AlMasaSupplyOperation.start_date.asc()).all()
     expenses = AlMasaSupplyExpense.query.filter_by(supply_id=supply_id).order_by(AlMasaSupplyExpense.date.asc()).all()
+    total_rental = sum(o.rental_total or 0 for o in operations)
+    total_supply = sum(o.supply_total or 0 for o in operations)
+    total_expenses = sum(e.amount or 0 for e in expenses)
+    total_paid = sum(o.rental_total or 0 for o in operations if o.check_received)
+    total_unpaid = sum(o.rental_total or 0 for o in operations if not o.check_received)
+    total_operations = total_rental
     return render_template('almasa/supply_detail.html',
-                           supply=supply, operations=operations, expenses=expenses)
+                           supply=supply, operations=operations, expenses=expenses,
+                           total_rental=total_rental, total_supply=total_supply,
+                           total_expenses=total_expenses,
+                           total_paid=total_paid, total_unpaid=total_unpaid,
+                           total_operations=total_operations)
 
 @app.route('/almasa/supplies/<int:supply_id>/delete', methods=['POST'])
 @custom_login_required
@@ -2463,15 +2669,37 @@ def almasa_add_supply_operation():
     start_date = datetime.strptime(request.form.get('start_date'), '%Y-%m-%d').date()
     end_date = datetime.strptime(request.form.get('end_date'), '%Y-%m-%d').date() if request.form.get('end_date') else None
     days_count = int(request.form.get('days_count', 0))
-    supplier_daily = float(request.form.get('supplier_daily_rate', 0))
-    customer_daily = float(request.form.get('customer_daily_rate', 0))
-    supplier_total = supplier_daily * days_count
-    customer_total = customer_daily * days_count
+    supply_value = float(request.form.get('supply_value', 0))
+    rental_value = float(request.form.get('rental_value', 0))
+    extra_hours = float(request.form.get('extra_hours', 0))
+    hour_rate = float(request.form.get('hour_rate', 0))
+    travel_days = float(request.form.get('travel_days', 0))
+    travel_rate = float(request.form.get('travel_rate', 0))
+    tax_14_enabled = request.form.get('tax_14_enabled') == 'on'
+    tax_14_value = float(request.form.get('tax_14_value', 14))
+    tax_85_enabled = request.form.get('tax_85_enabled') == 'on'
+    tax_85_value = float(request.form.get('tax_85_value', 8.5))
+    invoice_number = request.form.get('invoice_number', '').strip()
+    invoice_date_str = request.form.get('invoice_date')
+    invoice_date = datetime.strptime(invoice_date_str, '%Y-%m-%d').date() if invoice_date_str else None
+    project_name = request.form.get('project_name', '').strip()
+    project_location = request.form.get('project_location', '').strip()
+    payment_method = request.form.get('payment_method', '').strip()
+    extra_value = (extra_hours * hour_rate) + (travel_days * travel_rate)
+    supply_total = (supply_value * days_count) + extra_value
+    rental_total = (rental_value * days_count) + extra_value
     operation = AlMasaSupplyOperation(
         supply_id=supply_id, start_date=start_date, end_date=end_date,
-        days_count=days_count, supplier_daily_rate=supplier_daily,
-        customer_daily_rate=customer_daily,
-        supplier_total=supplier_total, customer_total=customer_total,
+        days_count=days_count,
+        supply_value=supply_value, rental_value=rental_value,
+        supply_total=supply_total, rental_total=rental_total,
+        extra_hours=extra_hours, hour_rate=hour_rate,
+        travel_days=travel_days, travel_rate=travel_rate,
+        tax_14_enabled=tax_14_enabled, tax_14_value=tax_14_value,
+        tax_85_enabled=tax_85_enabled, tax_85_value=tax_85_value,
+        invoice_number=invoice_number, invoice_date=invoice_date,
+        project_name=project_name, project_location=project_location,
+        payment_method=payment_method,
         created_by=current_user.id
     )
     db.session.add(operation)
@@ -2498,12 +2726,51 @@ def almasa_supply_operation_edit(op_id):
     operation.start_date = datetime.strptime(request.form.get('start_date'), '%Y-%m-%d').date()
     operation.end_date = datetime.strptime(request.form.get('end_date'), '%Y-%m-%d').date() if request.form.get('end_date') else None
     operation.days_count = int(request.form.get('days_count', 0))
-    operation.supplier_daily_rate = float(request.form.get('supplier_daily_rate', 0))
-    operation.customer_daily_rate = float(request.form.get('customer_daily_rate', 0))
-    operation.supplier_total = operation.supplier_daily_rate * operation.days_count
-    operation.customer_total = operation.customer_daily_rate * operation.days_count
+    operation.supply_value = float(request.form.get('supply_value', 0))
+    operation.rental_value = float(request.form.get('rental_value', 0))
+    operation.extra_hours = float(request.form.get('extra_hours', 0))
+    operation.hour_rate = float(request.form.get('hour_rate', 0))
+    operation.travel_days = float(request.form.get('travel_days', 0))
+    operation.travel_rate = float(request.form.get('travel_rate', 0))
+    operation.tax_14_enabled = request.form.get('tax_14_enabled') == 'on'
+    operation.tax_14_value = float(request.form.get('tax_14_value', 14))
+    operation.tax_85_enabled = request.form.get('tax_85_enabled') == 'on'
+    operation.tax_85_value = float(request.form.get('tax_85_value', 8.5))
+    operation.invoice_number = request.form.get('invoice_number', '').strip()
+    invoice_date_str = request.form.get('invoice_date')
+    operation.invoice_date = datetime.strptime(invoice_date_str, '%Y-%m-%d').date() if invoice_date_str else None
+    operation.project_name = request.form.get('project_name', '').strip()
+    operation.project_location = request.form.get('project_location', '').strip()
+    operation.payment_method = request.form.get('payment_method', '').strip()
+    extra_value = (operation.extra_hours * operation.hour_rate) + (operation.travel_days * operation.travel_rate)
+    operation.supply_total = (operation.supply_value * operation.days_count) + extra_value
+    operation.rental_total = (operation.rental_value * operation.days_count) + extra_value
     db.session.commit()
     flash('تم تعديل العملية بنجاح', 'success')
+    return redirect(url_for('almasa_supply_detail', supply_id=operation.supply_id))
+
+@app.route('/almasa/supply-operations/<int:op_id>/update-notes', methods=['POST'])
+@custom_login_required
+@role_required('sayed', 'dina', 'admin', 'meg')
+def almasa_supply_operation_update_notes(op_id):
+    operation = AlMasaSupplyOperation.query.get_or_404(op_id)
+    operation.notes = request.form.get('notes', '')
+    db.session.commit()
+    flash('تم تحديث الملاحظات بنجاح', 'success')
+    return redirect(url_for('almasa_supply_detail', supply_id=operation.supply_id))
+
+@app.route('/almasa/supply-operations/<int:op_id>/receive-check', methods=['POST'])
+@custom_login_required
+@role_required('sayed', 'dina', 'admin', 'meg')
+def almasa_supply_operation_receive_check(op_id):
+    operation = AlMasaSupplyOperation.query.get_or_404(op_id)
+    check_number = request.form.get('check_number', '').strip()
+    issue_date_str = request.form.get('issue_date')
+    issue_date = datetime.strptime(issue_date_str, '%Y-%m-%d').date() if issue_date_str else date.today()
+    operation.check_received = True
+    operation.check_received_date = issue_date
+    db.session.commit()
+    flash('تم تسجيل استلام الشيك بنجاح', 'success')
     return redirect(url_for('almasa_supply_detail', supply_id=operation.supply_id))
 
 @app.route('/almasa/supply-expenses/add', methods=['POST'])
@@ -2511,14 +2778,16 @@ def almasa_supply_operation_edit(op_id):
 @role_required('sayed', 'dina', 'admin', 'meg')
 def almasa_add_supply_expense():
     supply_id = int(request.form.get('supply_id'))
+    operation_id = request.form.get('operation_id')
+    operation_id = int(operation_id) if operation_id else None
     date_str = datetime.strptime(request.form.get('date'), '%Y-%m-%d').date()
     expense_type = request.form.get('expense_type')
     amount = float(request.form.get('amount', 0))
+    paid_by = request.form.get('paid_by', '').strip()
     notes = request.form.get('notes')
-    expense = AlMasaSupplyExpense(
-        supply_id=supply_id, date=date_str, expense_type=expense_type,
-        amount=amount, notes=notes, created_by=current_user.id
-    )
+    expense = AlMasaSupplyExpense(supply_id=supply_id, operation_id=operation_id, date=date_str,
+                                  expense_type=expense_type, amount=amount, paid_by=paid_by,
+                                  notes=notes, created_by=current_user.id)
     db.session.add(expense)
     db.session.commit()
     flash('تم إضافة المصروف بنجاح', 'success')
@@ -2543,6 +2812,7 @@ def almasa_supply_expense_edit(exp_id):
     expense.date = datetime.strptime(request.form.get('date'), '%Y-%m-%d').date()
     expense.expense_type = request.form.get('expense_type')
     expense.amount = float(request.form.get('amount', 0))
+    expense.paid_by = request.form.get('paid_by', '').strip()
     expense.notes = request.form.get('notes')
     db.session.commit()
     flash('تم تعديل المصروف بنجاح', 'success')
@@ -2555,25 +2825,23 @@ def almasa_supply_report(supply_id):
     supply = AlMasaSupply.query.get_or_404(supply_id)
     operations = AlMasaSupplyOperation.query.filter_by(supply_id=supply_id).order_by(AlMasaSupplyOperation.start_date.asc()).all()
     expenses = AlMasaSupplyExpense.query.filter_by(supply_id=supply_id).order_by(AlMasaSupplyExpense.date.asc()).all()
-    total_customer = sum(o.customer_total for o in operations)
-    total_supplier = sum(o.supplier_total for o in operations)
-    total_expenses = sum(e.amount for e in expenses)
-    check_amount = total_customer
-    tax_14 = check_amount * 0.14
-    tax_85 = check_amount * 0.085
-    net_after_tax = check_amount - tax_14 - tax_85
-    net_after_expenses = net_after_tax - total_expenses
-    our_profit = net_after_expenses - total_supplier
-    per_person = our_profit / 2
+    total_rental = sum(o.rental_total or 0 for o in operations)
+    total_supply = sum(o.supply_total or 0 for o in operations)
+    total_expenses = sum(e.amount or 0 for e in expenses)
+    first_op = operations[0] if operations else None
+    tax_85_value = first_op.tax_85_value if first_op and first_op.tax_85_enabled else 0
+    tax_85_amount = total_rental * (tax_85_value / 100)
+    admin_profit = total_rental - total_supply - total_expenses - tax_85_amount
+    check_amount = total_rental
+    tax_14 = total_rental * ((first_op.tax_14_value / 100) if first_op and first_op.tax_14_enabled else 0)
     return render_template('almasa/supply_report.html',
                            supply=supply, operations=operations, expenses=expenses,
-                           total_customer=total_customer, total_supplier=total_supplier,
+                           total_rental=total_rental, total_supply=total_supply,
                            total_expenses=total_expenses, check_amount=check_amount,
-                           tax_14=tax_14, tax_85=tax_85,
-                           net_after_tax=net_after_tax,
-                           net_after_expenses=net_after_expenses,
-                           our_profit=our_profit, per_person=per_person)
+                           tax_14=tax_14, tax_85_amount=tax_85_amount,
+                           admin_profit=admin_profit)
 
+# ==================== حساب الشريك / العميل ====================
 @app.route('/almasa/partner-accounts', methods=['GET', 'POST'])
 @custom_login_required
 @role_required('sayed', 'dina', 'admin', 'meg')
@@ -2604,11 +2872,9 @@ def almasa_partner_accounts():
         amount = float(request.form.get('amount', 0))
         description = request.form.get('description')
         notes = request.form.get('notes')
-        new_record = AlMasaPartnerAccount(
-            person_name=person_name, person_type=person_type, date=date_str,
-            amount=amount, description=description, notes=notes,
-            created_by=current_user.id
-        )
+        new_record = AlMasaPartnerAccount(person_name=person_name, person_type=person_type,
+                                          date=date_str, amount=amount, description=description,
+                                          notes=notes, created_by=current_user.id)
         db.session.add(new_record)
         db.session.commit()
         flash('تم إضافة السجل بنجاح', 'success')
@@ -2625,6 +2891,34 @@ def almasa_person_report(person_name):
     return render_template('almasa/person_report.html',
                            person_name=person_name, records=records, total=total)
 
+# ==================== العمليات غير المدفوعة ====================
+@app.route('/almasa/unpaid-operations')
+@custom_login_required
+@role_required('sayed', 'dina', 'admin', 'meg')
+def almasa_unpaid_operations():
+    """العمليات اللي لسه مفيش عليها شيك (غير مدفوعة)"""
+    partnership_ops = AlMasaOperation.query.filter(
+        (AlMasaOperation.check_received == False) | (AlMasaOperation.check_received == None)
+    ).all()
+    private_ops = AlMasaPrivateOperation.query.filter(
+        (AlMasaPrivateOperation.check_received == False) | (AlMasaPrivateOperation.check_received == None)
+    ).all()
+    supply_ops = AlMasaSupplyOperation.query.filter(
+        (AlMasaSupplyOperation.check_received == False) | (AlMasaSupplyOperation.check_received == None)
+    ).all()
+    partnership_total = sum(o.rental_total or 0 for o in partnership_ops)
+    private_total = sum(o.rental_total or 0 for o in private_ops)
+    supply_total = sum(o.rental_total or 0 for o in supply_ops)
+    grand_total = partnership_total + private_total + supply_total
+    return render_template('almasa/unpaid_operations.html',
+                           partnership_ops=partnership_ops,
+                           private_ops=private_ops,
+                           supply_ops=supply_ops,
+                           partnership_total=partnership_total,
+                           private_total=private_total,
+                           supply_total=supply_total,
+                           grand_total=grand_total)
+
 # ==================== التشغيل ====================
 if __name__ == '__main__':
-    app.run(host='0.0.0.0', port=5000, debug=True)
+    app.run(host='0.0.0.0', port=5000, debug=True)    
