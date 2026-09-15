@@ -336,7 +336,7 @@ class AlMasaOperation(db.Model):
     rental_value = db.Column(db.Float, default=0)
     supply_total = db.Column(db.Float, default=0)
     rental_total = db.Column(db.Float, default=0)
-    days_count = db.Column(db.Integer, default=0)
+    days_count = db.Column(db.Float, default=0)
     extra_hours = db.Column(db.Float, default=0)
     hour_rate = db.Column(db.Float, default=0)
     travel_days = db.Column(db.Float, default=0)
