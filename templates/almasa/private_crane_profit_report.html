@@ -1,0 +1,147 @@
+{% extends "base_almasa.html" %}
+
+{% block title %}تقرير الأرباح - {{ crane.name }}{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h2 class="fw-bold text-success">📈 تقرير الأرباح - {{ crane.name }}</h2>
+    <div>
+        <a href="{{ url_for('almasa_private_crane_detail', crane_id=crane.id) }}" class="btn btn-outline-secondary">← رجوع للونش</a>
+        <a href="{{ url_for('almasa_reports') }}" class="btn btn-outline-primary">📊 كل التقارير</a>
+    </div>
+</div>
+
+<!-- بيانات الونش -->
+<div class="card border-0 shadow-sm mb-4">
+    <div class="card-header text-white fw-bold" style="background: linear-gradient(90deg, #1b5e20, #2e7d32);">
+        🚛 بيانات الونش
+    </div>
+    <div class="card-body">
+        <div class="row">
+            <div class="col-md-3 mb-2"><strong>اسم الونش:</strong> {{ crane.name }}</div>
+            <div class="col-md-3 mb-2"><strong>صاحب الونش:</strong> {{ crane.owner_name }}</div>
+            <div class="col-md-3 mb-2"><strong>عدد العمليات:</strong> {{ operations|length }}</div>
+            <div class="col-md-3 mb-2"><strong>إجمالي الأيام:</strong> {{ total_days }}</div>
+        </div>
+    </div>
+</div>
+
+<!-- ✅ ملخص الأرباح -->
+<div class="card border-0 shadow-sm mb-4">
+    <div class="card-header text-white fw-bold" style="background: linear-gradient(135deg, #1b5e20, #2e7d32);">
+        📈 ملخص الأرباح
+    </div>
+    <div class="card-body">
+        <div class="row g-3">
+            <div class="col-md-4">
+                <div class="card bg-light h-100">
+                    <div class="card-body text-center">
+                        <h6 class="text-muted">إجمالي التأجير</h6>
+                        <h3 class="fw-bold text-primary">{{ total_rental }}</h3>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="card bg-light h-100">
+                    <div class="card-body text-center">
+                        <h6 class="text-muted">المصاريف</h6>
+                        <h3 class="fw-bold text-danger">{{ total_expenses }}</h3>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="card h-100" style="background: linear-gradient(135deg, #1b5e20, #2e7d32); color: white;">
+                    <div class="card-body text-center">
+                        <h6>الصافي النهائي</h6>
+                        <h3 class="fw-bold">{{ owner_share }}</h3>
+                        <small>= التأجير - المصاريف</small>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- ✅ إجمالي الأرباح -->
+<div class="alert alert-success mb-4">
+    <h5 class="fw-bold mb-0">💰 صافي الأرباح لصاحب الونش: {{ crane.owner_name }}</h5>
+    <h3 class="fw-bold mb-0 mt-2">{{ owner_share }}</h3>
+</div>
+
+<!-- ✅ ملخص الضرايب -->
+<div class="card border-0 shadow-sm mb-4">
+    <div class="card-header bg-light fw-bold">📊 الضرايب</div>
+    <div class="card-body">
+        <div class="row g-3">
+            <div class="col-md-6">
+                <div class="card bg-light h-100">
+                    <div class="card-body text-center">
+                        <h6 class="text-muted">إجمالي ضريبة 14%</h6>
+                        <h4 class="fw-bold text-danger">{{ tax_14_amount or 0 }}</h4>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-6">
+                <div class="card bg-light h-100">
+                    <div class="card-body text-center">
+                        <h6 class="text-muted">إجمالي ضريبة 8.5%</h6>
+                        <h4 class="fw-bold text-warning">{{ tax_85_amount or 0 }}</h4>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- ✅ تفاصيل العمليات -->
+<div class="card border-0 shadow-sm">
+    <div class="card-header bg-light fw-bold">⚙️ تفاصيل العمليات</div>
+    <div class="card-body">
+        {% if operations %}
+        <div class="table-responsive">
+            <table class="table table-sm table-striped">
+                <thead>
+                    <tr>
+                        <th>رقم الفاتورة</th>
+                        <th>المشروع</th>
+                        <th>من</th>
+                        <th>إلى</th>
+                        <th>الأيام</th>
+                        <th>إجمالي التأجير</th>
+                        <th>الضريبة 14%</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for op in operations %}
+                    <tr>
+                        <td>{{ op.invoice_number or '-' }}</td>
+                        <td>{{ op.project_name or '-' }}</td>
+                        <td>{{ op.start_date.strftime('%Y-%m-%d') }}</td>
+                        <td>{{ op.end_date.strftime('%Y-%m-%d') if op.end_date else '-' }}</td>
+                        <td>{{ op.days_count }}</td>
+                        <td class="fw-bold">{{ op.rental_total }}</td>
+                        <td>
+                            {% if op.tax_14_enabled %}
+                                <span class="badge bg-danger">
+                                    {{ (op.rental_total * op.tax_14_value / 100)|round(2) }}
+                                </span>
+                            {% else %}-{% endif %}
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+                <tfoot>
+                    <tr class="fw-bold table-secondary">
+                        <td colspan="5">الإجمالي</td>
+                        <td>{{ total_rental }}</td>
+                        <td>{{ tax_14_amount or 0 }}</td>
+                    </tr>
+                </tfoot>
+            </table>
+        </div>
+        {% else %}
+        <p class="text-muted mb-0">لا توجد عمليات</p>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}
