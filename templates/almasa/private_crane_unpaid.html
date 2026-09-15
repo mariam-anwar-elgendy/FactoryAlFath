@@ -1,0 +1,90 @@
+{% extends "base_almasa.html" %}
+
+{% block title %}عمليات غير مدفوعة - {{ crane.name }}{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h2 class="fw-bold text-danger">💸 عمليات غير مدفوعة - {{ crane.name }}</h2>
+    <a href="{{ url_for('almasa_private_crane_detail', crane_id=crane.id) }}" class="btn btn-outline-secondary">← رجوع</a>
+</div>
+
+<div class="alert alert-danger">
+    <h4 class="fw-bold">💰 إجمالي اللي ليكي عند الناس: {{ total_unpaid }}</h4>
+</div>
+
+<div class="card border-0 shadow-sm">
+    <div class="card-body">
+        {% if operations %}
+        <div class="table-responsive">
+            <table class="table table-sm table-striped table-hover">
+                <thead>
+                    <tr>
+                        <th>العميل (المشروع)</th>
+                        <th>المكان</th>
+                        <th>من</th>
+                        <th>إلى</th>
+                        <th>الأيام</th>
+                        <th>إجمالي التأجير</th>
+                        <th>رقم الفاتورة</th>
+                        <th>إجراءات</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for op in operations %}
+                    <tr>
+                        <td>{{ op.project_name or '-' }}</td>
+                        <td>{{ op.project_location or '-' }}</td>
+                        <td>{{ op.start_date.strftime('%Y-%m-%d') }}</td>
+                        <td>{{ op.end_date.strftime('%Y-%m-%d') if op.end_date else '-' }}</td>
+                        <td>{{ op.days_count }}</td>
+                        <td class="fw-bold text-danger">{{ op.rental_total }}</td>
+                        <td>{{ op.invoice_number or '-' }}</td>
+                        <td>
+                            <button class="btn btn-sm btn-outline-success" data-bs-toggle="modal" data-bs-target="#receiveCheckModal{{ op.id }}">☐ استلام شيك</button>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+                <tfoot>
+                    <tr class="fw-bold table-danger">
+                        <td colspan="5">الإجمالي</td>
+                        <td>{{ total_unpaid }}</td>
+                        <td colspan="2"></td>
+                    </tr>
+                </tfoot>
+            </table>
+        </div>
+        {% else %}
+        <p class="text-muted mb-0">لا توجد عمليات غير مدفوعة</p>
+        {% endif %}
+    </div>
+</div>
+
+<!-- مودالات استلام الشيك -->
+{% for op in operations %}
+<div class="modal fade" id="receiveCheckModal{{ op.id }}" tabindex="-1">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <form method="POST" action="{{ url_for('almasa_private_operation_receive_check', op_id=op.id) }}">
+        <div class="modal-header bg-success text-white">
+          <h5 class="modal-title">✅ تسجيل استلام الشيك</h5>
+          <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+        </div>
+        <div class="modal-body">
+          <div class="alert alert-info">
+            <strong>العملية:</strong> {{ op.project_name or '-' }}<br>
+            <strong>إجمالي التأجير:</strong> {{ op.rental_total }}
+          </div>
+          <div class="mb-3"><label class="form-label fw-bold">رقم الشيك</label><input type="text" name="check_number" class="form-control" required></div>
+          <div class="mb-3"><label class="form-label fw-bold">تاريخ الإصدار</label><input type="date" name="issue_date" class="form-control" value="{{ now.strftime('%Y-%m-%d') }}" required></div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">إلغاء</button>
+          <button type="submit" class="btn btn-success">تسجيل الاستلام</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+{% endfor %}
+{% endblock %}
