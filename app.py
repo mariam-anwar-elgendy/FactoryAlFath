@@ -349,6 +349,30 @@ def init_db():
 
         db.session.commit()
         print("✅ تم تهيئة قاعدة البيانات وإنشاء المستخدمين")
+               # ==================== Migration لـ days_count → Float ====================
+        try:
+            db.session.execute(db.text('ALTER TABLE almasa_operations ALTER COLUMN days_count TYPE FLOAT'))
+            db.session.commit()
+            print("✅ days_count → Float (operations)")
+        except Exception as e:
+            db.session.rollback()
+            print(f"⚠️ operations days_count: {e}")
+
+        try:
+            db.session.execute(db.text('ALTER TABLE almasa_private_operations ALTER COLUMN days_count TYPE FLOAT'))
+            db.session.commit()
+            print("✅ days_count → Float (private)")
+        except Exception as e:
+            db.session.rollback()
+            print(f"⚠️ private days_count: {e}")
+
+        try:
+            db.session.execute(db.text('ALTER TABLE almasa_supply_operations ALTER COLUMN days_count TYPE FLOAT'))
+            db.session.commit()
+            print("✅ days_count → Float (supply)")
+        except Exception as e:
+            db.session.rollback()
+            print(f"⚠️ supply days_count: {e}")  
 
         treasury_persons = ['الحاج أحمد', 'عيد', 'عبدالله', 'الحاج فتحي']
         account_types = ['كاش', 'فودافون كاش', 'انستا باي', 'شيك']
