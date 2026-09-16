@@ -2666,8 +2666,7 @@ def almasa_operation_receive_check(op_id):
     check = AlMasaCheck(
         crane_id=operation.crane_id, operation_id=op_id,
         check_number=check_number, company_name=operation.project_name,
-        amount=operation.rental_total + (operation.rental_total * (operation.tax_14_value / 100) if operation.tax_14_enabled else 0),
-        issue_date=issue_date, status='مستلم'
+        amount = operation.supply_total + (operation.supply_total * (operation.tax_14_value / 100) if operation.tax_14_enabled else 0)
     )
     db.session.add(check)
     operation.check_received = True
