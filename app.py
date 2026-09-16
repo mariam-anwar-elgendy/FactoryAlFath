@@ -137,6 +137,7 @@ def init_db():
         
         # ==================== Migration لعمليات الونش (مشاركة) ====================
         try:
+            # الحقول القديمة
             db.session.execute(db.text('ALTER TABLE almasa_operations ADD COLUMN IF NOT EXISTS rental_value FLOAT DEFAULT 0'))
             db.session.execute(db.text('ALTER TABLE almasa_operations ADD COLUMN IF NOT EXISTS supply_value FLOAT DEFAULT 0'))
             db.session.execute(db.text('ALTER TABLE almasa_operations ADD COLUMN IF NOT EXISTS rental_total FLOAT DEFAULT 0'))
@@ -158,6 +159,20 @@ def init_db():
             db.session.execute(db.text('ALTER TABLE almasa_operations ADD COLUMN IF NOT EXISTS payment_method VARCHAR(20)'))
             db.session.execute(db.text('ALTER TABLE almasa_operations ADD COLUMN IF NOT EXISTS check_received BOOLEAN DEFAULT FALSE'))
             db.session.execute(db.text('ALTER TABLE almasa_operations ADD COLUMN IF NOT EXISTS check_received_date DATE'))
+            # ✅ الحقول الجديدة
+            db.session.execute(db.text('ALTER TABLE almasa_operations ADD COLUMN IF NOT EXISTS rental_days FLOAT DEFAULT 0'))
+            db.session.execute(db.text('ALTER TABLE almasa_operations ADD COLUMN IF NOT EXISTS supply_days FLOAT DEFAULT 0'))
+            db.session.execute(db.text('ALTER TABLE almasa_operations ADD COLUMN IF NOT EXISTS rental_extra_hours FLOAT DEFAULT 0'))
+            db.session.execute(db.text('ALTER TABLE almasa_operations ADD COLUMN IF NOT EXISTS rental_hour_rate FLOAT DEFAULT 0'))
+            db.session.execute(db.text('ALTER TABLE almasa_operations ADD COLUMN IF NOT EXISTS supply_extra_hours FLOAT DEFAULT 0'))
+            db.session.execute(db.text('ALTER TABLE almasa_operations ADD COLUMN IF NOT EXISTS supply_hour_rate FLOAT DEFAULT 0'))
+            db.session.execute(db.text('ALTER TABLE almasa_operations ADD COLUMN IF NOT EXISTS rental_travel_days FLOAT DEFAULT 0'))
+            db.session.execute(db.text('ALTER TABLE almasa_operations ADD COLUMN IF NOT EXISTS supply_travel_days FLOAT DEFAULT 0'))
+            db.session.execute(db.text('ALTER TABLE almasa_operations ADD COLUMN IF NOT EXISTS payment_check_number VARCHAR(50)'))
+            db.session.execute(db.text('ALTER TABLE almasa_operations ADD COLUMN IF NOT EXISTS payment_check_due_date DATE'))
+            db.session.execute(db.text('ALTER TABLE almasa_operations ADD COLUMN IF NOT EXISTS payment_account_name VARCHAR(100)'))
+            db.session.execute(db.text('ALTER TABLE almasa_operations ADD COLUMN IF NOT EXISTS payment_account_number VARCHAR(50)'))
+            db.session.execute(db.text('ALTER TABLE almasa_operations ADD COLUMN IF NOT EXISTS payment_date DATE'))
             db.session.commit()
             print("✅ تم إضافة كل حقول almasa_operations")
         except Exception as e:
@@ -204,6 +219,20 @@ def init_db():
             db.session.execute(db.text('ALTER TABLE almasa_private_operations ADD COLUMN IF NOT EXISTS payment_method VARCHAR(20)'))
             db.session.execute(db.text('ALTER TABLE almasa_private_operations ADD COLUMN IF NOT EXISTS check_received BOOLEAN DEFAULT FALSE'))
             db.session.execute(db.text('ALTER TABLE almasa_private_operations ADD COLUMN IF NOT EXISTS check_received_date DATE'))
+            # ✅ الحقول الجديدة
+            db.session.execute(db.text('ALTER TABLE almasa_private_operations ADD COLUMN IF NOT EXISTS rental_days FLOAT DEFAULT 0'))
+            db.session.execute(db.text('ALTER TABLE almasa_private_operations ADD COLUMN IF NOT EXISTS supply_days FLOAT DEFAULT 0'))
+            db.session.execute(db.text('ALTER TABLE almasa_private_operations ADD COLUMN IF NOT EXISTS rental_extra_hours FLOAT DEFAULT 0'))
+            db.session.execute(db.text('ALTER TABLE almasa_private_operations ADD COLUMN IF NOT EXISTS rental_hour_rate FLOAT DEFAULT 0'))
+            db.session.execute(db.text('ALTER TABLE almasa_private_operations ADD COLUMN IF NOT EXISTS supply_extra_hours FLOAT DEFAULT 0'))
+            db.session.execute(db.text('ALTER TABLE almasa_private_operations ADD COLUMN IF NOT EXISTS supply_hour_rate FLOAT DEFAULT 0'))
+            db.session.execute(db.text('ALTER TABLE almasa_private_operations ADD COLUMN IF NOT EXISTS rental_travel_days FLOAT DEFAULT 0'))
+            db.session.execute(db.text('ALTER TABLE almasa_private_operations ADD COLUMN IF NOT EXISTS supply_travel_days FLOAT DEFAULT 0'))
+            db.session.execute(db.text('ALTER TABLE almasa_private_operations ADD COLUMN IF NOT EXISTS payment_check_number VARCHAR(50)'))
+            db.session.execute(db.text('ALTER TABLE almasa_private_operations ADD COLUMN IF NOT EXISTS payment_check_due_date DATE'))
+            db.session.execute(db.text('ALTER TABLE almasa_private_operations ADD COLUMN IF NOT EXISTS payment_account_name VARCHAR(100)'))
+            db.session.execute(db.text('ALTER TABLE almasa_private_operations ADD COLUMN IF NOT EXISTS payment_account_number VARCHAR(50)'))
+            db.session.execute(db.text('ALTER TABLE almasa_private_operations ADD COLUMN IF NOT EXISTS payment_date DATE'))
             db.session.commit()
             print("✅ تم إضافة كل حقول almasa_private_operations")
         except Exception as e:
@@ -249,6 +278,20 @@ def init_db():
             db.session.execute(db.text('ALTER TABLE almasa_supply_operations ADD COLUMN IF NOT EXISTS payment_method VARCHAR(20)'))
             db.session.execute(db.text('ALTER TABLE almasa_supply_operations ADD COLUMN IF NOT EXISTS check_received BOOLEAN DEFAULT FALSE'))
             db.session.execute(db.text('ALTER TABLE almasa_supply_operations ADD COLUMN IF NOT EXISTS check_received_date DATE'))
+            # ✅ الحقول الجديدة
+            db.session.execute(db.text('ALTER TABLE almasa_supply_operations ADD COLUMN IF NOT EXISTS rental_days FLOAT DEFAULT 0'))
+            db.session.execute(db.text('ALTER TABLE almasa_supply_operations ADD COLUMN IF NOT EXISTS supply_days FLOAT DEFAULT 0'))
+            db.session.execute(db.text('ALTER TABLE almasa_supply_operations ADD COLUMN IF NOT EXISTS rental_extra_hours FLOAT DEFAULT 0'))
+            db.session.execute(db.text('ALTER TABLE almasa_supply_operations ADD COLUMN IF NOT EXISTS rental_hour_rate FLOAT DEFAULT 0'))
+            db.session.execute(db.text('ALTER TABLE almasa_supply_operations ADD COLUMN IF NOT EXISTS supply_extra_hours FLOAT DEFAULT 0'))
+            db.session.execute(db.text('ALTER TABLE almasa_supply_operations ADD COLUMN IF NOT EXISTS supply_hour_rate FLOAT DEFAULT 0'))
+            db.session.execute(db.text('ALTER TABLE almasa_supply_operations ADD COLUMN IF NOT EXISTS rental_travel_days FLOAT DEFAULT 0'))
+            db.session.execute(db.text('ALTER TABLE almasa_supply_operations ADD COLUMN IF NOT EXISTS supply_travel_days FLOAT DEFAULT 0'))
+            db.session.execute(db.text('ALTER TABLE almasa_supply_operations ADD COLUMN IF NOT EXISTS payment_check_number VARCHAR(50)'))
+            db.session.execute(db.text('ALTER TABLE almasa_supply_operations ADD COLUMN IF NOT EXISTS payment_check_due_date DATE'))
+            db.session.execute(db.text('ALTER TABLE almasa_supply_operations ADD COLUMN IF NOT EXISTS payment_account_name VARCHAR(100)'))
+            db.session.execute(db.text('ALTER TABLE almasa_supply_operations ADD COLUMN IF NOT EXISTS payment_account_number VARCHAR(50)'))
+            db.session.execute(db.text('ALTER TABLE almasa_supply_operations ADD COLUMN IF NOT EXISTS payment_date DATE'))
             db.session.commit()
             print("✅ تم إضافة كل حقول almasa_supply_operations")
         except Exception as e:
@@ -344,6 +387,64 @@ def init_db():
             db.session.rollback()
             print(f"⚠️ supply days_count: {e}")
         
+        # ==================== Migration للبيانات القديمة (للحقول الجديدة) ====================
+        try:
+            db.session.execute(db.text('''
+                UPDATE almasa_operations 
+                SET rental_days = COALESCE(days_count, 0),
+                    supply_days = COALESCE(days_count, 0),
+                    rental_travel_days = COALESCE(travel_days, 0),
+                    supply_travel_days = COALESCE(travel_days, 0),
+                    rental_extra_hours = COALESCE(extra_hours, 0),
+                    supply_extra_hours = COALESCE(extra_hours, 0),
+                    rental_hour_rate = COALESCE(hour_rate, 0),
+                    supply_hour_rate = COALESCE(hour_rate, 0)
+                WHERE rental_days IS NULL OR rental_days = 0
+            '''))
+            db.session.commit()
+            print("✅ تم نقل البيانات القديمة للحقول الجديدة (operations)")
+        except Exception as e:
+            db.session.rollback()
+            print(f"⚠️ نقل البيانات الجديدة (operations): {e}")
+
+        try:
+            db.session.execute(db.text('''
+                UPDATE almasa_private_operations 
+                SET rental_days = COALESCE(days_count, 0),
+                    supply_days = COALESCE(days_count, 0),
+                    rental_travel_days = COALESCE(travel_days, 0),
+                    supply_travel_days = COALESCE(travel_days, 0),
+                    rental_extra_hours = COALESCE(extra_hours, 0),
+                    supply_extra_hours = COALESCE(extra_hours, 0),
+                    rental_hour_rate = COALESCE(hour_rate, 0),
+                    supply_hour_rate = COALESCE(hour_rate, 0)
+                WHERE rental_days IS NULL OR rental_days = 0
+            '''))
+            db.session.commit()
+            print("✅ تم نقل البيانات القديمة للحقول الجديدة (private)")
+        except Exception as e:
+            db.session.rollback()
+            print(f"⚠️ نقل البيانات الجديدة (private): {e}")
+
+        try:
+            db.session.execute(db.text('''
+                UPDATE almasa_supply_operations 
+                SET rental_days = COALESCE(days_count, 0),
+                    supply_days = COALESCE(days_count, 0),
+                    rental_travel_days = COALESCE(travel_days, 0),
+                    supply_travel_days = COALESCE(travel_days, 0),
+                    rental_extra_hours = COALESCE(extra_hours, 0),
+                    supply_extra_hours = COALESCE(extra_hours, 0),
+                    rental_hour_rate = COALESCE(hour_rate, 0),
+                    supply_hour_rate = COALESCE(hour_rate, 0)
+                WHERE rental_days IS NULL OR rental_days = 0
+            '''))
+            db.session.commit()
+            print("✅ تم نقل البيانات القديمة للحقول الجديدة (supply)")
+        except Exception as e:
+            db.session.rollback()
+            print(f"⚠️ نقل البيانات الجديدة (supply): {e}")
+        
         # ==================== إنشاء المستخدمين ====================
         users_data = [
             {'username': 'meg', 'password': '262004', 'full_name': 'MEG', 'role': 'meg', 'is_hidden': True},
@@ -381,7 +482,7 @@ def init_db():
                 get_or_create_treasury_account(person, acc_type)
 
         print("✅ تم إنشاء حسابات الخزينة")
-
+        
 init_db()
 # ==================== Context Processor ====================
 @app.context_processor
@@ -2195,7 +2296,7 @@ def chat_unread_count():
     
     total = sum(by_user.values())
     
-    return jsonify({'total': total, 'by_user': by_user, 'by_group': {}})
+    return jsonify({'total': total, 'by_user': by_user, 'by_group': {}})    
 # ====================================================================
 # ==================== شركة الماسة ====================
 # ====================================================================
@@ -2381,7 +2482,7 @@ def almasa_crane_delete(crane_id):
 
 
 # ====================================================================
-# ✅✅✅ تعديل: almasa_add_operation — travel_supply_rate + travel_rental_rate
+# ✅✅✅ almasa_add_operation — الحسابات الجديدة
 # ====================================================================
 @app.route('/almasa/operations/add', methods=['POST'])
 @custom_login_required
@@ -2390,35 +2491,72 @@ def almasa_add_operation():
     crane_id = int(request.form.get('crane_id'))
     start_date = datetime.strptime(request.form.get('start_date'), '%Y-%m-%d').date()
     end_date = datetime.strptime(request.form.get('end_date'), '%Y-%m-%d').date() if request.form.get('end_date') else None
+    
+    # القيم اليومية
     supply_value = float(request.form.get('supply_value', 0))
     rental_value = float(request.form.get('rental_value', 0))
-    days_count = float(request.form.get('days_count', 0))
-    travel_days = float(request.form.get('travel_days', 0))
-    travel_supply_rate = float(request.form.get('travel_supply_rate', 0))
+    
+    # ✅ الحقول الجديدة — عدد الأيام (منفصلة)
+    rental_days = float(request.form.get('rental_days', 0))
+    supply_days = float(request.form.get('supply_days', 0))
+    
+    # ✅ الحقول الجديدة — ساعات إضافية (منفصلة)
+    rental_extra_hours = float(request.form.get('rental_extra_hours', 0))
+    rental_hour_rate = float(request.form.get('rental_hour_rate', 0))
+    supply_extra_hours = float(request.form.get('supply_extra_hours', 0))
+    supply_hour_rate = float(request.form.get('supply_hour_rate', 0))
+    
+    # ✅ الحقول الجديدة — أيام الطريق (منفصلة)
+    rental_travel_days = float(request.form.get('rental_travel_days', 0))
+    supply_travel_days = float(request.form.get('supply_travel_days', 0))
+    
+    # ✅ الحقول الجديدة — سعر يوم الطريق (منفصلة)
     travel_rental_rate = float(request.form.get('travel_rental_rate', 0))
+    travel_supply_rate = float(request.form.get('travel_supply_rate', 0))
+    
+    # ✅ الحقول الجديدة — الدفع
+    payment_check_number = request.form.get('payment_check_number', '').strip()
+    payment_check_due_date_str = request.form.get('payment_check_due_date')
+    payment_check_due_date = datetime.strptime(payment_check_due_date_str, '%Y-%m-%d').date() if payment_check_due_date_str else None
+    payment_account_name = request.form.get('payment_account_name', '').strip()
+    payment_account_number = request.form.get('payment_account_number', '').strip()
+    payment_date_str = request.form.get('payment_date')
+    payment_date = datetime.strptime(payment_date_str, '%Y-%m-%d').date() if payment_date_str else None
+    
+    # الضرايب
     tax_14_enabled = request.form.get('tax_14_enabled') == 'on'
     tax_14_value = float(request.form.get('tax_14_value', 14))
     tax_85_enabled = request.form.get('tax_85_enabled') == 'on'
     tax_85_value = float(request.form.get('tax_85_value', 8.5))
+    
+    # الفاتورة
     invoice_number = request.form.get('invoice_number', '').strip()
     invoice_date_str = request.form.get('invoice_date')
     invoice_date = datetime.strptime(invoice_date_str, '%Y-%m-%d').date() if invoice_date_str else None
     project_name = request.form.get('project_name', '').strip()
     project_location = request.form.get('project_location', '').strip()
     payment_method = request.form.get('payment_method', '').strip()
-    # الحسابات الجديدة — من غير ساعات إضافية
-    travel_supply_total = travel_days * travel_supply_rate
-    travel_rental_total = travel_days * travel_rental_rate
-    supply_total = (supply_value * days_count) + travel_supply_total
-    rental_total = (rental_value * days_count) + travel_rental_total
+    
+    # ✅ الحسابات الجديدة
+    rental_extra_value = (rental_extra_hours * rental_hour_rate) + (rental_travel_days * travel_rental_rate)
+    supply_extra_value = (supply_extra_hours * supply_hour_rate) + (supply_travel_days * travel_supply_rate)
+    rental_total = (rental_value * rental_days) + rental_extra_value
+    supply_total = (supply_value * supply_days) + supply_extra_value
+    
     operation = AlMasaOperation(
         crane_id=crane_id, start_date=start_date, end_date=end_date,
         supply_value=supply_value, rental_value=rental_value,
         supply_total=supply_total, rental_total=rental_total,
-        days_count=days_count,
-        travel_days=travel_days,
-        travel_supply_rate=travel_supply_rate,
-        travel_rental_rate=travel_rental_rate,
+        rental_days=rental_days, supply_days=supply_days,
+        rental_extra_hours=rental_extra_hours, rental_hour_rate=rental_hour_rate,
+        supply_extra_hours=supply_extra_hours, supply_hour_rate=supply_hour_rate,
+        rental_travel_days=rental_travel_days, supply_travel_days=supply_travel_days,
+        travel_rental_rate=travel_rental_rate, travel_supply_rate=travel_supply_rate,
+        payment_check_number=payment_check_number,
+        payment_check_due_date=payment_check_due_date,
+        payment_account_name=payment_account_name,
+        payment_account_number=payment_account_number,
+        payment_date=payment_date,
         tax_14_enabled=tax_14_enabled, tax_14_value=tax_14_value,
         tax_85_enabled=tax_85_enabled, tax_85_value=tax_85_value,
         invoice_number=invoice_number, invoice_date=invoice_date,
@@ -2446,7 +2584,7 @@ def almasa_operation_delete(op_id):
 
 
 # ====================================================================
-# ✅✅✅ تعديل: almasa_operation_edit — travel_supply_rate + travel_rental_rate
+# ✅✅✅ almasa_operation_edit — الحسابات الجديدة
 # ====================================================================
 @app.route('/almasa/operations/<int:op_id>/edit', methods=['POST'])
 @custom_login_required
@@ -2455,27 +2593,52 @@ def almasa_operation_edit(op_id):
     operation = AlMasaOperation.query.get_or_404(op_id)
     operation.start_date = datetime.strptime(request.form.get('start_date'), '%Y-%m-%d').date()
     operation.end_date = datetime.strptime(request.form.get('end_date'), '%Y-%m-%d').date() if request.form.get('end_date') else None
+    
+    # القيم اليومية
     operation.supply_value = float(request.form.get('supply_value', 0))
     operation.rental_value = float(request.form.get('rental_value', 0))
-    operation.days_count = float(request.form.get('days_count', 0))
-    operation.travel_days = float(request.form.get('travel_days', 0))
-    operation.travel_supply_rate = float(request.form.get('travel_supply_rate', 0))
+    
+    # ✅ الحقول الجديدة
+    operation.rental_days = float(request.form.get('rental_days', 0))
+    operation.supply_days = float(request.form.get('supply_days', 0))
+    operation.rental_extra_hours = float(request.form.get('rental_extra_hours', 0))
+    operation.rental_hour_rate = float(request.form.get('rental_hour_rate', 0))
+    operation.supply_extra_hours = float(request.form.get('supply_extra_hours', 0))
+    operation.supply_hour_rate = float(request.form.get('supply_hour_rate', 0))
+    operation.rental_travel_days = float(request.form.get('rental_travel_days', 0))
+    operation.supply_travel_days = float(request.form.get('supply_travel_days', 0))
     operation.travel_rental_rate = float(request.form.get('travel_rental_rate', 0))
+    operation.travel_supply_rate = float(request.form.get('travel_supply_rate', 0))
+    
+    # الدفع
+    operation.payment_check_number = request.form.get('payment_check_number', '').strip()
+    payment_check_due_date_str = request.form.get('payment_check_due_date')
+    operation.payment_check_due_date = datetime.strptime(payment_check_due_date_str, '%Y-%m-%d').date() if payment_check_due_date_str else None
+    operation.payment_account_name = request.form.get('payment_account_name', '').strip()
+    operation.payment_account_number = request.form.get('payment_account_number', '').strip()
+    payment_date_str = request.form.get('payment_date')
+    operation.payment_date = datetime.strptime(payment_date_str, '%Y-%m-%d').date() if payment_date_str else None
+    
+    # الضرايب
     operation.tax_14_enabled = request.form.get('tax_14_enabled') == 'on'
     operation.tax_14_value = float(request.form.get('tax_14_value', 14))
     operation.tax_85_enabled = request.form.get('tax_85_enabled') == 'on'
     operation.tax_85_value = float(request.form.get('tax_85_value', 8.5))
+    
+    # الفاتورة
     operation.invoice_number = request.form.get('invoice_number', '').strip()
     invoice_date_str = request.form.get('invoice_date')
     operation.invoice_date = datetime.strptime(invoice_date_str, '%Y-%m-%d').date() if invoice_date_str else None
     operation.project_name = request.form.get('project_name', '').strip()
     operation.project_location = request.form.get('project_location', '').strip()
     operation.payment_method = request.form.get('payment_method', '').strip()
-    # الحسابات الجديدة — من غير ساعات إضافية
-    travel_supply_total = operation.travel_days * operation.travel_supply_rate
-    travel_rental_total = operation.travel_days * operation.travel_rental_rate
-    operation.supply_total = (operation.supply_value * operation.days_count) + travel_supply_total
-    operation.rental_total = (operation.rental_value * operation.days_count) + travel_rental_total
+    
+    # ✅ الحسابات الجديدة
+    rental_extra_value = (operation.rental_extra_hours * operation.rental_hour_rate) + (operation.rental_travel_days * operation.travel_rental_rate)
+    supply_extra_value = (operation.supply_extra_hours * operation.supply_hour_rate) + (operation.supply_travel_days * operation.travel_supply_rate)
+    operation.rental_total = (operation.rental_value * operation.rental_days) + rental_extra_value
+    operation.supply_total = (operation.supply_value * operation.supply_days) + supply_extra_value
+    
     db.session.commit()
     flash('تم تعديل العملية بنجاح', 'success')
     return redirect(url_for('almasa_crane_detail', crane_id=operation.crane_id))
@@ -2642,7 +2805,7 @@ def almasa_check_report(check_id):
                            admin_profit=admin_profit, supply_profit=supply_profit,
                            basic_diff=basic_diff,
                            partners=partners, partners_profit=partners_profit,
-                           report_type='partnership')
+                           report_type='partnership')    
 # ====================================================================
 # ==================== النوع 2: ونش خاص ====================
 # ====================================================================
@@ -2711,7 +2874,7 @@ def almasa_private_crane_delete(crane_id):
 
 
 # ====================================================================
-# ✅✅✅ تعديل: almasa_add_private_operation — travel_supply_rate + travel_rental_rate
+# ✅✅✅ almasa_add_private_operation — الحسابات الجديدة
 # ====================================================================
 @app.route('/almasa/private-operations/add', methods=['POST'])
 @custom_login_required
@@ -2720,35 +2883,61 @@ def almasa_add_private_operation():
     crane_id = int(request.form.get('crane_id'))
     start_date = datetime.strptime(request.form.get('start_date'), '%Y-%m-%d').date()
     end_date = datetime.strptime(request.form.get('end_date'), '%Y-%m-%d').date() if request.form.get('end_date') else None
+    
     supply_value = float(request.form.get('supply_value', 0))
     rental_value = float(request.form.get('rental_value', 0))
-    days_count = float(request.form.get('days_count', 0))
-    travel_days = float(request.form.get('travel_days', 0))
-    travel_supply_rate = float(request.form.get('travel_supply_rate', 0))
+    
+    rental_days = float(request.form.get('rental_days', 0))
+    supply_days = float(request.form.get('supply_days', 0))
+    rental_extra_hours = float(request.form.get('rental_extra_hours', 0))
+    rental_hour_rate = float(request.form.get('rental_hour_rate', 0))
+    supply_extra_hours = float(request.form.get('supply_extra_hours', 0))
+    supply_hour_rate = float(request.form.get('supply_hour_rate', 0))
+    rental_travel_days = float(request.form.get('rental_travel_days', 0))
+    supply_travel_days = float(request.form.get('supply_travel_days', 0))
     travel_rental_rate = float(request.form.get('travel_rental_rate', 0))
+    travel_supply_rate = float(request.form.get('travel_supply_rate', 0))
+    
+    payment_check_number = request.form.get('payment_check_number', '').strip()
+    payment_check_due_date_str = request.form.get('payment_check_due_date')
+    payment_check_due_date = datetime.strptime(payment_check_due_date_str, '%Y-%m-%d').date() if payment_check_due_date_str else None
+    payment_account_name = request.form.get('payment_account_name', '').strip()
+    payment_account_number = request.form.get('payment_account_number', '').strip()
+    payment_date_str = request.form.get('payment_date')
+    payment_date = datetime.strptime(payment_date_str, '%Y-%m-%d').date() if payment_date_str else None
+    
     tax_14_enabled = request.form.get('tax_14_enabled') == 'on'
     tax_14_value = float(request.form.get('tax_14_value', 14))
     tax_85_enabled = request.form.get('tax_85_enabled') == 'on'
     tax_85_value = float(request.form.get('tax_85_value', 8.5))
+    
     invoice_number = request.form.get('invoice_number', '').strip()
     invoice_date_str = request.form.get('invoice_date')
     invoice_date = datetime.strptime(invoice_date_str, '%Y-%m-%d').date() if invoice_date_str else None
     project_name = request.form.get('project_name', '').strip()
     project_location = request.form.get('project_location', '').strip()
     payment_method = request.form.get('payment_method', '').strip()
-    # الحسابات الجديدة — من غير ساعات إضافية
-    travel_supply_total = travel_days * travel_supply_rate
-    travel_rental_total = travel_days * travel_rental_rate
-    supply_total = (supply_value * days_count) + travel_supply_total
-    rental_total = (rental_value * days_count) + travel_rental_total
+    
+    # ✅ الحسابات الجديدة
+    rental_extra_value = (rental_extra_hours * rental_hour_rate) + (rental_travel_days * travel_rental_rate)
+    supply_extra_value = (supply_extra_hours * supply_hour_rate) + (supply_travel_days * travel_supply_rate)
+    rental_total = (rental_value * rental_days) + rental_extra_value
+    supply_total = (supply_value * supply_days) + supply_extra_value
+    
     operation = AlMasaPrivateOperation(
         crane_id=crane_id, start_date=start_date, end_date=end_date,
         supply_value=supply_value, rental_value=rental_value,
         supply_total=supply_total, rental_total=rental_total,
-        days_count=days_count,
-        travel_days=travel_days,
-        travel_supply_rate=travel_supply_rate,
-        travel_rental_rate=travel_rental_rate,
+        rental_days=rental_days, supply_days=supply_days,
+        rental_extra_hours=rental_extra_hours, rental_hour_rate=rental_hour_rate,
+        supply_extra_hours=supply_extra_hours, supply_hour_rate=supply_hour_rate,
+        rental_travel_days=rental_travel_days, supply_travel_days=supply_travel_days,
+        travel_rental_rate=travel_rental_rate, travel_supply_rate=travel_supply_rate,
+        payment_check_number=payment_check_number,
+        payment_check_due_date=payment_check_due_date,
+        payment_account_name=payment_account_name,
+        payment_account_number=payment_account_number,
+        payment_date=payment_date,
         tax_14_enabled=tax_14_enabled, tax_14_value=tax_14_value,
         tax_85_enabled=tax_85_enabled, tax_85_value=tax_85_value,
         invoice_number=invoice_number, invoice_date=invoice_date,
@@ -2776,7 +2965,7 @@ def almasa_private_operation_delete(op_id):
 
 
 # ====================================================================
-# ✅✅✅ تعديل: almasa_private_operation_edit — travel_supply_rate + travel_rental_rate
+# ✅✅✅ almasa_private_operation_edit — الحسابات الجديدة
 # ====================================================================
 @app.route('/almasa/private-operations/<int:op_id>/edit', methods=['POST'])
 @custom_login_required
@@ -2785,27 +2974,47 @@ def almasa_private_operation_edit(op_id):
     operation = AlMasaPrivateOperation.query.get_or_404(op_id)
     operation.start_date = datetime.strptime(request.form.get('start_date'), '%Y-%m-%d').date()
     operation.end_date = datetime.strptime(request.form.get('end_date'), '%Y-%m-%d').date() if request.form.get('end_date') else None
+    
     operation.supply_value = float(request.form.get('supply_value', 0))
     operation.rental_value = float(request.form.get('rental_value', 0))
-    operation.days_count = float(request.form.get('days_count', 0))
-    operation.travel_days = float(request.form.get('travel_days', 0))
-    operation.travel_supply_rate = float(request.form.get('travel_supply_rate', 0))
+    
+    operation.rental_days = float(request.form.get('rental_days', 0))
+    operation.supply_days = float(request.form.get('supply_days', 0))
+    operation.rental_extra_hours = float(request.form.get('rental_extra_hours', 0))
+    operation.rental_hour_rate = float(request.form.get('rental_hour_rate', 0))
+    operation.supply_extra_hours = float(request.form.get('supply_extra_hours', 0))
+    operation.supply_hour_rate = float(request.form.get('supply_hour_rate', 0))
+    operation.rental_travel_days = float(request.form.get('rental_travel_days', 0))
+    operation.supply_travel_days = float(request.form.get('supply_travel_days', 0))
     operation.travel_rental_rate = float(request.form.get('travel_rental_rate', 0))
+    operation.travel_supply_rate = float(request.form.get('travel_supply_rate', 0))
+    
+    operation.payment_check_number = request.form.get('payment_check_number', '').strip()
+    payment_check_due_date_str = request.form.get('payment_check_due_date')
+    operation.payment_check_due_date = datetime.strptime(payment_check_due_date_str, '%Y-%m-%d').date() if payment_check_due_date_str else None
+    operation.payment_account_name = request.form.get('payment_account_name', '').strip()
+    operation.payment_account_number = request.form.get('payment_account_number', '').strip()
+    payment_date_str = request.form.get('payment_date')
+    operation.payment_date = datetime.strptime(payment_date_str, '%Y-%m-%d').date() if payment_date_str else None
+    
     operation.tax_14_enabled = request.form.get('tax_14_enabled') == 'on'
     operation.tax_14_value = float(request.form.get('tax_14_value', 14))
     operation.tax_85_enabled = request.form.get('tax_85_enabled') == 'on'
     operation.tax_85_value = float(request.form.get('tax_85_value', 8.5))
+    
     operation.invoice_number = request.form.get('invoice_number', '').strip()
     invoice_date_str = request.form.get('invoice_date')
     operation.invoice_date = datetime.strptime(invoice_date_str, '%Y-%m-%d').date() if invoice_date_str else None
     operation.project_name = request.form.get('project_name', '').strip()
     operation.project_location = request.form.get('project_location', '').strip()
     operation.payment_method = request.form.get('payment_method', '').strip()
-    # الحسابات الجديدة — من غير ساعات إضافية
-    travel_supply_total = operation.travel_days * operation.travel_supply_rate
-    travel_rental_total = operation.travel_days * operation.travel_rental_rate
-    operation.supply_total = (operation.supply_value * operation.days_count) + travel_supply_total
-    operation.rental_total = (operation.rental_value * operation.days_count) + travel_rental_total
+    
+    # ✅ الحسابات الجديدة
+    rental_extra_value = (operation.rental_extra_hours * operation.rental_hour_rate) + (operation.rental_travel_days * operation.travel_rental_rate)
+    supply_extra_value = (operation.supply_extra_hours * operation.supply_hour_rate) + (operation.supply_travel_days * operation.travel_supply_rate)
+    operation.rental_total = (operation.rental_value * operation.rental_days) + rental_extra_value
+    operation.supply_total = (operation.supply_value * operation.supply_days) + supply_extra_value
+    
     db.session.commit()
     flash('تم تعديل العملية بنجاح', 'success')
     return redirect(url_for('almasa_private_crane_detail', crane_id=operation.crane_id))
@@ -3006,7 +3215,7 @@ def almasa_supply_delete(supply_id):
 
 
 # ====================================================================
-# ✅✅✅ تعديل: almasa_add_supply_operation — travel_supply_rate + travel_rental_rate
+# ✅✅✅ almasa_add_supply_operation — الحسابات الجديدة
 # ====================================================================
 @app.route('/almasa/supply-operations/add', methods=['POST'])
 @custom_login_required
@@ -3015,35 +3224,61 @@ def almasa_add_supply_operation():
     supply_id = int(request.form.get('supply_id'))
     start_date = datetime.strptime(request.form.get('start_date'), '%Y-%m-%d').date()
     end_date = datetime.strptime(request.form.get('end_date'), '%Y-%m-%d').date() if request.form.get('end_date') else None
-    days_count = float(request.form.get('days_count', 0))
+    
     supply_value = float(request.form.get('supply_value', 0))
     rental_value = float(request.form.get('rental_value', 0))
-    travel_days = float(request.form.get('travel_days', 0))
-    travel_supply_rate = float(request.form.get('travel_supply_rate', 0))
+    
+    rental_days = float(request.form.get('rental_days', 0))
+    supply_days = float(request.form.get('supply_days', 0))
+    rental_extra_hours = float(request.form.get('rental_extra_hours', 0))
+    rental_hour_rate = float(request.form.get('rental_hour_rate', 0))
+    supply_extra_hours = float(request.form.get('supply_extra_hours', 0))
+    supply_hour_rate = float(request.form.get('supply_hour_rate', 0))
+    rental_travel_days = float(request.form.get('rental_travel_days', 0))
+    supply_travel_days = float(request.form.get('supply_travel_days', 0))
     travel_rental_rate = float(request.form.get('travel_rental_rate', 0))
+    travel_supply_rate = float(request.form.get('travel_supply_rate', 0))
+    
+    payment_check_number = request.form.get('payment_check_number', '').strip()
+    payment_check_due_date_str = request.form.get('payment_check_due_date')
+    payment_check_due_date = datetime.strptime(payment_check_due_date_str, '%Y-%m-%d').date() if payment_check_due_date_str else None
+    payment_account_name = request.form.get('payment_account_name', '').strip()
+    payment_account_number = request.form.get('payment_account_number', '').strip()
+    payment_date_str = request.form.get('payment_date')
+    payment_date = datetime.strptime(payment_date_str, '%Y-%m-%d').date() if payment_date_str else None
+    
     tax_14_enabled = request.form.get('tax_14_enabled') == 'on'
     tax_14_value = float(request.form.get('tax_14_value', 14))
     tax_85_enabled = request.form.get('tax_85_enabled') == 'on'
     tax_85_value = float(request.form.get('tax_85_value', 8.5))
+    
     invoice_number = request.form.get('invoice_number', '').strip()
     invoice_date_str = request.form.get('invoice_date')
     invoice_date = datetime.strptime(invoice_date_str, '%Y-%m-%d').date() if invoice_date_str else None
     project_name = request.form.get('project_name', '').strip()
     project_location = request.form.get('project_location', '').strip()
     payment_method = request.form.get('payment_method', '').strip()
-    # الحسابات الجديدة — من غير ساعات إضافية
-    travel_supply_total = travel_days * travel_supply_rate
-    travel_rental_total = travel_days * travel_rental_rate
-    supply_total = (supply_value * days_count) + travel_supply_total
-    rental_total = (rental_value * days_count) + travel_rental_total
+    
+    # ✅ الحسابات الجديدة
+    rental_extra_value = (rental_extra_hours * rental_hour_rate) + (rental_travel_days * travel_rental_rate)
+    supply_extra_value = (supply_extra_hours * supply_hour_rate) + (supply_travel_days * travel_supply_rate)
+    rental_total = (rental_value * rental_days) + rental_extra_value
+    supply_total = (supply_value * supply_days) + supply_extra_value
+    
     operation = AlMasaSupplyOperation(
         supply_id=supply_id, start_date=start_date, end_date=end_date,
-        days_count=days_count,
         supply_value=supply_value, rental_value=rental_value,
         supply_total=supply_total, rental_total=rental_total,
-        travel_days=travel_days,
-        travel_supply_rate=travel_supply_rate,
-        travel_rental_rate=travel_rental_rate,
+        rental_days=rental_days, supply_days=supply_days,
+        rental_extra_hours=rental_extra_hours, rental_hour_rate=rental_hour_rate,
+        supply_extra_hours=supply_extra_hours, supply_hour_rate=supply_hour_rate,
+        rental_travel_days=rental_travel_days, supply_travel_days=supply_travel_days,
+        travel_rental_rate=travel_rental_rate, travel_supply_rate=travel_supply_rate,
+        payment_check_number=payment_check_number,
+        payment_check_due_date=payment_check_due_date,
+        payment_account_name=payment_account_name,
+        payment_account_number=payment_account_number,
+        payment_date=payment_date,
         tax_14_enabled=tax_14_enabled, tax_14_value=tax_14_value,
         tax_85_enabled=tax_85_enabled, tax_85_value=tax_85_value,
         invoice_number=invoice_number, invoice_date=invoice_date,
@@ -3070,7 +3305,7 @@ def almasa_supply_operation_delete(op_id):
 
 
 # ====================================================================
-# ✅✅✅ تعديل: almasa_supply_operation_edit — travel_supply_rate + travel_rental_rate
+# ✅✅✅ almasa_supply_operation_edit — الحسابات الجديدة
 # ====================================================================
 @app.route('/almasa/supply-operations/<int:op_id>/edit', methods=['POST'])
 @custom_login_required
@@ -3079,27 +3314,47 @@ def almasa_supply_operation_edit(op_id):
     operation = AlMasaSupplyOperation.query.get_or_404(op_id)
     operation.start_date = datetime.strptime(request.form.get('start_date'), '%Y-%m-%d').date()
     operation.end_date = datetime.strptime(request.form.get('end_date'), '%Y-%m-%d').date() if request.form.get('end_date') else None
-    operation.days_count = float(request.form.get('days_count', 0))
+    
     operation.supply_value = float(request.form.get('supply_value', 0))
     operation.rental_value = float(request.form.get('rental_value', 0))
-    operation.travel_days = float(request.form.get('travel_days', 0))
-    operation.travel_supply_rate = float(request.form.get('travel_supply_rate', 0))
+    
+    operation.rental_days = float(request.form.get('rental_days', 0))
+    operation.supply_days = float(request.form.get('supply_days', 0))
+    operation.rental_extra_hours = float(request.form.get('rental_extra_hours', 0))
+    operation.rental_hour_rate = float(request.form.get('rental_hour_rate', 0))
+    operation.supply_extra_hours = float(request.form.get('supply_extra_hours', 0))
+    operation.supply_hour_rate = float(request.form.get('supply_hour_rate', 0))
+    operation.rental_travel_days = float(request.form.get('rental_travel_days', 0))
+    operation.supply_travel_days = float(request.form.get('supply_travel_days', 0))
     operation.travel_rental_rate = float(request.form.get('travel_rental_rate', 0))
+    operation.travel_supply_rate = float(request.form.get('travel_supply_rate', 0))
+    
+    operation.payment_check_number = request.form.get('payment_check_number', '').strip()
+    payment_check_due_date_str = request.form.get('payment_check_due_date')
+    operation.payment_check_due_date = datetime.strptime(payment_check_due_date_str, '%Y-%m-%d').date() if payment_check_due_date_str else None
+    operation.payment_account_name = request.form.get('payment_account_name', '').strip()
+    operation.payment_account_number = request.form.get('payment_account_number', '').strip()
+    payment_date_str = request.form.get('payment_date')
+    operation.payment_date = datetime.strptime(payment_date_str, '%Y-%m-%d').date() if payment_date_str else None
+    
     operation.tax_14_enabled = request.form.get('tax_14_enabled') == 'on'
     operation.tax_14_value = float(request.form.get('tax_14_value', 14))
     operation.tax_85_enabled = request.form.get('tax_85_enabled') == 'on'
     operation.tax_85_value = float(request.form.get('tax_85_value', 8.5))
+    
     operation.invoice_number = request.form.get('invoice_number', '').strip()
     invoice_date_str = request.form.get('invoice_date')
     operation.invoice_date = datetime.strptime(invoice_date_str, '%Y-%m-%d').date() if invoice_date_str else None
     operation.project_name = request.form.get('project_name', '').strip()
     operation.project_location = request.form.get('project_location', '').strip()
     operation.payment_method = request.form.get('payment_method', '').strip()
-    # الحسابات الجديدة — من غير ساعات إضافية
-    travel_supply_total = operation.travel_days * operation.travel_supply_rate
-    travel_rental_total = operation.travel_days * operation.travel_rental_rate
-    operation.supply_total = (operation.supply_value * operation.days_count) + travel_supply_total
-    operation.rental_total = (operation.rental_value * operation.days_count) + travel_rental_total
+    
+    # ✅ الحسابات الجديدة
+    rental_extra_value = (operation.rental_extra_hours * operation.rental_hour_rate) + (operation.rental_travel_days * operation.travel_rental_rate)
+    supply_extra_value = (operation.supply_extra_hours * operation.supply_hour_rate) + (operation.supply_travel_days * operation.travel_supply_rate)
+    operation.rental_total = (operation.rental_value * operation.rental_days) + rental_extra_value
+    operation.supply_total = (operation.supply_value * operation.supply_days) + supply_extra_value
+    
     db.session.commit()
     flash('تم تعديل العملية بنجاح', 'success')
     return redirect(url_for('almasa_supply_detail', supply_id=operation.supply_id))
@@ -3200,8 +3455,6 @@ def almasa_supply_report(supply_id):
                            total_expenses=total_expenses, check_amount=check_amount,
                            tax_14=tax_14, tax_85_amount=tax_85_amount,
                            admin_profit=admin_profit)
-
-
 # ====================================================================
 # ==================== تقارير الماسة (لكل ونش) ====================
 # ====================================================================
@@ -3561,4 +3814,5 @@ def almasa_unpaid_operations():
 
 # ==================== التشغيل ====================
 if __name__ == '__main__':
-    app.run(host='0.0.0.0', port=5000, debug=True)   
+    app.run(host='0.0.0.0', port=5000, debug=True)    
+    
