@@ -13,16 +13,16 @@
     <div class="col-md-3">
         <div class="card border-0 shadow-sm">
             <div class="card-body text-center">
-                <h6 class="text-muted">إجمالي الفعلي</h6>
-                <h4 class="fw-bold">{{ total_actual }}</h4>
+                <h6 class="text-muted">إجمالي التأجير (للمورد)</h6>
+                <h4 class="fw-bold text-success">{{ total_rental }}</h4>
             </div>
         </div>
     </div>
     <div class="col-md-3">
         <div class="card border-0 shadow-sm">
             <div class="card-body text-center">
-                <h6 class="text-muted">إجمالي الافتراضي</h6>
-                <h4 class="fw-bold">{{ total_default }}</h4>
+                <h6 class="text-muted">إجمالي التوريد (من العميل)</h6>
+                <h4 class="fw-bold text-primary">{{ total_supply }}</h4>
             </div>
         </div>
     </div>
@@ -37,8 +37,30 @@
     <div class="col-md-3">
         <div class="card border-0 shadow-sm">
             <div class="card-body text-center">
-                <h6 class="text-muted">الصافي الفعلي</h6>
-                <h4 class="fw-bold text-success">{{ net_actual }}</h4>
+                <h6 class="text-muted">الأرباح التوريدية</h6>
+                <h4 class="fw-bold text-info">{{ supply_profit }}</h4>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- الأرباح الإدارية والتوريدية -->
+<div class="row mb-4">
+    <div class="col-md-6">
+        <div class="card border-0 shadow-sm h-100">
+            <div class="card-header bg-primary text-white fw-bold">📈 الأرباح الإدارية</div>
+            <div class="card-body text-center">
+                <h6 class="text-muted">= إجمالي التوريد - إجمالي التأجير</h6>
+                <h3 class="fw-bold text-primary">{{ admin_profit }}</h3>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-6">
+        <div class="card border-0 shadow-sm h-100">
+            <div class="card-header bg-success text-white fw-bold">📉 الأرباح التوريدية</div>
+            <div class="card-body text-center">
+                <h6 class="text-muted">= إجمالي التأجير - المصاريف</h6>
+                <h3 class="fw-bold text-success">{{ supply_profit }}</h3>
             </div>
         </div>
     </div>
@@ -52,19 +74,34 @@
         <div class="table-responsive">
             <table class="table table-sm table-striped">
                 <thead>
-                    <tr><th>من</th><th>إلى</th><th>عدد الأيام</th><th>الفعلي</th><th>الافتراضي</th></tr>
+                    <tr>
+                        <th>من</th>
+                        <th>إلى</th>
+                        <th>أيام التأجير</th>
+                        <th>أيام التوريد</th>
+                        <th>إجمالي التأجير</th>
+                        <th>إجمالي التوريد</th>
+                    </tr>
                 </thead>
                 <tbody>
                     {% for op in operations %}
                     <tr>
                         <td>{{ op.start_date.strftime('%Y-%m-%d') }}</td>
                         <td>{{ op.end_date.strftime('%Y-%m-%d') if op.end_date else '-' }}</td>
-                        <td>{{ op.days_count }}</td>
-                        <td>{{ op.actual_total }}</td>
-                        <td>{{ op.default_total }}</td>
+                        <td>{{ op.rental_days or op.days_count or 0 }}</td>
+                        <td>{{ op.supply_days or op.days_count or 0 }}</td>
+                        <td>{{ op.rental_total }}</td>
+                        <td>{{ op.supply_total }}</td>
                     </tr>
                     {% endfor %}
                 </tbody>
+                <tfoot>
+                    <tr class="fw-bold table-secondary">
+                        <td colspan="4">الإجمالي</td>
+                        <td>{{ total_rental }}</td>
+                        <td>{{ total_supply }}</td>
+                    </tr>
+                </tfoot>
             </table>
         </div>
         {% else %}
@@ -79,13 +116,14 @@
         👥 توزيع الأرباح
     </div>
     <div class="card-body">
+        {% if partners_profit %}
         <table class="table table-striped">
             <thead>
                 <tr>
                     <th>الشريك</th>
                     <th>النسبة</th>
-                    <th>الصافي الفعلي للفرد</th>
-                    <th>الصافي الافتراضي للفرد</th>
+                    <th>حصة الأرباح الإدارية</th>
+                    <th>حصة الأرباح التوريدية</th>
                     <th>الصافي النهائي</th>
                 </tr>
             </thead>
@@ -104,6 +142,9 @@
                 {% endfor %}
             </tbody>
         </table>
+        {% else %}
+        <p class="text-muted mb-0">لا يوجد شركاء</p>
+        {% endif %}
     </div>
 </div>
 {% endblock %}
