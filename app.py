@@ -2433,7 +2433,7 @@ def almasa_operation_edit(op_id):
     operation.end_date = datetime.strptime(request.form.get('end_date'), '%Y-%m-%d').date() if request.form.get('end_date') else None
     operation.supply_value = float(request.form.get('supply_value', 0))
     operation.rental_value = float(request.form.get('rental_value', 0))
-    operation.days_count = int(request.form.get('days_count', 0))
+    operation.days_count = float(request.form.get('days_count', 0))
     operation.extra_hours = float(request.form.get('extra_hours', 0))
     operation.hour_rate = float(request.form.get('hour_rate', 0))
     operation.travel_days = float(request.form.get('travel_days', 0))
@@ -2696,7 +2696,7 @@ def almasa_add_private_operation():
     end_date = datetime.strptime(request.form.get('end_date'), '%Y-%m-%d').date() if request.form.get('end_date') else None
     supply_value = float(request.form.get('supply_value', 0))
     rental_value = float(request.form.get('rental_value', 0))
-    days_count = int(request.form.get('days_count', 0))
+    days_count = float(request.form.get('days_count', 0))
     extra_hours = float(request.form.get('extra_hours', 0))
     hour_rate = float(request.form.get('hour_rate', 0))
     travel_days = float(request.form.get('travel_days', 0))
@@ -2756,7 +2756,7 @@ def almasa_private_operation_edit(op_id):
     operation.end_date = datetime.strptime(request.form.get('end_date'), '%Y-%m-%d').date() if request.form.get('end_date') else None
     operation.supply_value = float(request.form.get('supply_value', 0))
     operation.rental_value = float(request.form.get('rental_value', 0))
-    operation.days_count = int(request.form.get('days_count', 0))
+    operation.days_count = float(request.form.get('days_count', 0))
     operation.extra_hours = float(request.form.get('extra_hours', 0))
     operation.hour_rate = float(request.form.get('hour_rate', 0))
     operation.travel_days = float(request.form.get('travel_days', 0))
@@ -2980,7 +2980,7 @@ def almasa_add_supply_operation():
     supply_id = int(request.form.get('supply_id'))
     start_date = datetime.strptime(request.form.get('start_date'), '%Y-%m-%d').date()
     end_date = datetime.strptime(request.form.get('end_date'), '%Y-%m-%d').date() if request.form.get('end_date') else None
-    days_count = int(request.form.get('days_count', 0))
+    days_count = float(request.form.get('days_count', 0))
     supply_value = float(request.form.get('supply_value', 0))
     rental_value = float(request.form.get('rental_value', 0))
     extra_hours = float(request.form.get('extra_hours', 0))
@@ -3039,7 +3039,7 @@ def almasa_supply_operation_edit(op_id):
     operation = AlMasaSupplyOperation.query.get_or_404(op_id)
     operation.start_date = datetime.strptime(request.form.get('start_date'), '%Y-%m-%d').date()
     operation.end_date = datetime.strptime(request.form.get('end_date'), '%Y-%m-%d').date() if request.form.get('end_date') else None
-    operation.days_count = int(request.form.get('days_count', 0))
+    operation.days_count = float(request.form.get('days_count', 0))
     operation.supply_value = float(request.form.get('supply_value', 0))
     operation.rental_value = float(request.form.get('rental_value', 0))
     operation.extra_hours = float(request.form.get('extra_hours', 0))
