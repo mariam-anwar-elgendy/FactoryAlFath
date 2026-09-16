@@ -19,6 +19,8 @@
                 z-index: 1045;
                 transform: translateX(100%);
                 transition: transform 0.3s ease-in-out;
+                overflow-y: auto;
+                padding-top: 20px;
             }
             .sidebar.show {
                 transform: translateX(0) !important;
@@ -43,6 +45,9 @@
                 top: 56px;
                 height: calc(100vh - 56px);
                 overflow-y: auto;
+            }
+            .sidebar-backdrop {
+                display: none !important;
             }
         }
         .nav-link {
