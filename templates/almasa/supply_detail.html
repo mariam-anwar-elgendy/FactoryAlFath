@@ -62,7 +62,8 @@
                         <th>المكان</th>
                         <th>من</th>
                         <th>إلى</th>
-                        <th>الأيام</th>
+                        <th>أيام التأجير</th>
+                        <th>أيام التوريد</th>
                         <th>سعر التأجير</th>
                         <th>سعر التوريد</th>
                         <th>إجمالي التأجير</th>
@@ -80,11 +81,12 @@
                         <td>{{ op.project_location or '-' }}</td>
                         <td>{{ op.start_date.strftime('%Y-%m-%d') }}</td>
                         <td>{{ op.end_date.strftime('%Y-%m-%d') if op.end_date else '-' }}</td>
-                        <td>{{ op.days_count }}</td>
-                        <td>{{ op.supply_value }}</td>
+                        <td>{{ op.rental_days or op.days_count or 0 }}</td>
+                        <td>{{ op.supply_days or op.days_count or 0 }}</td>
                         <td>{{ op.rental_value }}</td>
-                        <td>{{ op.supply_total }}</td>
-                        <td class="fw-bold">{{ op.rental_total }}</td>
+                        <td>{{ op.supply_value }}</td>
+                        <td>{{ op.rental_total }}</td>
+                        <td class="fw-bold text-warning">{{ op.supply_total }}</td>
                         <td>
                             {% if op.check_received %}
                                 <span class="badge bg-success">✅ مستلم</span>
@@ -108,9 +110,9 @@
                 </tbody>
                 <tfoot>
                     <tr class="fw-bold table-secondary">
-                        <td colspan="8">الإجمالي</td>
-                        <td>{{ total_supply }}</td>
+                        <td colspan="9">الإجمالي</td>
                         <td>{{ total_rental }}</td>
+                        <td>{{ total_supply }}</td>
                         <td colspan="3"></td>
                     </tr>
                 </tfoot>
@@ -121,7 +123,7 @@
 </div>
 
 <!-- المصاريف -->
-<div class="card border-0 shadow-sm">
+<div class="card border-0 shadow-sm mb-4">
     <div class="card-header bg-light fw-bold d-flex justify-content-between align-items-center">
         <span>💸 المصاريف</span>
         <button class="btn btn-sm btn-warning" data-bs-toggle="modal" data-bs-target="#addExpenseModal">➕ إضافة مصروف</button>
@@ -154,7 +156,14 @@
         {% else %}<p class="text-muted mb-0">لا توجد مصاريف</p>{% endif %}
     </div>
 </div>
-<!-- مودال إضافة عملية -->
+
+<!-- ملاحظة -->
+{% if supply.notes %}
+<div class="alert alert-warning">
+    <strong>📝 ملاحظات:</strong> {{ supply.notes }}
+</div>
+{% endif %}
+<!-- ==================== مودال إضافة عملية ==================== -->
 <div class="modal fade" id="addOperationModal" tabindex="-1">
   <div class="modal-dialog modal-xl">
     <div class="modal-content">
@@ -174,22 +183,54 @@
             <div class="col-md-6 mb-3"><label class="form-label fw-bold">اسم المشروع</label><input type="text" name="project_name" class="form-control"></div>
             <div class="col-md-6 mb-3"><label class="form-label fw-bold">مكان المشروع</label><input type="text" name="project_location" class="form-control"></div>
           </div>
-          <h6 class="fw-bold text-warning mb-3 mt-3">💰 القيم اليومية</h6>
-          <div class="row">
-            <div class="col-md-4 mb-3"><label class="form-label fw-bold">سعر التأجير </label><input type="number" step="0.01" name="supply_value" class="form-control" value="0" required></div>
-            <div class="col-md-4 mb-3"><label class="form-label fw-bold">سعر التوريد </label><input type="number" step="0.01" name="rental_value" class="form-control" value="0" required></div>
-            <div class="col-md-4 mb-3"><label class="form-label fw-bold">عدد الأيام</label><input type="number" step="any" name="days_count" class="form-control" value="0" required></div>
+
+          <!-- ==================== قسم التأجير (للمورد) ==================== -->
+          <div class="card border-warning mb-3">
+            <div class="card-header bg-warning text-white fw-bold">
+              💰 التأجير (للمورد)
+            </div>
+            <div class="card-body">
+              <div class="row">
+                <div class="col-md-4 mb-3"><label class="form-label fw-bold">سعر التأجير (يومي)</label><input type="number" step="0.01" name="rental_value" class="form-control" value="0" required></div>
+                <div class="col-md-4 mb-3"><label class="form-label fw-bold">عدد أيام التأجير</label><input type="number" step="any" name="rental_days" class="form-control" value="0" required></div>
+              </div>
+              <h6 class="fw-bold text-warning mb-3 mt-3">⏰ ساعات إضافية للتأجير</h6>
+              <div class="row">
+                <div class="col-md-6 mb-3"><label class="form-label fw-bold">عدد الساعات</label><input type="number" step="0.01" name="rental_extra_hours" class="form-control" value="0"></div>
+                <div class="col-md-6 mb-3"><label class="form-label fw-bold">سعر الساعة</label><input type="number" step="0.01" name="rental_hour_rate" class="form-control" value="0"></div>
+              </div>
+              <h6 class="fw-bold text-warning mb-3 mt-3">🚛 أيام الطريق للتأجير</h6>
+              <div class="row">
+                <div class="col-md-6 mb-3"><label class="form-label fw-bold">عدد أيام الطريق</label><input type="number" step="0.01" name="rental_travel_days" class="form-control" value="0"></div>
+                <div class="col-md-6 mb-3"><label class="form-label fw-bold">سعر يوم الطريق</label><input type="number" step="0.01" name="travel_rental_rate" class="form-control" value="0"></div>
+              </div>
+            </div>
           </div>
-          <h6 class="fw-bold text-warning mb-3 mt-3">⏰ ساعات إضافية <small class="text-muted">(بتتضاف على العميل والمورد)</small></h6>
-          <div class="row">
-            <div class="col-md-6 mb-3"><label class="form-label fw-bold">عدد الساعات الإضافية</label><input type="number" step="0.01" name="extra_hours" class="form-control" value="0"></div>
-            <div class="col-md-6 mb-3"><label class="form-label fw-bold">سعر الساعة</label><input type="number" step="0.01" name="hour_rate" class="form-control" value="0"></div>
+
+          <!-- ==================== قسم التوريد (من العميل) ==================== -->
+          <div class="card border-warning mb-3">
+            <div class="card-header bg-warning text-white fw-bold">
+              💰 التوريد (من العميل)
+            </div>
+            <div class="card-body">
+              <div class="row">
+                <div class="col-md-4 mb-3"><label class="form-label fw-bold">سعر التوريد (يومي)</label><input type="number" step="0.01" name="supply_value" class="form-control" value="0" required></div>
+                <div class="col-md-4 mb-3"><label class="form-label fw-bold">عدد أيام التوريد</label><input type="number" step="any" name="supply_days" class="form-control" value="0" required></div>
+              </div>
+              <h6 class="fw-bold text-warning mb-3 mt-3">⏰ ساعات إضافية للتوريد</h6>
+              <div class="row">
+                <div class="col-md-6 mb-3"><label class="form-label fw-bold">عدد الساعات</label><input type="number" step="0.01" name="supply_extra_hours" class="form-control" value="0"></div>
+                <div class="col-md-6 mb-3"><label class="form-label fw-bold">سعر الساعة</label><input type="number" step="0.01" name="supply_hour_rate" class="form-control" value="0"></div>
+              </div>
+              <h6 class="fw-bold text-warning mb-3 mt-3">🚛 أيام الطريق للتوريد</h6>
+              <div class="row">
+                <div class="col-md-6 mb-3"><label class="form-label fw-bold">عدد أيام الطريق</label><input type="number" step="0.01" name="supply_travel_days" class="form-control" value="0"></div>
+                <div class="col-md-6 mb-3"><label class="form-label fw-bold">سعر يوم الطريق</label><input type="number" step="0.01" name="travel_supply_rate" class="form-control" value="0"></div>
+              </div>
+            </div>
           </div>
-          <h6 class="fw-bold text-warning mb-3 mt-3">🚛 أيام الطريق <small class="text-muted">(بتتضاف على العميل والمورد)</small></h6>
-          <div class="row">
-            <div class="col-md-6 mb-3"><label class="form-label fw-bold">عدد أيام الطريق</label><input type="number" step="0.01" name="travel_days" class="form-control" value="0"></div>
-            <div class="col-md-6 mb-3"><label class="form-label fw-bold">سعر يوم الطريق</label><input type="number" step="0.01" name="travel_rate" class="form-control" value="0"></div>
-          </div>   
+
+          <!-- ==================== الضرايب ==================== -->
           <h6 class="fw-bold text-warning mb-3 mt-3">📊 الضرايب</h6>
           <div class="row">
             <div class="col-md-6 mb-3">
@@ -201,26 +242,69 @@
               <input type="number" step="0.01" name="tax_85_value" class="form-control mt-2" value="8.5">
             </div>
           </div>
-          <h6 class="fw-bold text-warning mb-3 mt-3">🧾 الفاتورة</h6>
+
+          <!-- ==================== طريقة الدفع + الحقول الديناميكية ==================== -->
+          <h6 class="fw-bold text-warning mb-3 mt-3">💳 طريقة الدفع</h6>
           <div class="row">
-            <div class="col-md-4 mb-3"><label class="form-label fw-bold">رقم الفاتورة</label><input type="text" name="invoice_number" class="form-control"></div>
-            <div class="col-md-4 mb-3"><label class="form-label fw-bold">تاريخ الإصدار</label><input type="date" name="invoice_date" class="form-control"></div>
-            <div class="col-md-4 mb-3"><label class="form-label fw-bold">طريقة السداد</label>
-              <select name="payment_method" class="form-select">
+            <div class="col-md-4 mb-3">
+              <label class="form-label fw-bold">طريقة الدفع</label>
+              <select name="payment_method" class="form-select payment-method-select" onchange="showPaymentFields(this, 'add')">
                 <option value="">اختر...</option>
-                <option value="نقدي">نقدي</option>
                 <option value="شيك">شيك</option>
+                <option value="نقدي">نقدي</option>
+                <option value="تحويل بنكي">تحويل بنكي</option>
+                <option value="انستا باي">انستا باي</option>
+                <option value="فودافون كاش">فودافون كاش</option>
               </select>
             </div>
+            <div class="col-md-8 mb-3">
+              <!-- حقول الشيك -->
+              <div id="add_payment_check" class="payment-fields" style="display:none;">
+                <div class="row">
+                  <div class="col-md-6 mb-2"><label class="form-label fw-bold small">رقم الشيك</label><input type="text" name="payment_check_number" class="form-control form-control-sm"></div>
+                  <div class="col-md-6 mb-2"><label class="form-label fw-bold small">تاريخ الاستحقاق</label><input type="date" name="payment_check_due_date" class="form-control form-control-sm"></div>
+                </div>
+              </div>
+              <!-- حقول التحويل البنكي -->
+              <div id="add_payment_bank" class="payment-fields" style="display:none;">
+                <div class="row">
+                  <div class="col-md-6 mb-2"><label class="form-label fw-bold small">اسم الحساب</label><input type="text" name="payment_account_name" class="form-control form-control-sm"></div>
+                  <div class="col-md-6 mb-2"><label class="form-label fw-bold small">التاريخ</label><input type="date" name="payment_date" class="form-control form-control-sm"></div>
+                </div>
+              </div>
+              <!-- حقول انستا باي -->
+              <div id="add_payment_insta" class="payment-fields" style="display:none;">
+                <div class="row">
+                  <div class="col-md-6 mb-2"><label class="form-label fw-bold small">الرقم</label><input type="text" name="payment_account_number" class="form-control form-control-sm"></div>
+                  <div class="col-md-6 mb-2"><label class="form-label fw-bold small">التاريخ</label><input type="date" name="payment_date_insta" class="form-control form-control-sm"></div>
+                </div>
+              </div>
+              <!-- حقول فودافون كاش -->
+              <div id="add_payment_vodafone" class="payment-fields" style="display:none;">
+                <div class="row">
+                  <div class="col-md-6 mb-2"><label class="form-label fw-bold small">الرقم</label><input type="text" name="payment_account_number_vodafone" class="form-control form-control-sm"></div>
+                  <div class="col-md-6 mb-2"><label class="form-label fw-bold small">التاريخ</label><input type="date" name="payment_date_vodafone" class="form-control form-control-sm"></div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- ==================== الفاتورة ==================== -->
+          <h6 class="fw-bold text-warning mb-3 mt-3">🧾 الفاتورة</h6>
+          <div class="row">
+            <div class="col-md-6 mb-3"><label class="form-label fw-bold">رقم الفاتورة</label><input type="text" name="invoice_number" class="form-control"></div>
+            <div class="col-md-6 mb-3"><label class="form-label fw-bold">تاريخ الإصدار</label><input type="date" name="invoice_date" class="form-control"></div>
           </div>
         </div>
-        <div class="modal-footer"><button type="button" class="btn btn-secondary" data-bs-dismiss="modal">إلغاء</button><button type="submit" class="btn btn-warning">حفظ</button></div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">إلغاء</button>
+          <button type="submit" class="btn btn-warning">حفظ</button>
+        </div>
       </form>
     </div>
   </div>
 </div>
-
-<!-- مودال إضافة مصروف -->
+<!-- ==================== مودال إضافة مصروف ==================== -->
 <div class="modal fade" id="addExpenseModal" tabindex="-1">
   <div class="modal-dialog">
     <div class="modal-content">
@@ -240,7 +324,7 @@
   </div>
 </div>
 
-<!-- مودالات استلام الشيك -->
+<!-- ==================== مودالات استلام الشيك ==================== -->
 {% for op in operations if not op.check_received %}
 <div class="modal fade" id="receiveCheckModal{{ op.id }}" tabindex="-1">
   <div class="modal-dialog">
@@ -258,7 +342,7 @@
 </div>
 {% endfor %}
 
-<!-- مودالات تعديل العمليات -->
+<!-- ==================== مودالات تعديل العمليات ==================== -->
 {% for op in operations %}
 <div class="modal fade" id="editOperationModal{{ op.id }}" tabindex="-1">
   <div class="modal-dialog modal-xl">
@@ -266,6 +350,7 @@
       <form method="POST" action="{{ url_for('almasa_supply_operation_edit', op_id=op.id) }}">
         <div class="modal-header bg-warning text-dark"><h5 class="modal-title">✏️ تعديل العملية</h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div>
         <div class="modal-body">
+          <h6 class="fw-bold text-warning mb-3">📋 بيانات أساسية</h6>
           <div class="row">
             <div class="col-md-6 mb-3"><label class="form-label fw-bold">من تاريخ</label><input type="date" name="start_date" class="form-control" value="{{ op.start_date.strftime('%Y-%m-%d') }}" required></div>
             <div class="col-md-6 mb-3"><label class="form-label fw-bold">إلى تاريخ</label><input type="date" name="end_date" class="form-control" value="{{ op.end_date.strftime('%Y-%m-%d') if op.end_date else '' }}"></div>
@@ -274,21 +359,55 @@
             <div class="col-md-6 mb-3"><label class="form-label fw-bold">اسم المشروع</label><input type="text" name="project_name" class="form-control" value="{{ op.project_name or '' }}"></div>
             <div class="col-md-6 mb-3"><label class="form-label fw-bold">مكان المشروع</label><input type="text" name="project_location" class="form-control" value="{{ op.project_location or '' }}"></div>
           </div>
-          <div class="row">
-            <div class="col-md-4 mb-3"><label class="form-label fw-bold">سعر التأجير</label><input type="number" step="0.01" name="supply_value" class="form-control" value="{{ op.supply_value }}" required></div>
-            <div class="col-md-4 mb-3"><label class="form-label fw-bold">سعر التوريد</label><input type="number" step="0.01" name="rental_value" class="form-control" value="{{ op.rental_value }}" required></div>
-            <div class="col-md-4 mb-3"><label class="form-label fw-bold">عدد الأيام</label><input type="number" step="any" name="days_count" class="form-control" value="{{ op.days_count }}" required></div>
+
+          <!-- ==================== قسم التأجير (للمورد) ==================== -->
+          <div class="card border-warning mb-3">
+            <div class="card-header bg-warning text-white fw-bold">
+              💰 التأجير (للمورد)
+            </div>
+            <div class="card-body">
+              <div class="row">
+                <div class="col-md-4 mb-3"><label class="form-label fw-bold">سعر التأجير (يومي)</label><input type="number" step="0.01" name="rental_value" class="form-control" value="{{ op.rental_value or 0 }}" required></div>
+                <div class="col-md-4 mb-3"><label class="form-label fw-bold">عدد أيام التأجير</label><input type="number" step="any" name="rental_days" class="form-control" value="{{ op.rental_days or op.days_count or 0 }}" required></div>
+              </div>
+              <h6 class="fw-bold text-warning mb-3 mt-3">⏰ ساعات إضافية للتأجير</h6>
+              <div class="row">
+                <div class="col-md-6 mb-3"><label class="form-label fw-bold">عدد الساعات</label><input type="number" step="0.01" name="rental_extra_hours" class="form-control" value="{{ op.rental_extra_hours or 0 }}"></div>
+                <div class="col-md-6 mb-3"><label class="form-label fw-bold">سعر الساعة</label><input type="number" step="0.01" name="rental_hour_rate" class="form-control" value="{{ op.rental_hour_rate or 0 }}"></div>
+              </div>
+              <h6 class="fw-bold text-warning mb-3 mt-3">🚛 أيام الطريق للتأجير</h6>
+              <div class="row">
+                <div class="col-md-6 mb-3"><label class="form-label fw-bold">عدد أيام الطريق</label><input type="number" step="0.01" name="rental_travel_days" class="form-control" value="{{ op.rental_travel_days or op.travel_days or 0 }}"></div>
+                <div class="col-md-6 mb-3"><label class="form-label fw-bold">سعر يوم الطريق</label><input type="number" step="0.01" name="travel_rental_rate" class="form-control" value="{{ op.travel_rental_rate or op.travel_rate or 0 }}"></div>
+              </div>
+            </div>
           </div>
-          <div class="row">
-            <div class="col-md-6 mb-3"><label class="form-label fw-bold">ساعات إضافية</label><input type="number" step="0.01" name="extra_hours" class="form-control" value="{{ op.extra_hours or 0 }}"></div>
-            <div class="col-md-6 mb-3"><label class="form-label fw-bold">سعر الساعة</label><input type="number" step="0.01" name="hour_rate" class="form-control" value="{{ op.hour_rate or 0 }}"></div>
+
+          <!-- ==================== قسم التوريد (من العميل) ==================== -->
+          <div class="card border-warning mb-3">
+            <div class="card-header bg-warning text-white fw-bold">
+              💰 التوريد (من العميل)
+            </div>
+            <div class="card-body">
+              <div class="row">
+                <div class="col-md-4 mb-3"><label class="form-label fw-bold">سعر التوريد (يومي)</label><input type="number" step="0.01" name="supply_value" class="form-control" value="{{ op.supply_value or 0 }}" required></div>
+                <div class="col-md-4 mb-3"><label class="form-label fw-bold">عدد أيام التوريد</label><input type="number" step="any" name="supply_days" class="form-control" value="{{ op.supply_days or op.days_count or 0 }}" required></div>
+              </div>
+              <h6 class="fw-bold text-warning mb-3 mt-3">⏰ ساعات إضافية للتوريد</h6>
+              <div class="row">
+                <div class="col-md-6 mb-3"><label class="form-label fw-bold">عدد الساعات</label><input type="number" step="0.01" name="supply_extra_hours" class="form-control" value="{{ op.supply_extra_hours or 0 }}"></div>
+                <div class="col-md-6 mb-3"><label class="form-label fw-bold">سعر الساعة</label><input type="number" step="0.01" name="supply_hour_rate" class="form-control" value="{{ op.supply_hour_rate or 0 }}"></div>
+              </div>
+              <h6 class="fw-bold text-warning mb-3 mt-3">🚛 أيام الطريق للتوريد</h6>
+              <div class="row">
+                <div class="col-md-6 mb-3"><label class="form-label fw-bold">عدد أيام الطريق</label><input type="number" step="0.01" name="supply_travel_days" class="form-control" value="{{ op.supply_travel_days or op.travel_days or 0 }}"></div>
+                <div class="col-md-6 mb-3"><label class="form-label fw-bold">سعر يوم الطريق</label><input type="number" step="0.01" name="travel_supply_rate" class="form-control" value="{{ op.travel_supply_rate or op.travel_rate or 0 }}"></div>
+              </div>
+            </div>
           </div>
-          <h6 class="fw-bold text-warning mb-3 mt-3">🚛 أيام الطريق</h6>
-          <div class="row">
-            <div class="col-md-4 mb-3"><label class="form-label fw-bold">عدد أيام الطريق</label><input type="number" step="0.01" name="travel_days" class="form-control" value="{{ op.travel_days or 0 }}"></div>
-            <div class="col-md-4 mb-3"><label class="form-label fw-bold">سعر تأجير يوم الطريق </label><input type="number" step="0.01" name="travel_rental_rate" class="form-control" value="{{ op.travel_rental_rate or 0 }}"></div>
-            <div class="col-md-4 mb-3"><label class="form-label fw-bold">سعر توريد يوم الطريق </label><input type="number" step="0.01" name="travel_supply_rate" class="form-control" value="{{ op.travel_supply_rate or 0 }}"></div>
-          </div>
+
+          <!-- ==================== الضرايب ==================== -->
+          <h6 class="fw-bold text-warning mb-3 mt-3">📊 الضرايب</h6>
           <div class="row">
             <div class="col-md-6 mb-3">
               <div class="form-check"><input class="form-check-input" type="checkbox" name="tax_14_enabled" id="stax14_{{ op.id }}" {% if op.tax_14_enabled %}checked{% endif %}><label class="form-check-label fw-bold" for="stax14_{{ op.id }}">تفعيل 14%</label></div>
@@ -299,16 +418,58 @@
               <input type="number" step="0.01" name="tax_85_value" class="form-control mt-2" value="{{ op.tax_85_value or 8.5 }}">
             </div>
           </div>
+
+          <!-- ==================== طريقة الدفع + الحقول الديناميكية ==================== -->
+          <h6 class="fw-bold text-warning mb-3 mt-3">💳 طريقة الدفع</h6>
           <div class="row">
-            <div class="col-md-4 mb-3"><label class="form-label fw-bold">رقم الفاتورة</label><input type="text" name="invoice_number" class="form-control" value="{{ op.invoice_number or '' }}"></div>
-            <div class="col-md-4 mb-3"><label class="form-label fw-bold">تاريخ الإصدار</label><input type="date" name="invoice_date" class="form-control" value="{{ op.invoice_date.strftime('%Y-%m-%d') if op.invoice_date else '' }}"></div>
-            <div class="col-md-4 mb-3"><label class="form-label fw-bold">طريقة السداد</label>
-              <select name="payment_method" class="form-select">
+            <div class="col-md-4 mb-3">
+              <label class="form-label fw-bold">طريقة الدفع</label>
+              <select name="payment_method" class="form-select payment-method-select" onchange="showPaymentFields(this, 'edit_{{ op.id }}')">
                 <option value="">اختر...</option>
-                <option value="نقدي" {% if op.payment_method == 'نقدي' %}selected{% endif %}>نقدي</option>
                 <option value="شيك" {% if op.payment_method == 'شيك' %}selected{% endif %}>شيك</option>
+                <option value="نقدي" {% if op.payment_method == 'نقدي' %}selected{% endif %}>نقدي</option>
+                <option value="تحويل بنكي" {% if op.payment_method == 'تحويل بنكي' %}selected{% endif %}>تحويل بنكي</option>
+                <option value="انستا باي" {% if op.payment_method == 'انستا باي' %}selected{% endif %}>انستا باي</option>
+                <option value="فودافون كاش" {% if op.payment_method == 'فودافون كاش' %}selected{% endif %}>فودافون كاش</option>
               </select>
             </div>
+            <div class="col-md-8 mb-3">
+              <!-- حقول الشيك -->
+              <div id="edit_{{ op.id }}_payment_check" class="payment-fields" style="display:none;">
+                <div class="row">
+                  <div class="col-md-6 mb-2"><label class="form-label fw-bold small">رقم الشيك</label><input type="text" name="payment_check_number" class="form-control form-control-sm" value="{{ op.payment_check_number or '' }}"></div>
+                  <div class="col-md-6 mb-2"><label class="form-label fw-bold small">تاريخ الاستحقاق</label><input type="date" name="payment_check_due_date" class="form-control form-control-sm" value="{{ op.payment_check_due_date.strftime('%Y-%m-%d') if op.payment_check_due_date else '' }}"></div>
+                </div>
+              </div>
+              <!-- حقول التحويل البنكي -->
+              <div id="edit_{{ op.id }}_payment_bank" class="payment-fields" style="display:none;">
+                <div class="row">
+                  <div class="col-md-6 mb-2"><label class="form-label fw-bold small">اسم الحساب</label><input type="text" name="payment_account_name" class="form-control form-control-sm" value="{{ op.payment_account_name or '' }}"></div>
+                  <div class="col-md-6 mb-2"><label class="form-label fw-bold small">التاريخ</label><input type="date" name="payment_date" class="form-control form-control-sm" value="{{ op.payment_date.strftime('%Y-%m-%d') if op.payment_date else '' }}"></div>
+                </div>
+              </div>
+              <!-- حقول انستا باي -->
+              <div id="edit_{{ op.id }}_payment_insta" class="payment-fields" style="display:none;">
+                <div class="row">
+                  <div class="col-md-6 mb-2"><label class="form-label fw-bold small">الرقم</label><input type="text" name="payment_account_number" class="form-control form-control-sm" value="{{ op.payment_account_number or '' }}"></div>
+                  <div class="col-md-6 mb-2"><label class="form-label fw-bold small">التاريخ</label><input type="date" name="payment_date_insta" class="form-control form-control-sm"></div>
+                </div>
+              </div>
+              <!-- حقول فودافون كاش -->
+              <div id="edit_{{ op.id }}_payment_vodafone" class="payment-fields" style="display:none;">
+                <div class="row">
+                  <div class="col-md-6 mb-2"><label class="form-label fw-bold small">الرقم</label><input type="text" name="payment_account_number_vodafone" class="form-control form-control-sm" value="{{ op.payment_account_number or '' }}"></div>
+                  <div class="col-md-6 mb-2"><label class="form-label fw-bold small">التاريخ</label><input type="date" name="payment_date_vodafone" class="form-control form-control-sm"></div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- ==================== الفاتورة ==================== -->
+          <h6 class="fw-bold text-warning mb-3 mt-3">🧾 الفاتورة</h6>
+          <div class="row">
+            <div class="col-md-6 mb-3"><label class="form-label fw-bold">رقم الفاتورة</label><input type="text" name="invoice_number" class="form-control" value="{{ op.invoice_number or '' }}"></div>
+            <div class="col-md-6 mb-3"><label class="form-label fw-bold">تاريخ الإصدار</label><input type="date" name="invoice_date" class="form-control" value="{{ op.invoice_date.strftime('%Y-%m-%d') if op.invoice_date else '' }}"></div>
           </div>
         </div>
         <div class="modal-footer"><button type="button" class="btn btn-secondary" data-bs-dismiss="modal">إلغاء</button><button type="submit" class="btn btn-warning">تعديل</button></div>
@@ -317,6 +478,7 @@
   </div>
 </div>
 
+<!-- Modal تعديل الملاحظات -->
 <div class="modal fade" id="editNotesModal{{ op.id }}" tabindex="-1">
   <div class="modal-dialog">
     <div class="modal-content">
@@ -330,7 +492,7 @@
 </div>
 {% endfor %}
 
-<!-- مودالات تعديل المصاريف -->
+<!-- ==================== مودالات تعديل المصاريف ==================== -->
 {% for exp in expenses %}
 <div class="modal fade" id="editExpenseModal{{ exp.id }}" tabindex="-1">
   <div class="modal-dialog">
@@ -350,4 +512,65 @@
   </div>
 </div>
 {% endfor %}
+<!-- ==================== JavaScript للقائمة المنبثقة ==================== -->
+<script>
+function showPaymentFields(selectElement, prefix) {
+    // إخفاء كل حقول الدفع
+    var modal = selectElement.closest('.modal-body');
+    if (!modal) modal = selectElement.closest('form');
+    if (!modal) return;
+    
+    var allPaymentFields = modal.querySelectorAll('.payment-fields');
+    allPaymentFields.forEach(function(field) {
+        field.style.display = 'none';
+    });
+    
+    // إظهار الحقول حسب طريقة الدفع
+    var method = selectElement.value;
+    var targetId = '';
+    
+    if (method === 'شيك') {
+        targetId = prefix + '_payment_check';
+    } else if (method === 'تحويل بنكي') {
+        targetId = prefix + '_payment_bank';
+    } else if (method === 'انستا باي') {
+        targetId = prefix + '_payment_insta';
+    } else if (method === 'فودافون كاش') {
+        targetId = prefix + '_payment_vodafone';
+    }
+    
+    if (targetId) {
+        var target = modal.querySelector('#' + targetId);
+        if (target) {
+            target.style.display = 'block';
+        }
+    }
+}
+
+// عند فتح مودال التعديل — إظهار الحقول المناسبة
+document.addEventListener('DOMContentLoaded', function() {
+    // لكل مودال فيه payment-method-select
+    document.querySelectorAll('.payment-method-select').forEach(function(select) {
+        // إظهار الحقول لو فيه قيمة مختارة
+        if (select.value) {
+            var modal = select.closest('.modal-body') || select.closest('form');
+            if (modal) {
+                var prefix = '';
+                // تحديد الـ prefix
+                if (select.closest('.modal').id && select.closest('.modal').id.startsWith('editOperationModal')) {
+                    // استخراج رقم العملية من id المودال
+                    var modalId = select.closest('.modal').id;
+                    var opId = modalId.replace('editOperationModal', '');
+                    prefix = 'edit_' + opId;
+                } else {
+                    // لو في مودال إضافة — نستخدم 'add'
+                    prefix = 'add';
+                }
+                showPaymentFields(select, prefix);
+            }
+        }
+    });
+});
+</script>
+
 {% endblock %}
