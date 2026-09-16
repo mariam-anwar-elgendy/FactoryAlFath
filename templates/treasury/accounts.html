@@ -25,10 +25,10 @@
                 <td>{{ account.account_type }}</td>
                 <td class="fw-bold {{ 'text-success' if account.balance >= 0 else 'text-danger' }}">{{ account.balance }}</td>
                 <td>
-                    {% if current_user.role in ['meg','admin','mariam'] %}
+                    {% if current_user.role in ['meg','admin','mariam','sayed'] %}
                     <button class="btn btn-sm btn-warning" data-bs-toggle="modal" data-bs-target="#editAccount{{ account.id }}">✏️ تعديل</button>
                     {% endif %}
-                    {% if current_user.role in ['meg','admin'] %}
+                    {% if current_user.role in ['meg','admin','sayed'] %}
                     <form action="{{ url_for('treasury_accounts') }}" method="POST" class="d-inline" onsubmit="return confirm('حذف هذا الحساب؟');">
                         <input type="hidden" name="delete_id" value="{{ account.id }}">
                         <button type="submit" class="btn btn-sm btn-danger">🗑️ حذف</button>
