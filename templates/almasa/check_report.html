@@ -43,8 +43,8 @@
                         <th>من</th>
                         <th>إلى</th>
                         <th>الأيام</th>
-                        <th>إجمالي التأجير</th>
                         <th>إجمالي التوريد</th>
+                        <th>إجمالي التأجير</th>
                         <th>ملاحظات</th>
                     </tr>
                 </thead>
@@ -123,11 +123,11 @@
                 <div class="card bg-light h-100">
                     <div class="card-body">
                         <h6 class="fw-bold text-primary">📈 الأرباح الإدارية</h6>
-                        <p class="text-muted small mb-2">= إجمالي التأجير - إجمالي التوريد</p>
+                        <p class="text-muted small mb-2">= إجمالي التوريد - إجمالي التأجير</p>
                         <table class="table table-sm table-bordered mb-0">
                             <tbody>
-                                <tr><td>إجمالي التأجير</td><td>{{ total_rental }}</td></tr>
-                                <tr><td>إجمالي التوريد</td><td>{{ total_supply }}</td></tr>
+                                <tr><td>إجمالي التوريد</td><td>{{ total_rental }}</td></tr>
+                                <tr><td>إجمالي التأجير</td><td>{{ total_supply }}</td></tr>
                                 <tr class="table-success fw-bold"><td>الأرباح الإدارية</td><td>{{ admin_profit }}</td></tr>
                             </tbody>
                         </table>
@@ -139,10 +139,10 @@
                 <div class="card bg-light h-100">
                     <div class="card-body">
                         <h6 class="fw-bold text-success">📉 الأرباح التوريدية</h6>
-                        <p class="text-muted small mb-2">= إجمالي التوريد - المصاريف - الضريبة 8.5%</p>
+                        <p class="text-muted small mb-2">= إجمالي التأجير - المصاريف - الضريبة 8.5%</p>
                         <table class="table table-sm table-bordered mb-0">
                             <tbody>
-                                <tr><td>إجمالي التوريد</td><td>{{ total_supply }}</td></tr>
+                                <tr><td>إجمالي التأجير</td><td>{{ total_supply }}</td></tr>
                                 <tr><td>المصاريف</td><td>{{ total_expenses }}</td></tr>
                                 <tr><td>الضريبة 8.5%</td><td>{{ tax_85_amount or 0 }}</td></tr>
                                 <tr class="table-success fw-bold"><td>الأرباح التوريدية</td><td>{{ supply_profit }}</td></tr>
@@ -191,5 +191,6 @@
         </table>
         {% endif %}
     </div>
+    
 </div>
 {% endblock %}
