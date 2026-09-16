@@ -297,7 +297,6 @@ class InventoryAudit(db.Model):
     notes = db.Column(db.Text)
     created_by = db.Column(db.Integer, db.ForeignKey('users.id'))
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
-
 # ====================================================================
 # ==================== شركة الماسة ====================
 # ====================================================================
@@ -336,6 +335,7 @@ class AlMasaOperation(db.Model):
     rental_value = db.Column(db.Float, default=0)
     supply_total = db.Column(db.Float, default=0)
     rental_total = db.Column(db.Float, default=0)
+    # الحقول القديمة — للتوافق مع البيانات القديمة
     days_count = db.Column(db.Float, default=0)
     extra_hours = db.Column(db.Float, default=0)
     hour_rate = db.Column(db.Float, default=0)
@@ -343,10 +343,30 @@ class AlMasaOperation(db.Model):
     travel_rate = db.Column(db.Float, default=0)
     travel_supply_rate = db.Column(db.Float, default=0)
     travel_rental_rate = db.Column(db.Float, default=0)
+    # ✅ الحقول الجديدة — منفصلة للتأجير والتوريد
+    # عدد الأيام
+    rental_days = db.Column(db.Float, default=0)
+    supply_days = db.Column(db.Float, default=0)
+    # ساعات إضافية
+    rental_extra_hours = db.Column(db.Float, default=0)
+    rental_hour_rate = db.Column(db.Float, default=0)
+    supply_extra_hours = db.Column(db.Float, default=0)
+    supply_hour_rate = db.Column(db.Float, default=0)
+    # أيام الطريق
+    rental_travel_days = db.Column(db.Float, default=0)
+    supply_travel_days = db.Column(db.Float, default=0)
+    # حقول الدفع الديناميكية
+    payment_check_number = db.Column(db.String(50))
+    payment_check_due_date = db.Column(db.Date)
+    payment_account_name = db.Column(db.String(100))
+    payment_account_number = db.Column(db.String(50))
+    payment_date = db.Column(db.Date)
+    # الضرايب
     tax_14_enabled = db.Column(db.Boolean, default=False)
     tax_14_value = db.Column(db.Float, default=14)
     tax_85_enabled = db.Column(db.Boolean, default=False)
     tax_85_value = db.Column(db.Float, default=8.5)
+    # الفاتورة
     invoice_number = db.Column(db.String(50))
     invoice_date = db.Column(db.Date)
     project_name = db.Column(db.String(200))
@@ -390,7 +410,6 @@ class AlMasaExpense(db.Model):
     notes = db.Column(db.Text)
     created_by = db.Column(db.Integer, db.ForeignKey('users.id'))
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
-
 # --------------------------------------------------------------------
 # النوع 2: ونش خاص
 # --------------------------------------------------------------------
@@ -415,6 +434,7 @@ class AlMasaPrivateOperation(db.Model):
     rental_value = db.Column(db.Float, default=0)
     supply_total = db.Column(db.Float, default=0)
     rental_total = db.Column(db.Float, default=0)
+    # الحقول القديمة
     days_count = db.Column(db.Float, default=0)
     extra_hours = db.Column(db.Float, default=0)
     hour_rate = db.Column(db.Float, default=0)
@@ -422,10 +442,26 @@ class AlMasaPrivateOperation(db.Model):
     travel_rate = db.Column(db.Float, default=0)
     travel_supply_rate = db.Column(db.Float, default=0)
     travel_rental_rate = db.Column(db.Float, default=0)
+    # ✅ الحقول الجديدة
+    rental_days = db.Column(db.Float, default=0)
+    supply_days = db.Column(db.Float, default=0)
+    rental_extra_hours = db.Column(db.Float, default=0)
+    rental_hour_rate = db.Column(db.Float, default=0)
+    supply_extra_hours = db.Column(db.Float, default=0)
+    supply_hour_rate = db.Column(db.Float, default=0)
+    rental_travel_days = db.Column(db.Float, default=0)
+    supply_travel_days = db.Column(db.Float, default=0)
+    payment_check_number = db.Column(db.String(50))
+    payment_check_due_date = db.Column(db.Date)
+    payment_account_name = db.Column(db.String(100))
+    payment_account_number = db.Column(db.String(50))
+    payment_date = db.Column(db.Date)
+    # الضرايب
     tax_14_enabled = db.Column(db.Boolean, default=False)
     tax_14_value = db.Column(db.Float, default=14)
     tax_85_enabled = db.Column(db.Boolean, default=False)
     tax_85_value = db.Column(db.Float, default=8.5)
+    # الفاتورة
     invoice_number = db.Column(db.String(50))
     invoice_date = db.Column(db.Date)
     project_name = db.Column(db.String(200))
@@ -490,6 +526,7 @@ class AlMasaSupplyOperation(db.Model):
     supply_id = db.Column(db.Integer, db.ForeignKey('almasa_supplies.id'), nullable=False)
     start_date = db.Column(db.Date, nullable=False)
     end_date = db.Column(db.Date)
+    # الحقول القديمة
     days_count = db.Column(db.Float, default=0)
     supply_value = db.Column(db.Float, default=0)
     rental_value = db.Column(db.Float, default=0)
@@ -501,10 +538,26 @@ class AlMasaSupplyOperation(db.Model):
     travel_rate = db.Column(db.Float, default=0)
     travel_supply_rate = db.Column(db.Float, default=0)
     travel_rental_rate = db.Column(db.Float, default=0)
+    # ✅ الحقول الجديدة
+    rental_days = db.Column(db.Float, default=0)
+    supply_days = db.Column(db.Float, default=0)
+    rental_extra_hours = db.Column(db.Float, default=0)
+    rental_hour_rate = db.Column(db.Float, default=0)
+    supply_extra_hours = db.Column(db.Float, default=0)
+    supply_hour_rate = db.Column(db.Float, default=0)
+    rental_travel_days = db.Column(db.Float, default=0)
+    supply_travel_days = db.Column(db.Float, default=0)
+    payment_check_number = db.Column(db.String(50))
+    payment_check_due_date = db.Column(db.Date)
+    payment_account_name = db.Column(db.String(100))
+    payment_account_number = db.Column(db.String(50))
+    payment_date = db.Column(db.Date)
+    # الضرايب
     tax_14_enabled = db.Column(db.Boolean, default=False)
     tax_14_value = db.Column(db.Float, default=14)
     tax_85_enabled = db.Column(db.Boolean, default=False)
     tax_85_value = db.Column(db.Float, default=8.5)
+    # الفاتورة
     invoice_number = db.Column(db.String(50))
     invoice_date = db.Column(db.Date)
     project_name = db.Column(db.String(200))
@@ -543,7 +596,6 @@ class AlMasaPartnerAccount(db.Model):
     notes = db.Column(db.Text)
     created_by = db.Column(db.Integer, db.ForeignKey('users.id'))
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
-
 # ====================================================================
 # ==================== الشات ====================
 # ====================================================================
@@ -582,4 +634,4 @@ class ChatMessage(db.Model):
     def display_message(self):
         if self.is_deleted:
             return '🚫 تم حذف هذه الرسالة'
-        return self.message or ''
+        return self.message or ''    
