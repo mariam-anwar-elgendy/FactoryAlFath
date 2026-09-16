@@ -373,7 +373,7 @@
           <div class="row">
             <div class="col-md-4 mb-3"><label class="form-label fw-bold">قيمة التوريد</label><input type="number" step="0.01" name="supply_value" class="form-control" value="{{ op.supply_value }}" required></div>
             <div class="col-md-4 mb-3"><label class="form-label fw-bold">قيمة التأجير</label><input type="number" step="0.01" name="rental_value" class="form-control" value="{{ op.rental_value }}" required></div>
-            <div class="col-md-4 mb-3"><label class="form-label fw-bold">عدد الأيام</label><input type="number" name="days_count" class="form-control" value="{{ op.days_count }}" required></div>
+            <div class="col-md-4 mb-3"><label class="form-label fw-bold">عدد الأيام</label><input type="number" step="any" name="days_count" class="form-control" value="{{ op.days_count }}" required></div>
           </div>
           <h6 class="fw-bold text-primary mb-3 mt-3">⏰ ساعات إضافية</h6>
           <div class="row">
@@ -441,7 +441,7 @@
         <div class="modal-body">
           <div class="mb-3"><label class="form-label fw-bold">التاريخ</label><input type="date" name="date" class="form-control" value="{{ exp.date.strftime('%Y-%m-%d') }}" required></div>
           <div class="mb-3"><label class="form-label fw-bold">النوع</label><input type="text" name="expense_type" class="form-control" value="{{ exp.expense_type }}" required></div>
-          <div class="mb-3"><label class="form-label fw-bold">المبلغ</label><input type="number" step="0.01" name="amount" class="form-control" value="{{ exp.amount }}" required></div>
+          <div class="mb-3"><label class="form-label fw-bold">المبلغ</label><input type="number" step="any" name="amount" class="form-control" value="{{ exp.amount }}" required></div>
           <div class="mb-3">
             <label class="form-label fw-bold">دفعه</label>
             <select name="paid_by" class="form-select">
