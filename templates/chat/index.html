@@ -273,8 +273,14 @@
 {% endblock %}
 
 {% block content %}
+
 <div class="d-flex justify-content-between align-items-center mb-3">
-    <h2 class="fw-bold text-purple-dark">💬 الشات</h2>
+    <div class="d-flex align-items-center gap-2">
+        <button class="btn btn-purple btn-sm d-md-none" onclick="toggleSidebar()">
+            <i class="fas fa-bars"></i> المحادثات
+        </button>
+        <h2 class="fw-bold text-purple-dark mb-0">💬 الشات</h2>
+    </div>
     {% if current_user.role in ['meg', 'admin', 'sayed'] %}
     <button class="btn btn-purple btn-sm" data-bs-toggle="modal" data-bs-target="#createGroupModal">
         ➕ مجموعة جديدة
