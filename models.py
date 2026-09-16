@@ -341,6 +341,8 @@ class AlMasaOperation(db.Model):
     hour_rate = db.Column(db.Float, default=0)
     travel_days = db.Column(db.Float, default=0)
     travel_rate = db.Column(db.Float, default=0)
+    travel_supply_rate = db.Column(db.Float, default=0)
+    travel_rental_rate = db.Column(db.Float, default=0)
     tax_14_enabled = db.Column(db.Boolean, default=False)
     tax_14_value = db.Column(db.Float, default=14)
     tax_85_enabled = db.Column(db.Boolean, default=False)
@@ -418,6 +420,8 @@ class AlMasaPrivateOperation(db.Model):
     hour_rate = db.Column(db.Float, default=0)
     travel_days = db.Column(db.Float, default=0)
     travel_rate = db.Column(db.Float, default=0)
+    travel_supply_rate = db.Column(db.Float, default=0)
+    travel_rental_rate = db.Column(db.Float, default=0)
     tax_14_enabled = db.Column(db.Boolean, default=False)
     tax_14_value = db.Column(db.Float, default=14)
     tax_85_enabled = db.Column(db.Boolean, default=False)
@@ -495,6 +499,8 @@ class AlMasaSupplyOperation(db.Model):
     hour_rate = db.Column(db.Float, default=0)
     travel_days = db.Column(db.Float, default=0)
     travel_rate = db.Column(db.Float, default=0)
+    travel_supply_rate = db.Column(db.Float, default=0)
+    travel_rental_rate = db.Column(db.Float, default=0)
     tax_14_enabled = db.Column(db.Boolean, default=False)
     tax_14_value = db.Column(db.Float, default=14)
     tax_85_enabled = db.Column(db.Boolean, default=False)
@@ -542,7 +548,6 @@ class AlMasaPartnerAccount(db.Model):
 # ==================== الشات ====================
 # ====================================================================
 
-# ⚠️ مهم: ChatGroup و ChatGroupMember قبل ChatMessage
 class ChatGroup(db.Model):
     __tablename__ = 'chat_groups'
     id = db.Column(db.Integer, primary_key=True)
