@@ -43,13 +43,13 @@
                 <td>{{ t.notes or '-' }}</td>
                 <td>{{ get_user_name(t.created_by) }}</td>
                 <td>
-                    {% if current_user.role in ['meg','admin','mariam'] %}
+                    {% if current_user.role in ['meg','admin','mariam','sayed'] %}
                     <button type="button" class="btn btn-sm btn-warning" 
                             onclick="openEditModal({{ t.id }}, '{{ t.date.strftime('%Y-%m-%d') }}', '{{ t.account_id }}', '{{ t.transaction_type }}', '{{ t.amount }}', '{{ t.source or '' }}', '{{ t.payment_method }}', '{{ t.notes or '' }}')">
                         ✏️
                     </button>
                     {% endif %}
-                    {% if current_user.role in ['meg','admin'] %}
+                    {% if current_user.role in ['meg','admin','sayed'] %}
                     <form action="{{ url_for('treasury_transactions') }}" method="POST" class="d-inline" onsubmit="return confirm('حذف هذه الحركة؟');">
                         <input type="hidden" name="delete_id" value="{{ t.id }}">
                         <button type="submit" class="btn btn-sm btn-danger">🗑️</button>
@@ -213,7 +213,6 @@ function hideBackdrop() {
 }
 
 function openEditModal(id, date, accountId, type, amount, source, payment, notes) {
-    // تعبئة البيانات
     document.getElementById('edit_transaction_id').value = id;
     document.getElementById('edit_date').value = date;
     document.getElementById('edit_account_id').value = accountId;
@@ -223,7 +222,6 @@ function openEditModal(id, date, accountId, type, amount, source, payment, notes
     document.getElementById('edit_payment_method').value = payment;
     document.getElementById('edit_notes').value = notes;
     
-    // فتح الـ Modal
     var modal = document.getElementById('editTransactionModal');
     modal.style.display = 'block';
     modal.classList.add('show');
@@ -245,7 +243,6 @@ function openAddModal() {
     modal.style.zIndex = '9999';
     showBackdrop();
     
-    // تهيئة الصف الأول
     var firstRow = document.querySelector('#financialRows tbody tr');
     if (firstRow) {
         toggleRowVisibility(firstRow);
@@ -259,7 +256,6 @@ function closeAddModal() {
     hideBackdrop();
 }
 
-// إغلاق الـ Modal عند الضغط على الـ Backdrop
 document.getElementById('modalBackdrop').addEventListener('click', function() {
     closeEditModal();
     closeAddModal();
