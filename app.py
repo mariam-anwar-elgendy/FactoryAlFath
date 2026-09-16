@@ -2774,8 +2774,8 @@ def almasa_check_report(check_id):
     first_op = operations_list[0] if operations_list else None
     tax_14_value = first_op.tax_14_value if first_op and first_op.tax_14_enabled else 0
     tax_85_value = first_op.tax_85_value if first_op and first_op.tax_85_enabled else 0
-    check_amount = total_rental + (total_rental * (tax_14_value / 100))
-    tax_14 = total_rental * (tax_14_value / 100)
+    check_amount = total_supply + (total_supply * (tax_14_value / 100))
+    tax_14 = total_supply * (tax_14_value / 100)
     admin_profit = total_rental - total_supply
     tax_85_amount = total_supply * (tax_85_value / 100)
     supply_profit = total_supply - total_expenses - tax_85_amount
@@ -3144,8 +3144,8 @@ def almasa_private_check_report(check_id):
         expenses = []
     total_expenses = sum(e.amount for e in expenses)
     total_supply = total_rental
-    check_amount = total_rental + (total_rental * 0.14)
-    tax_14 = total_rental * 0.14
+    check_amount = total_supply + (total_supply * (tax_14_value / 100))
+    tax_14 = total_supply * (tax_14_value / 100)
     admin_profit = total_rental - total_supply
     supply_profit = total_supply - total_expenses
     owner_share = admin_profit + supply_profit
@@ -3445,8 +3445,8 @@ def almasa_supply_report(supply_id):
     first_op = operations[0] if operations else None
     tax_85_value = first_op.tax_85_value if first_op and first_op.tax_85_enabled else 0
     tax_85_amount = total_rental * (tax_85_value / 100)
-    admin_profit = total_rental - total_supply - total_expenses - tax_85_amount
-    check_amount = total_rental
+    admin_profit = total_supply - total_rental - total_expenses - tax_85_amount
+    check_amount = total_suuply
     tax_14 = total_rental * ((first_op.tax_14_value / 100) if first_op and first_op.tax_14_enabled else 0)
     return render_template('almasa/supply_report.html',
                            supply=supply, operations=operations, expenses=expenses,
