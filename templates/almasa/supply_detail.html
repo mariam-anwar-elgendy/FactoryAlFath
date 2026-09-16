@@ -283,9 +283,11 @@
             <div class="col-md-6 mb-3"><label class="form-label fw-bold">ساعات إضافية</label><input type="number" step="0.01" name="extra_hours" class="form-control" value="{{ op.extra_hours or 0 }}"></div>
             <div class="col-md-6 mb-3"><label class="form-label fw-bold">سعر الساعة</label><input type="number" step="0.01" name="hour_rate" class="form-control" value="{{ op.hour_rate or 0 }}"></div>
           </div>
+          <h6 class="fw-bold text-warning mb-3 mt-3">🚛 أيام الطريق</h6>
           <div class="row">
-            <div class="col-md-6 mb-3"><label class="form-label fw-bold">أيام الطريق</label><input type="number" step="0.01" name="travel_days" class="form-control" value="{{ op.travel_days or 0 }}"></div>
-            <div class="col-md-6 mb-3"><label class="form-label fw-bold">سعر يوم الطريق</label><input type="number" step="0.01" name="travel_rate" class="form-control" value="{{ op.travel_rate or 0 }}"></div>
+            <div class="col-md-4 mb-3"><label class="form-label fw-bold">عدد أيام الطريق</label><input type="number" step="0.01" name="travel_days" class="form-control" value="{{ op.travel_days or 0 }}"></div>
+            <div class="col-md-4 mb-3"><label class="form-label fw-bold">سعر تأجير يوم الطريق (من العميل)</label><input type="number" step="0.01" name="travel_rental_rate" class="form-control" value="{{ op.travel_rental_rate or 0 }}"></div>
+            <div class="col-md-4 mb-3"><label class="form-label fw-bold">سعر توريد يوم الطريق (للمورد)</label><input type="number" step="0.01" name="travel_supply_rate" class="form-control" value="{{ op.travel_supply_rate or 0 }}"></div>
           </div>
           <div class="row">
             <div class="col-md-6 mb-3">
