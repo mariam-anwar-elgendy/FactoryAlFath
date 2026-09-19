@@ -9,7 +9,7 @@
 </div>
 
 <div class="alert alert-danger">
-    <h4 class="fw-bold">💰 إجمالي اللي ليكي عند الناس: {{ total_unpaid }}</h4>
+    <h4 class="fw-bold">💰 إجمالي اللي لينا عند الناس: {{ total_unpaid }}</h4>
 </div>
 
 <div class="card border-0 shadow-sm">
@@ -26,6 +26,7 @@
                         <th>الأيام</th>
                         <th>إجمالي التأجير</th>
                         <th>رقم الفاتورة</th>
+                        <th>تفاصيل</th>
                         <th>إجراءات</th>
                     </tr>
                 </thead>
@@ -36,9 +37,12 @@
                         <td>{{ op.project_location or '-' }}</td>
                         <td>{{ op.start_date.strftime('%Y-%m-%d') }}</td>
                         <td>{{ op.end_date.strftime('%Y-%m-%d') if op.end_date else '-' }}</td>
-                        <td>{{ op.days_count }}</td>
+                        <td>{{ op.rental_days or op.days_count or 0 }}</td>
                         <td class="fw-bold text-danger">{{ op.rental_total }}</td>
                         <td>{{ op.invoice_number or '-' }}</td>
+                        <td>
+                            <button class="btn btn-sm btn-outline-info" data-bs-toggle="modal" data-bs-target="#detailsModal{{ op.id }}">📋</button>
+                        </td>
                         <td>
                             <button class="btn btn-sm btn-outline-success" data-bs-toggle="modal" data-bs-target="#receiveCheckModal{{ op.id }}">☐ استلام شيك</button>
                         </td>
@@ -49,7 +53,7 @@
                     <tr class="fw-bold table-danger">
                         <td colspan="5">الإجمالي</td>
                         <td>{{ total_unpaid }}</td>
-                        <td colspan="2"></td>
+                        <td colspan="3"></td>
                     </tr>
                 </tfoot>
             </table>
@@ -60,7 +64,86 @@
     </div>
 </div>
 
-<!-- مودالات استلام الشيك -->
+<!-- ✅ مودال التفاصيل الكاملة -->
+{% for op in operations %}
+<div class="modal fade" id="detailsModal{{ op.id }}" tabindex="-1">
+  <div class="modal-dialog modal-lg">
+    <div class="modal-content">
+      <div class="modal-header bg-info text-white">
+        <h5 class="modal-title">📋 تفاصيل العملية - {{ op.project_name or '-' }}</h5>
+        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body">
+        <!-- بيانات أساسية -->
+        <h6 class="fw-bold text-success mb-3">📋 بيانات أساسية</h6>
+        <table class="table table-sm table-bordered mb-4">
+          <tbody>
+            <tr><td class="fw-bold" style="width: 40%;">المشروع</td><td>{{ op.project_name or '-' }}</td></tr>
+            <tr><td class="fw-bold">المكان</td><td>{{ op.project_location or '-' }}</td></tr>
+            <tr><td class="fw-bold">من تاريخ</td><td>{{ op.start_date.strftime('%Y-%m-%d') }}</td></tr>
+            <tr><td class="fw-bold">إلى تاريخ</td><td>{{ op.end_date.strftime('%Y-%m-%d') if op.end_date else '-' }}</td></tr>
+            <tr><td class="fw-bold">رقم الفاتورة</td><td>{{ op.invoice_number or '-' }}</td></tr>
+          </tbody>
+        </table>
+
+        <!-- التأجير (للمورد) -->
+        <h6 class="fw-bold text-success mb-3">💰 التأجير (للمورد)</h6>
+        <table class="table table-sm table-bordered mb-4">
+          <tbody>
+            <tr><td class="fw-bold" style="width: 40%;">سعر التأجير اليومي</td><td>{{ op.rental_value or 0 }}</td></tr>
+            <tr><td class="fw-bold">عدد الأيام</td><td>{{ op.rental_days or op.days_count or 0 }}</td></tr>
+            <tr><td class="fw-bold">ساعات إضافية</td><td>{{ op.rental_extra_hours or 0 }}</td></tr>
+            <tr><td class="fw-bold">سعر الساعة الإضافية</td><td>{{ op.rental_hour_rate or 0 }}</td></tr>
+            <tr><td class="fw-bold">أيام الطريق</td><td>{{ op.rental_travel_days or op.travel_days or 0 }}</td></tr>
+            <tr><td class="fw-bold">سعر يوم الطريق</td><td>{{ op.travel_rental_rate or op.travel_rate or 0 }}</td></tr>
+            <tr class="table-success"><td class="fw-bold">إجمالي التأجير</td><td class="fw-bold">{{ op.rental_total }}</td></tr>
+          </tbody>
+        </table>
+
+        <!-- التوريد (من العميل) -->
+        <h6 class="fw-bold text-success mb-3">💰 التوريد (من العميل)</h6>
+        <table class="table table-sm table-bordered mb-4">
+          <tbody>
+            <tr><td class="fw-bold" style="width: 40%;">سعر التوريد اليومي</td><td>{{ op.supply_value or 0 }}</td></tr>
+            <tr><td class="fw-bold">عدد الأيام</td><td>{{ op.supply_days or op.days_count or 0 }}</td></tr>
+            <tr><td class="fw-bold">ساعات إضافية</td><td>{{ op.supply_extra_hours or 0 }}</td></tr>
+            <tr><td class="fw-bold">سعر الساعة الإضافية</td><td>{{ op.supply_hour_rate or 0 }}</td></tr>
+            <tr><td class="fw-bold">أيام الطريق</td><td>{{ op.supply_travel_days or op.travel_days or 0 }}</td></tr>
+            <tr><td class="fw-bold">سعر يوم الطريق</td><td>{{ op.travel_supply_rate or op.travel_rate or 0 }}</td></tr>
+            <tr class="table-success"><td class="fw-bold">إجمالي التوريد</td><td class="fw-bold">{{ op.supply_total }}</td></tr>
+          </tbody>
+        </table>
+
+        <!-- الضرايب -->
+        {% if op.tax_14_enabled or op.tax_85_enabled %}
+        <h6 class="fw-bold text-warning mb-3">📊 الضرايب</h6>
+        <table class="table table-sm table-bordered mb-0">
+          <tbody>
+            {% if op.tax_14_enabled %}
+            <tr class="table-warning">
+              <td class="fw-bold" style="width: 40%;">ضريبة 14%</td>
+              <td>{{ (op.rental_total * op.tax_14_value / 100)|round(2) }}</td>
+            </tr>
+            {% endif %}
+            {% if op.tax_85_enabled %}
+            <tr class="table-warning">
+              <td class="fw-bold">ضريبة 8.5%</td>
+              <td>{{ (op.rental_total * op.tax_85_value / 100)|round(2) }}</td>
+            </tr>
+            {% endif %}
+          </tbody>
+        </table>
+        {% endif %}
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">إغلاق</button>
+      </div>
+    </div>
+  </div>
+</div>
+{% endfor %}
+
+<!-- ✅ مودالات استلام الشيك -->
 {% for op in operations %}
 <div class="modal fade" id="receiveCheckModal{{ op.id }}" tabindex="-1">
   <div class="modal-dialog">
@@ -73,6 +156,8 @@
         <div class="modal-body">
           <div class="alert alert-info">
             <strong>العملية:</strong> {{ op.project_name or '-' }}<br>
+            <strong>من:</strong> {{ op.start_date.strftime('%Y-%m-%d') }}<br>
+            <strong>إلى:</strong> {{ op.end_date.strftime('%Y-%m-%d') if op.end_date else '-' }}<br>
             <strong>إجمالي التأجير:</strong> {{ op.rental_total }}
           </div>
           <div class="mb-3"><label class="form-label fw-bold">رقم الشيك</label><input type="text" name="check_number" class="form-control" required></div>
