@@ -716,15 +716,14 @@ def factory_production():
             record = FactoryProduction.query.get_or_404(record_id)
             if can_delete_record(current_user.role, record.date):
                 # ✅ إرجاع الكمية من المخزون قبل الحذف
-                inv = StoreInventory.query.filter_by(
+              inv = StoreInventory.query.filter_by(
                     product_type='كوع',
                     product_size=record.elbow_size,
                     product_spec=record.elbow_thickness
                 ).first()
                 if inv:
-                    inv.current_quantity -= record.quantity
+                    inv.current_quantity = max(0, inv.current_quantity - record.quantity)
                     db.session.add(inv)
-                
                 db.session.delete(record)
                 db.session.commit()
                 flash('تم حذف السجل بنجاح', 'success')
