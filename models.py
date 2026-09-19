@@ -64,6 +64,8 @@ class FactoryRawMaterial(db.Model):
     pipe_size = db.Column(db.String(50))
     pipe_thickness = db.Column(db.String(50))
     quantity = db.Column(db.Float, nullable=False)
+    unit_price = db.Column(db.Float, default=0)      # ✅ جديد — سعر الماسورة
+    total_cost = db.Column(db.Float, default=0)      # ✅ جديد — الإجمالي = الكمية × السعر
     supplier = db.Column(db.String(100))
     notes = db.Column(db.Text)
     created_by = db.Column(db.Integer, db.ForeignKey('users.id'))
@@ -77,6 +79,8 @@ class FactoryProduction(db.Model):
     elbow_thickness = db.Column(db.String(50))
     quantity = db.Column(db.Float, nullable=False)
     raw_material_used = db.Column(db.Float, default=0)
+    cost_per_unit = db.Column(db.Float, default=0)   # ✅ جديد — تكلفة الكوع الواحد
+    total_cost = db.Column(db.Float, default=0)      # ✅ جديد — الإجمالي = الكمية × التكلفة
     notes = db.Column(db.Text)
     created_by = db.Column(db.Integer, db.ForeignKey('users.id'))
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
@@ -297,6 +301,7 @@ class InventoryAudit(db.Model):
     notes = db.Column(db.Text)
     created_by = db.Column(db.Integer, db.ForeignKey('users.id'))
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
+
 # ====================================================================
 # ==================== شركة الماسة ====================
 # ====================================================================
@@ -344,15 +349,12 @@ class AlMasaOperation(db.Model):
     travel_supply_rate = db.Column(db.Float, default=0)
     travel_rental_rate = db.Column(db.Float, default=0)
     # ✅ الحقول الجديدة — منفصلة للتأجير والتوريد
-    # عدد الأيام
     rental_days = db.Column(db.Float, default=0)
     supply_days = db.Column(db.Float, default=0)
-    # ساعات إضافية
     rental_extra_hours = db.Column(db.Float, default=0)
     rental_hour_rate = db.Column(db.Float, default=0)
     supply_extra_hours = db.Column(db.Float, default=0)
     supply_hour_rate = db.Column(db.Float, default=0)
-    # أيام الطريق
     rental_travel_days = db.Column(db.Float, default=0)
     supply_travel_days = db.Column(db.Float, default=0)
     # حقول الدفع الديناميكية
@@ -410,6 +412,7 @@ class AlMasaExpense(db.Model):
     notes = db.Column(db.Text)
     created_by = db.Column(db.Integer, db.ForeignKey('users.id'))
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
+
 # --------------------------------------------------------------------
 # النوع 2: ونش خاص
 # --------------------------------------------------------------------
@@ -526,7 +529,6 @@ class AlMasaSupplyOperation(db.Model):
     supply_id = db.Column(db.Integer, db.ForeignKey('almasa_supplies.id'), nullable=False)
     start_date = db.Column(db.Date, nullable=False)
     end_date = db.Column(db.Date)
-    # الحقول القديمة
     days_count = db.Column(db.Float, default=0)
     supply_value = db.Column(db.Float, default=0)
     rental_value = db.Column(db.Float, default=0)
@@ -596,6 +598,7 @@ class AlMasaPartnerAccount(db.Model):
     notes = db.Column(db.Text)
     created_by = db.Column(db.Integer, db.ForeignKey('users.id'))
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
+
 # ====================================================================
 # ==================== الشات ====================
 # ====================================================================
@@ -634,4 +637,4 @@ class ChatMessage(db.Model):
     def display_message(self):
         if self.is_deleted:
             return '🚫 تم حذف هذه الرسالة'
-        return self.message or ''    
+        return self.message or ''
