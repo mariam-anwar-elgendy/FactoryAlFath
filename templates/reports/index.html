@@ -20,12 +20,34 @@
     </div>
 </div>
 
-<div class="row g-3 mt-2">  <!-- غيرت الـ mt-4 لـ g-3 عشان المسافات تبقى زي الفوق -->
+<div class="row g-3">
     <div class="col-md-6">
         <a href="{{ url_for('reports_customers') }}" class="btn btn-purple w-100 py-3">👥 تقرير العملاء</a>
     </div>
     <div class="col-md-6">
         <a href="{{ url_for('reports_suppliers') }}" class="btn btn-purple w-100 py-3">🏢 تقرير الموردين</a>
+    </div>
+</div>
+
+<!-- ✅ كشف حساب مورد/عميل -->
+<div class="card border-0 shadow-sm mt-4">
+    <div class="card-header text-white fw-bold" style="background: linear-gradient(90deg, #1a237e, #283593);">
+        📊 كشف حساب مورد / عميل
+    </div>
+    <div class="card-body">
+        <p class="text-muted">اختار مورد أو عميل لعرض كشف حسابه الكامل (مبيعات + مشتريات + دفعات + الرصيد النهائي).</p>
+        <div class="row g-2">
+            <div class="col-md-6">
+                <a href="{{ url_for('reports_party_list') }}" class="btn btn-outline-primary w-100 py-3">
+                    👤 كشف حساب مورد / عميل
+                </a>
+            </div>
+            <div class="col-md-6">
+                <a href="{{ url_for('factory_alerts') }}" class="btn btn-outline-warning w-100 py-3">
+                    🔔 تنبيهات (لينا / علينا)
+                </a>
+            </div>
+        </div>
     </div>
 </div>
 {% endblock %}
