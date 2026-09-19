@@ -2795,8 +2795,8 @@ def almasa_crane_detail(crane_id):
     total_rental = sum(o.rental_total or 0 for o in operations)
     total_supply = sum(o.supply_total or 0 for o in operations)
     total_expenses = sum(e.amount or 0 for e in expenses)
-    total_paid = sum(o.rental_total or 0 for o in operations if o.check_received)
-    total_unpaid = sum(o.rental_total or 0 for o in operations if not o.check_received)
+    total_paid = sum(o.supply_total or 0 for o in operations if o.check_received)
+    total_unpaid = sum(o.supply_total or 0 for o in operations if not o.check_received)
     total_operations = total_rental
     
     return render_template('almasa/crane_detail.html',
@@ -3215,8 +3215,8 @@ def almasa_private_crane_detail(crane_id):
     total_rental = sum(o.rental_total or 0 for o in operations)
     total_supply = sum(o.supply_total or 0 for o in operations)
     total_expenses = sum(e.amount or 0 for e in expenses)
-    total_paid = sum(o.rental_total or 0 for o in operations if o.check_received)
-    total_unpaid = sum(o.rental_total or 0 for o in operations if not o.check_received)
+    total_paid = sum(o.supply_total or 0 for o in operations if o.check_received)
+    total_unpaid = sum(o.supply_total or 0 for o in operations if not o.check_received)
     total_operations = total_rental
     return render_template('almasa/private_crane_detail.html',
                            crane=crane, operations=operations,
@@ -3608,8 +3608,8 @@ def almasa_supply_detail(supply_id):
     total_rental = sum(o.rental_total or 0 for o in operations)
     total_supply = sum(o.supply_total or 0 for o in operations)
     total_expenses = sum(e.amount or 0 for e in expenses)
-    total_paid = sum(o.rental_total or 0 for o in operations if o.check_received)
-    total_unpaid = sum(o.rental_total or 0 for o in operations if not o.check_received)
+    total_paid = sum(o.supply_total or 0 for o in operations if o.check_received)
+    total_unpaid = sum(o.supply_total or 0 for o in operations if not o.check_received)
     total_operations = total_rental
     return render_template('almasa/supply_detail.html',
                            supply=supply, operations=operations, expenses=expenses,
