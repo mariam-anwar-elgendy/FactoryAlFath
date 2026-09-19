@@ -13,7 +13,7 @@
     <h4 class="fw-bold">💰 إجمالي اللي لينا عند الناس: {{ grand_total }}</h4>
 </div>
 
-<!-- عمليات الونش (مشاركة) -->
+<!-- ==================== عمليات الونش (مشاركة) ==================== -->
 <div class="card border-0 shadow-sm mb-4">
     <div class="card-header bg-light fw-bold d-flex justify-content-between align-items-center">
         <span>🏗️ أوناش مشاركة ({{ partnership_ops|length }} عملية)</span>
@@ -48,7 +48,7 @@
                         <td>{{ op.supply_days or op.days_count or 0 }}</td>
                         <td class="fw-bold text-danger">{{ op.supply_total }}</td>
                         <td>
-                            <button class="btn btn-sm btn-outline-info" data-bs-toggle="modal" data-bs-target="#detailsModal{{ op.id }}">📋</button>
+                            <button class="btn btn-sm btn-outline-info" data-bs-toggle="modal" data-bs-target="#partnership_detailsModal{{ op.id }}">📋</button>
                         </td>
                     </tr>
                     {% endfor %}
@@ -68,7 +68,7 @@
     </div>
 </div>
 
-<!-- عمليات الونش الخاص -->
+<!-- ==================== عمليات الونش الخاص ==================== -->
 <div class="card border-0 shadow-sm mb-4">
     <div class="card-header bg-light fw-bold d-flex justify-content-between align-items-center">
         <span>🚛 أوناش خاصة ({{ private_ops|length }} عملية)</span>
@@ -101,7 +101,7 @@
                         <td>{{ op.rental_days or op.days_count or 0 }}</td>
                         <td class="fw-bold text-danger">{{ op.rental_total }}</td>
                         <td>
-                            <button class="btn btn-sm btn-outline-info" data-bs-toggle="modal" data-bs-target="#detailsModal{{ op.id }}">📋</button>
+                            <button class="btn btn-sm btn-outline-info" data-bs-toggle="modal" data-bs-target="#private_detailsModal{{ op.id }}">📋</button>
                         </td>
                     </tr>
                     {% endfor %}
@@ -121,7 +121,7 @@
     </div>
 </div>
 
-<!-- عمليات التوريدات -->
+<!-- ==================== عمليات التوريدات ==================== -->
 <div class="card border-0 shadow-sm">
     <div class="card-header bg-light fw-bold d-flex justify-content-between align-items-center">
         <span>📦 توريدات ({{ supply_ops|length }} عملية)</span>
@@ -158,7 +158,7 @@
                         <td>{{ op.supply_days or op.days_count or 0 }}</td>
                         <td class="fw-bold text-danger">{{ op.supply_total }}</td>
                         <td>
-                            <button class="btn btn-sm btn-outline-info" data-bs-toggle="modal" data-bs-target="#detailsModal{{ op.id }}">📋</button>
+                            <button class="btn btn-sm btn-outline-info" data-bs-toggle="modal" data-bs-target="#supply_detailsModal{{ op.id }}">📋</button>
                         </td>
                     </tr>
                     {% endfor %}
@@ -178,9 +178,9 @@
     </div>
 </div>
 
-<!-- ✅ مودالات التفاصيل الكاملة -->
+<!-- ==================== مودالات التفاصيل - مشاركة ==================== -->
 {% for op in partnership_ops %}
-<div class="modal fade" id="detailsModal{{ op.id }}" tabindex="-1">
+<div class="modal fade" id="partnership_detailsModal{{ op.id }}" tabindex="-1">
   <div class="modal-dialog modal-lg">
     <div class="modal-content">
       <div class="modal-header bg-primary text-white">
@@ -246,8 +246,9 @@
 </div>
 {% endfor %}
 
+<!-- ==================== مودالات التفاصيل - خاص ==================== -->
 {% for op in private_ops %}
-<div class="modal fade" id="detailsModal{{ op.id }}" tabindex="-1">
+<div class="modal fade" id="private_detailsModal{{ op.id }}" tabindex="-1">
   <div class="modal-dialog modal-lg">
     <div class="modal-content">
       <div class="modal-header bg-success text-white">
@@ -285,8 +286,9 @@
 </div>
 {% endfor %}
 
+<!-- ==================== مودالات التفاصيل - توريدات ==================== -->
 {% for op in supply_ops %}
-<div class="modal fade" id="detailsModal{{ op.id }}" tabindex="-1">
+<div class="modal fade" id="supply_detailsModal{{ op.id }}" tabindex="-1">
   <div class="modal-dialog modal-lg">
     <div class="modal-content">
       <div class="modal-header bg-warning text-dark">
