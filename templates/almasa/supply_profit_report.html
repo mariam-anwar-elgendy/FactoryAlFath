@@ -1,10 +1,10 @@
 {% extends "base_almasa.html" %}
 
-{% block title %}تقرير الأرباح التوريدية{% endblock %}
+{% block title %}تقرير الأرباح التجارية{% endblock %}
 
 {% block content %}
 <div class="d-flex justify-content-between align-items-center mb-4">
-    <h2 class="fw-bold text-success">📉 تقرير الأرباح التوريدية - شركة الماسة</h2>
+    <h2 class="fw-bold text-success">📉 تقرير الأرباح التجارية - شركة الماسة</h2>
     <div>
         <a href="{{ url_for('almasa_reports') }}" class="btn btn-outline-primary">📊 كل التقارير</a>
         <a href="{{ url_for('almasa_index') }}" class="btn btn-outline-secondary">← الرئيسية</a>
@@ -14,11 +14,11 @@
 <!-- ✅ الإجمالي العام -->
 <div class="card border-0 shadow-sm mb-4">
     <div class="card-header text-white fw-bold" style="background: linear-gradient(135deg, #1b5e20, #2e7d32);">
-        💰 الإجمالي العام للأرباح التوريدية
+        💰 الإجمالي العام للأرباح التجارية
     </div>
     <div class="card-body text-center">
         <h1 class="fw-bold text-success display-5">{{ grand_supply_profit }}</h1>
-        <p class="text-muted mb-0">إجمالي الأرباح التوريدية لكل الأوناش (مشاركة + خاصة)</p>
+        <p class="text-muted mb-0">إجمالي الأرباح التجارية لكل الأوناش (مشاركة + خاصة)</p>
     </div>
 </div>
 
@@ -50,7 +50,7 @@
 
 <!-- ⚠️ ملاحظة مهمة -->
 <div class="alert alert-info mb-4">
-    <strong>ℹ️ ملاحظة:</strong> التوريدات ليس لها أرباح توريدية — الأرباح الإدارية فقط.
+    <strong>ℹ️ ملاحظة:</strong> التوريدات ليس لها أرباح تجارية — الأرباح الإدارية فقط.
 </div>
 
 <!-- ✅ تفاصيل الأوناش (مشاركة) -->
@@ -67,10 +67,11 @@
                         <th>الونش</th>
                         <th>الشركاء</th>
                         <th>العمليات</th>
-                        <th>إجمالي التأجير</th>
-                        <th>المصاريف</th>
+                        <th>إجمالي التأجير (للمورد)</th>
                         <th>ضريبة 8.5%</th>
-                        <th>الأرباح التوريدية</th>
+                        <th>التأجير بعد الضريبة</th>
+                        <th>المصاريف</th>
+                        <th>الأرباح التجارية</th>
                         <th>إجراءات</th>
                     </tr>
                 </thead>
@@ -80,9 +81,10 @@
                         <td class="fw-bold">{{ item.crane.name }}</td>
                         <td>{{ item.crane.partners|length }}</td>
                         <td>{{ item.crane.operations|length }}</td>
-                        <td>{{ item.total_supply }}</td>
-                        <td class="text-danger">{{ item.total_expenses }}</td>
+                        <td class="fw-bold text-primary">{{ item.total_rental }}</td>
                         <td class="text-warning">{{ item.tax_85_amount }}</td>
+                        <td class="fw-bold">{{ item.rental_after_tax }}</td>
+                        <td class="text-danger">{{ item.total_expenses }}</td>
                         <td class="fw-bold text-success">{{ item.supply_profit }}</td>
                         <td>
                             <a href="{{ url_for('almasa_crane_profit_report', crane_id=item.crane.id) }}" class="btn btn-sm btn-primary">
@@ -94,7 +96,7 @@
                 </tbody>
                 <tfoot>
                     <tr class="fw-bold table-secondary">
-                        <td colspan="6">الإجمالي</td>
+                        <td colspan="7">الإجمالي</td>
                         <td class="text-success">{{ partnership_supply_profit }}</td>
                         <td></td>
                     </tr>
@@ -121,10 +123,11 @@
                         <th>الونش</th>
                         <th>صاحب الونش</th>
                         <th>العمليات</th>
-                        <th>إجمالي التأجير</th>
-                        <th>المصاريف</th>
+                        <th>إجمالي التأجير (للمورد)</th>
                         <th>ضريبة 8.5%</th>
-                        <th>الأرباح التوريدية</th>
+                        <th>التأجير بعد الضريبة</th>
+                        <th>المصاريف</th>
+                        <th>الأرباح التجارية</th>
                         <th>إجراءات</th>
                     </tr>
                 </thead>
@@ -134,9 +137,10 @@
                         <td class="fw-bold">{{ item.crane.name }}</td>
                         <td>{{ item.crane.owner_name }}</td>
                         <td>{{ item.crane.operations|length }}</td>
-                        <td>{{ item.total_supply }}</td>
-                        <td class="text-danger">{{ item.total_expenses }}</td>
+                        <td class="fw-bold text-primary">{{ item.total_rental }}</td>
                         <td class="text-warning">{{ item.tax_85_amount }}</td>
+                        <td class="fw-bold">{{ item.rental_after_tax }}</td>
+                        <td class="text-danger">{{ item.total_expenses }}</td>
                         <td class="fw-bold text-success">{{ item.supply_profit }}</td>
                         <td>
                             <a href="{{ url_for('almasa_private_crane_profit_report', crane_id=item.crane.id) }}" class="btn btn-sm btn-success">
@@ -148,7 +152,7 @@
                 </tbody>
                 <tfoot>
                     <tr class="fw-bold table-secondary">
-                        <td colspan="6">الإجمالي</td>
+                        <td colspan="7">الإجمالي</td>
                         <td class="text-success">{{ private_supply_profit }}</td>
                         <td></td>
                     </tr>
@@ -158,6 +162,16 @@
         {% else %}
         <div class="alert alert-info mb-0">لا توجد أوناش خاصة</div>
         {% endif %}
+    </div>
+</div>
+
+<!-- ✅ ملخص المعادلة -->
+<div class="card border-0 shadow-sm mt-4">
+    <div class="card-body" style="background: linear-gradient(135deg, #f5f3ff, #ede9fe);">
+        <h5 class="fw-bold mb-3 text-center">📊 معادلة الأرباح التجارية</h5>
+        <div class="alert alert-info mb-0 text-center">
+            <h5 class="fw-bold mb-0">الأرباح التجارية = (إجمالي التأجير − ضريبة 8.5%) − المصاريف</h5>
+        </div>
     </div>
 </div>
 {% endblock %}
