@@ -1,0 +1,165 @@
+{% extends "base.html" %}
+
+{% block title %}تنبيهات المصنع{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h2 class="fw-bold text-purple-dark">🔔 تنبيهات المصنع</h2>
+    <a href="{{ url_for('factory_index') }}" class="btn btn-outline-secondary">← رجوع للمصنع</a>
+</div>
+
+<!-- ✅ ملخص التنبيهات -->
+<div class="row g-3 mb-4">
+    <div class="col-md-6">
+        <div class="card border-0 shadow-sm h-100" style="background: linear-gradient(135deg, #28a745, #1e7e34); color: white;">
+            <div class="card-body text-center">
+                <div style="font-size: 3rem;">💰</div>
+                <h5 class="fw-bold mt-3">لينا فلوس</h5>
+                <h2 class="fw-bold mb-0">{{ total_owed_to_us }}</h2>
+                <small class="d-block mt-2">على {{ customers_owed|length }} عميل</small>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-6">
+        <div class="card border-0 shadow-sm h-100" style="background: linear-gradient(135deg, #dc3545, #c82333); color: white;">
+            <div class="card-body text-center">
+                <div style="font-size: 3rem;">💸</div>
+                <h5 class="fw-bold mt-3">علينا فلوس</h5>
+                <h2 class="fw-bold mb-0">{{ total_we_owe }}</h2>
+                <small class="d-block mt-2">لـ {{ suppliers_we_owe|length }} مورد</small>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- ✅ لينا فلوس (عملاء) -->
+<div class="card border-0 shadow-sm mb-4">
+    <div class="card-header bg-success text-white fw-bold">
+        💰 لينا فلوس (على العملاء)
+    </div>
+    <div class="card-body">
+        {% if customers_owed %}
+        <div class="table-responsive">
+            <table class="table table-striped table-hover align-middle">
+                <thead>
+                    <tr>
+                        <th>#</th>
+                        <th>العميل</th>
+                        <th>الهاتف</th>
+                        <th>إجمالي المبيعات</th>
+                        <th>المدفوع</th>
+                        <th>المتبقي</th>
+                        <th>إجراءات</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for c in customers_owed %}
+                    <tr>
+                        <td>{{ loop.index }}</td>
+                        <td class="fw-bold">{{ c.name }}</td>
+                        <td>{{ c.phone or '-' }}</td>
+                        <td>{{ c.total }}</td>
+                        <td class="text-success">{{ c.paid }}</td>
+                        <td class="fw-bold text-danger">{{ c.remaining }}</td>
+                        <td>
+                            <a href="{{ url_for('reports_party_statement', party_name=c.name) }}" class="btn btn-sm btn-outline-primary">
+                                📊 كشف حساب
+                            </a>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+                <tfoot>
+                    <tr class="fw-bold table-success">
+                        <td colspan="5">الإجمالي</td>
+                        <td class="text-danger">{{ total_owed_to_us }}</td>
+                        <td></td>
+                    </tr>
+                </tfoot>
+            </table>
+        </div>
+        {% else %}
+        <div class="alert alert-success mb-0 text-center">
+            ✅ مفيش عملاء عليهم فلوس
+        </div>
+        {% endif %}
+    </div>
+</div>
+
+<!-- ✅ علينا فلوس (موردين) -->
+<div class="card border-0 shadow-sm mb-4">
+    <div class="card-header bg-danger text-white fw-bold">
+        💸 علينا فلوس (للموردين)
+    </div>
+    <div class="card-body">
+        {% if suppliers_we_owe %}
+        <div class="table-responsive">
+            <table class="table table-striped table-hover align-middle">
+                <thead>
+                    <tr>
+                        <th>#</th>
+                        <th>المورد</th>
+                        <th>الهاتف</th>
+                        <th>إجمالي المشتريات</th>
+                        <th>المدفوع</th>
+                        <th>المتبقي</th>
+                        <th>إجراءات</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for s in suppliers_we_owe %}
+                    <tr>
+                        <td>{{ loop.index }}</td>
+                        <td class="fw-bold">{{ s.name }}</td>
+                        <td>{{ s.phone or '-' }}</td>
+                        <td>{{ s.total }}</td>
+                        <td class="text-success">{{ s.paid }}</td>
+                        <td class="fw-bold text-danger">{{ s.remaining }}</td>
+                        <td>
+                            <a href="{{ url_for('reports_party_statement', party_name=s.name) }}" class="btn btn-sm btn-outline-danger">
+                                📊 كشف حساب
+                            </a>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+                <tfoot>
+                    <tr class="fw-bold table-danger">
+                        <td colspan="5">الإجمالي</td>
+                        <td class="text-danger">{{ total_we_owe }}</td>
+                        <td></td>
+                    </tr>
+                </tfoot>
+            </table>
+        </div>
+        {% else %}
+        <div class="alert alert-success mb-0 text-center">
+            ✅ مفيش موردين علينا فلوس
+        </div>
+        {% endif %}
+    </div>
+</div>
+
+<!-- ✅ ملخص سريع -->
+<div class="card border-0 shadow-sm">
+    <div class="card-body">
+        <h5 class="fw-bold mb-3">📊 ملخص سريع</h5>
+        <div class="row text-center">
+            <div class="col-md-4">
+                <p class="text-muted mb-1">إجمالي لينا</p>
+                <h3 class="fw-bold text-success">{{ total_owed_to_us }}</h3>
+            </div>
+            <div class="col-md-4">
+                <p class="text-muted mb-1">إجمالي علينا</p>
+                <h3 class="fw-bold text-danger">{{ total_we_owe }}</h3>
+            </div>
+            <div class="col-md-4">
+                <p class="text-muted mb-1">الفرق (صافي)</p>
+                <h3 class="fw-bold {% if total_owed_to_us - total_we_owe >= 0 %}text-primary{% else %}text-warning{% endif %}">
+                    {{ total_owed_to_us - total_we_owe }}
+                </h3>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
