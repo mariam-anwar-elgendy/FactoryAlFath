@@ -18,6 +18,8 @@
                 <th>المقاس</th>
                 <th>السماكة</th>
                 <th>الكمية</th>
+                <th>سعر الوحدة</th>
+                <th>الإجمالي</th>
                 <th>المورد</th>
                 <th>ملاحظات</th>
                 <th>المسؤول</th>
@@ -31,6 +33,8 @@
                 <td>{{ m.pipe_size }}</td>
                 <td>{{ m.pipe_thickness or '-' }}</td>
                 <td>{{ m.quantity }}</td>
+                <td class="text-primary fw-bold">{{ m.unit_price or 0 }}</td>
+                <td class="text-success fw-bold">{{ m.total_cost or 0 }}</td>
                 <td>{{ m.supplier or '-' }}</td>
                 <td>{{ m.notes or '-' }}</td>
                 <td>{{ get_user_name(m.created_by) }}</td>
@@ -47,7 +51,7 @@
                 </td>
             </tr>
             {% else %}
-            <tr><td colspan="8" class="text-center text-muted">لا يوجد وارد مسجل</td></tr>
+            <tr><td colspan="10" class="text-center text-muted">لا يوجد وارد مسجل</td></tr>
             {% endfor %}
         </tbody>
     </table>
@@ -93,9 +97,19 @@
                             <option value="جدول 80">
                         </datalist>
                     </div>
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label fw-bold">الكمية (عدد المواسير)</label>
+                            <input type="number" step="0.01" name="quantity" id="add_quantity" class="form-control" required oninput="calcTotalAdd()">
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label fw-bold">سعر الوحدة</label>
+                            <input type="number" step="0.01" name="unit_price" id="add_unit_price" class="form-control" value="0" oninput="calcTotalAdd()">
+                        </div>
+                    </div>
                     <div class="mb-3">
-                        <label class="form-label fw-bold">الكمية (عدد المواسير)</label>
-                        <input type="number" step="0.01" name="quantity" class="form-control" required>
+                        <label class="form-label fw-bold">الإجمالي (تلقائي)</label>
+                        <input type="number" step="0.01" id="add_total_cost" class="form-control" value="0" readonly style="background-color: #f0f0f0;">
                     </div>
                     <div class="mb-3">
                         <label class="form-label fw-bold">المورد</label>
@@ -163,9 +177,19 @@
                             <option value="جدول 80">
                         </datalist>
                     </div>
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label fw-bold">الكمية</label>
+                            <input type="number" step="0.01" name="quantity" id="edit_quantity_{{ m.id }}" class="form-control" value="{{ m.quantity }}" required oninput="calcTotalEdit({{ m.id }})">
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label fw-bold">سعر الوحدة</label>
+                            <input type="number" step="0.01" name="unit_price" id="edit_unit_price_{{ m.id }}" class="form-control" value="{{ m.unit_price or 0 }}" oninput="calcTotalEdit({{ m.id }})">
+                        </div>
+                    </div>
                     <div class="mb-3">
-                        <label class="form-label fw-bold">الكمية</label>
-                        <input type="number" step="0.01" name="quantity" class="form-control" value="{{ m.quantity }}" required>
+                        <label class="form-label fw-bold">الإجمالي (تلقائي)</label>
+                        <input type="number" step="0.01" id="edit_total_cost_{{ m.id }}" class="form-control" value="{{ m.total_cost or 0 }}" readonly style="background-color: #f0f0f0;">
                     </div>
                     <div class="mb-3">
                         <label class="form-label fw-bold">المورد</label>
@@ -190,4 +214,20 @@
     </div>
 </div>
 {% endfor %}
+
+<!-- ✅ JavaScript للحساب التلقائي -->
+<script>
+function calcTotalAdd() {
+    var qty = parseFloat(document.getElementById('add_quantity').value) || 0;
+    var price = parseFloat(document.getElementById('add_unit_price').value) || 0;
+    document.getElementById('add_total_cost').value = (qty * price).toFixed(2);
+}
+
+function calcTotalEdit(id) {
+    var qty = parseFloat(document.getElementById('edit_quantity_' + id).value) || 0;
+    var price = parseFloat(document.getElementById('edit_unit_price_' + id).value) || 0;
+    document.getElementById('edit_total_cost_' + id).value = (qty * price).toFixed(2);
+}
+</script>
+
 {% endblock %}
