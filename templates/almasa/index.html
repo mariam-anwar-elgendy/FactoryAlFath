@@ -17,7 +17,7 @@
                 <p class="text-muted mb-0 small">أوناش مشاركة</p>
                 <hr class="my-2">
                 <h6 class="text-primary fw-bold mb-0">{{ total_partnership }}</h6>
-                <small class="text-muted">إجمالي</small>
+                <small class="text-muted">إجمالي التوريد</small>
             </div>
         </div>
     </div>
@@ -29,7 +29,7 @@
                 <p class="text-muted mb-0 small">أوناش خاصة</p>
                 <hr class="my-2">
                 <h6 class="text-success fw-bold mb-0">{{ total_private }}</h6>
-                <small class="text-muted">إجمالي</small>
+                <small class="text-muted">إجمالي التأجير</small>
             </div>
         </div>
     </div>
@@ -41,7 +41,7 @@
                 <p class="text-muted mb-0 small">توريدات</p>
                 <hr class="my-2">
                 <h6 class="text-warning fw-bold mb-0">{{ total_supply }}</h6>
-                <small class="text-muted">إجمالي</small>
+                <small class="text-muted">إجمالي التوريد</small>
             </div>
         </div>
     </div>
@@ -88,7 +88,7 @@
                 <div style="font-size: 2rem;">📊</div>
                 <h5 class="fw-bold mt-2">إجمالي الأرباح</h5>
                 <h3 class="fw-bold mb-0">{{ total_profit or 0 }}</h3>
-                <small>الأرباح الإدارية + التوريدية</small>
+                <small>الأرباح الإدارية + التجارية</small>
             </div>
         </div>
     </div>
@@ -118,7 +118,26 @@
     </div>
 </div>
 
-<!-- قائمة الأوناش (مشاركة) -->
+<!-- ✅ أزرار التقارير -->
+<div class="row g-2 mb-4">
+    <div class="col-md-4 col-6">
+        <a href="{{ url_for('almasa_admin_profit_report') }}" class="btn btn-outline-primary w-100 py-3">
+            📈 الأرباح الإدارية
+        </a>
+    </div>
+    <div class="col-md-4 col-6">
+        <a href="{{ url_for('almasa_supply_profit_report') }}" class="btn btn-outline-success w-100 py-3">
+            📉 الأرباح التجارية
+        </a>
+    </div>
+    <div class="col-md-4 col-12">
+        <a href="{{ url_for('almasa_reports') }}" class="btn btn-outline-info w-100 py-3">
+            📊 كل التقارير
+        </a>
+    </div>
+</div>
+
+<!-- ✅ قائمة الأوناش (مشاركة) -->
 <div class="card border-0 shadow-sm mb-4">
     <div class="card-header text-white fw-bold d-flex justify-content-between align-items-center" 
          style="background: linear-gradient(90deg, #1a237e, #283593);">
@@ -134,7 +153,7 @@
                         <th>الاسم</th>
                         <th>الشركاء</th>
                         <th>العمليات</th>
-                        <th>الإجمالي</th>
+                        <th>إجمالي التوريد</th>
                         <th>غير مدفوع</th>
                         <th>إجراءات</th>
                     </tr>
@@ -145,12 +164,12 @@
                         <td>{{ crane.name }}</td>
                         <td>{{ crane.partners|length }}</td>
                         <td>{{ crane.operations|length }}</td>
-                        <td class="fw-bold text-primary">{{ crane.operations|sum(attribute='rental_total') or 0 }}</td>
+                        <td class="fw-bold text-success">{{ crane.operations|sum(attribute='supply_total') or 0 }}</td>
                         <td class="text-danger">
                             {% set unpaid = [] %}
                             {% for op in crane.operations %}
                                 {% if not op.check_received %}
-                                    {% set _ = unpaid.append(op.rental_total or 0) %}
+                                    {% set _ = unpaid.append(op.supply_total or 0) %}
                                 {% endif %}
                             {% endfor %}
                             {{ unpaid|sum or 0 }}
@@ -170,7 +189,7 @@
     </div>
 </div>
 
-<!-- قائمة الأوناش الخاصة -->
+<!-- ✅ قائمة الأوناش الخاصة -->
 <div class="card border-0 shadow-sm mb-4">
     <div class="card-header text-white fw-bold d-flex justify-content-between align-items-center" 
          style="background: linear-gradient(90deg, #1b5e20, #2e7d32);">
@@ -186,7 +205,7 @@
                         <th>الاسم</th>
                         <th>صاحب الونش</th>
                         <th>العمليات</th>
-                        <th>الإجمالي</th>
+                        <th>إجمالي التأجير</th>
                         <th>غير مدفوع</th>
                         <th>إجراءات</th>
                     </tr>
@@ -197,7 +216,7 @@
                         <td>{{ crane.name }}</td>
                         <td>{{ crane.owner_name }}</td>
                         <td>{{ crane.operations|length }}</td>
-                        <td class="fw-bold text-success">{{ crane.operations|sum(attribute='rental_total') or 0 }}</td>
+                        <td class="fw-bold text-primary">{{ crane.operations|sum(attribute='rental_total') or 0 }}</td>
                         <td class="text-danger">
                             {% set unpaid = [] %}
                             {% for op in crane.operations %}
@@ -222,7 +241,7 @@
     </div>
 </div>
 
-<!-- قائمة التوريدات -->
+<!-- ✅ قائمة التوريدات -->
 <div class="card border-0 shadow-sm">
     <div class="card-header text-white fw-bold d-flex justify-content-between align-items-center" 
          style="background: linear-gradient(90deg, #e65100, #ef6c00);">
@@ -239,7 +258,7 @@
                         <th>المورد</th>
                         <th>العميل</th>
                         <th>العمليات</th>
-                        <th>الإجمالي</th>
+                        <th>إجمالي التوريد</th>
                         <th>غير مدفوع</th>
                         <th>إجراءات</th>
                     </tr>
@@ -251,12 +270,12 @@
                         <td>{{ supply.supplier_name or '-' }}</td>
                         <td>{{ supply.customer_name or '-' }}</td>
                         <td>{{ supply.operations|length }}</td>
-                        <td class="fw-bold text-warning">{{ supply.operations|sum(attribute='rental_total') or 0 }}</td>
+                        <td class="fw-bold text-success">{{ supply.operations|sum(attribute='supply_total') or 0 }}</td>
                         <td class="text-danger">
                             {% set unpaid = [] %}
                             {% for op in supply.operations %}
                                 {% if not op.check_received %}
-                                    {% set _ = unpaid.append(op.rental_total or 0) %}
+                                    {% set _ = unpaid.append(op.supply_total or 0) %}
                                 {% endif %}
                             {% endfor %}
                             {{ unpaid|sum or 0 }}
