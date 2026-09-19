@@ -29,6 +29,47 @@
     </div>
 </div>
 
+<!-- ✅ بيانات الشيك المالية (المهمة) -->
+<div class="row g-3 mb-4">
+    <div class="col-md-3">
+        <div class="card border-0 shadow-sm h-100">
+            <div class="card-body text-center">
+                <h6 class="text-muted">قيمة الشيك</h6>
+                <h3 class="fw-bold text-primary">{{ check_amount }}</h3>
+                {% if tax_14 > 0 %}
+                <small class="text-muted">(شامل ضريبة 14%)</small>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card border-0 shadow-sm h-100">
+            <div class="card-body text-center">
+                <h6 class="text-muted">إجمالي التوريد</h6>
+                <h3 class="fw-bold text-success">{{ total_supply }}</h3>
+                <small class="text-muted">من العميل</small>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card border-0 shadow-sm h-100">
+            <div class="card-body text-center">
+                <h6 class="text-muted">إجمالي التأجير</h6>
+                <h3 class="fw-bold text-secondary">{{ total_rental }}</h3>
+                <small class="text-muted">للمورد</small>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card border-0 shadow-sm h-100">
+            <div class="card-body text-center">
+                <h6 class="text-muted">المصاريف</h6>
+                <h3 class="fw-bold text-danger">{{ total_expenses }}</h3>
+            </div>
+        </div>
+    </div>
+</div>
+
 <!-- العمليات -->
 <div class="card border-0 shadow-sm mb-4">
     <div class="card-header bg-light fw-bold">⚙️ العمليات</div>
@@ -42,9 +83,10 @@
                         <th>المشروع</th>
                         <th>من</th>
                         <th>إلى</th>
-                        <th>الأيام</th>
-                        <th>إجمالي التوريد</th>
+                        <th>أيام التأجير</th>
+                        <th>أيام التوريد</th>
                         <th>إجمالي التأجير</th>
+                        <th>إجمالي التوريد</th>
                         <th>ملاحظات</th>
                     </tr>
                 </thead>
@@ -55,16 +97,17 @@
                         <td>{{ op.project_name or '-' }}</td>
                         <td>{{ op.start_date.strftime('%Y-%m-%d') }}</td>
                         <td>{{ op.end_date.strftime('%Y-%m-%d') if op.end_date else '-' }}</td>
-                        <td>{{ op.days_count }}</td>
-                        <td>{{ op.rental_total }}</td>
-                        <td>{{ op.supply_total }}</td>
+                        <td>{{ op.rental_days or op.days_count or 0 }}</td>
+                        <td>{{ op.supply_days or op.days_count or 0 }}</td>
+                        <td class="fw-bold text-secondary">{{ op.rental_total }}</td>
+                        <td class="fw-bold text-success">{{ op.supply_total }}</td>
                         <td>{{ op.notes or '-' }}</td>
                     </tr>
                     {% endfor %}
                 </tbody>
                 <tfoot>
                     <tr class="fw-bold table-secondary">
-                        <td colspan="5">الإجمالي</td>
+                        <td colspan="6">الإجمالي</td>
                         <td>{{ total_rental }}</td>
                         <td>{{ total_supply }}</td>
                         <td></td>
@@ -111,66 +154,80 @@
     </div>
 </div>
 
-<!-- ✅ الأرباح -->
+<!-- ✅ الحسابات التفصيلية -->
 <div class="card border-0 shadow-sm mb-4">
     <div class="card-header text-white fw-bold" style="background: linear-gradient(90deg, #e65100, #ef6c00);">
-        📊 الأرباح
+        📊 الحسابات التفصيلية
     </div>
     <div class="card-body">
         <div class="row">
-            <!-- الأرباح الإدارية -->
+            <!-- العمود الأيسر: الشيك والضريبة 14% -->
             <div class="col-md-6 mb-3">
                 <div class="card bg-light h-100">
                     <div class="card-body">
-                        <h6 class="fw-bold text-primary">📈 الأرباح الإدارية</h6>
-                        <p class="text-muted small mb-2">= إجمالي التوريد - إجمالي التأجير</p>
+                        <h6 class="fw-bold text-primary mb-3">💰 حساب الشيك</h6>
                         <table class="table table-sm table-bordered mb-0">
                             <tbody>
-                                <tr><td>إجمالي التوريد</td><td>{{ total_rental }}</td></tr>
-                                <tr><td>إجمالي التأجير</td><td>{{ total_supply }}</td></tr>
-                                <tr class="table-success fw-bold"><td>الأرباح الإدارية</td><td>{{ admin_profit }}</td></tr>
+                                <tr><td>إجمالي التوريد (من العميل)</td><td class="fw-bold">{{ total_supply }}</td></tr>
+                                {% if tax_14 > 0 %}
+                                <tr><td>+ ضريبة 14% (حكومية)</td><td class="text-warning fw-bold">{{ tax_14 }}</td></tr>
+                                {% endif %}
+                                <tr class="table-primary fw-bold"><td>قيمة الشيك</td><td>{{ check_amount }}</td></tr>
                             </tbody>
                         </table>
                     </div>
                 </div>
             </div>
-            <!-- الأرباح التوريدية -->
+
+            <!-- العمود الأيمن: حساب الأرباح -->
             <div class="col-md-6 mb-3">
                 <div class="card bg-light h-100">
                     <div class="card-body">
-                        <h6 class="fw-bold text-success">📉 الأرباح التوريدية</h6>
-                        <p class="text-muted small mb-2">= إجمالي التأجير - المصاريف - الضريبة 8.5%</p>
+                        <h6 class="fw-bold text-success mb-3">📈 حساب الأرباح</h6>
                         <table class="table table-sm table-bordered mb-0">
                             <tbody>
-                                <tr><td>إجمالي التأجير</td><td>{{ total_supply }}</td></tr>
-                                <tr><td>المصاريف</td><td>{{ total_expenses }}</td></tr>
-                                <tr><td>الضريبة 8.5%</td><td>{{ tax_85_amount or 0 }}</td></tr>
-                                <tr class="table-success fw-bold"><td>الأرباح التوريدية</td><td>{{ supply_profit }}</td></tr>
+                                <tr><td>إجمالي التأجير (للمورد)</td><td class="fw-bold">{{ total_rental }}</td></tr>
+                                {% if tax_85_amount > 0 %}
+                                <tr><td>- ضريبة 8.5%</td><td class="text-warning fw-bold">{{ tax_85_amount }}</td></tr>
+                                <tr><td>= التأجير بعد الضريبة</td><td class="fw-bold">{{ rental_after_tax }}</td></tr>
+                                {% endif %}
+                                <tr><td>- المصاريف</td><td class="text-danger fw-bold">{{ total_expenses }}</td></tr>
+                                <tr class="table-success fw-bold"><td>الأرباح التجارية</td><td>{{ supply_profit }}</td></tr>
                             </tbody>
                         </table>
                     </div>
                 </div>
             </div>
         </div>
-        
+
+        <!-- الأرباح الإدارية -->
         <div class="alert alert-info mt-3">
-            <strong>💰 إجمالي الأرباح =</strong> {{ admin_profit + supply_profit }}
+            <h5 class="fw-bold mb-2">📈 الأرباح الإدارية = {{ admin_profit }}</h5>
+            <small>= إجمالي التوريد ({{ total_supply }}) - إجمالي التأجير ({{ total_rental }})</small>
         </div>
-        
-        <!-- توزيع الأرباح -->
+
+        <!-- إجمالي الأرباح -->
+        <div class="alert alert-success">
+            <h5 class="fw-bold mb-0">💰 إجمالي الأرباح = {{ admin_profit + supply_profit }}</h5>
+            <small>= الأرباح الإدارية ({{ admin_profit }}) + الأرباح التجارية ({{ supply_profit }})</small>
+        </div>
+
+        <!-- توزيع الأرباح - للونش الخاص -->
         {% if report_type == 'private' %}
         <div class="alert alert-success">
             <h5>💰 صاحب الونش: {{ crane.owner_name }}</h5>
             <p class="mb-0 fs-4">الصافي النهائي: <strong>{{ owner_share }}</strong></p>
         </div>
         {% else %}
-        <table class="table table-striped mt-3">
+        <!-- توزيع الأرباح على الشركاء - للمشاركة -->
+        <h5 class="fw-bold mt-4 mb-3">👥 توزيع الأرباح على الشركاء</h5>
+        <table class="table table-striped">
             <thead>
                 <tr>
                     <th>الشريك</th>
                     <th>النسبة</th>
                     <th>حصة الأرباح الإدارية</th>
-                    <th>حصة الأرباح التوريدية</th>
+                    <th>حصة الأرباح التجارية</th>
                     <th>الإجمالي</th>
                 </tr>
             </thead>
@@ -191,6 +248,5 @@
         </table>
         {% endif %}
     </div>
-    
 </div>
 {% endblock %}
