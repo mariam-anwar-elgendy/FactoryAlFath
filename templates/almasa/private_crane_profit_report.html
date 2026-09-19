@@ -36,7 +36,7 @@
             <div class="col-md-4">
                 <div class="card bg-light h-100">
                     <div class="card-body text-center">
-                        <h6 class="text-muted">إجمالي التوريد</h6>
+                        <h6 class="text-muted">إجمالي التأجير (للمورد)</h6>
                         <h3 class="fw-bold text-primary">{{ total_rental }}</h3>
                     </div>
                 </div>
@@ -52,9 +52,9 @@
             <div class="col-md-4">
                 <div class="card h-100" style="background: linear-gradient(135deg, #1b5e20, #2e7d32); color: white;">
                     <div class="card-body text-center">
-                        <h6>الصافي النهائي</h6>
+                        <h6>الصافي النهائي لصاحب الونش</h6>
                         <h3 class="fw-bold">{{ owner_share }}</h3>
-                        <small>= التوريد - المصاريف</small>
+                        <small>= (التأجير - الضرايب) - المصاريف</small>
                     </div>
                 </div>
             </div>
@@ -69,29 +69,35 @@
 </div>
 
 <!-- ✅ ملخص الضرايب -->
+{% if tax_14_amount > 0 or tax_85_amount > 0 %}
 <div class="card border-0 shadow-sm mb-4">
     <div class="card-header bg-light fw-bold">📊 الضرايب</div>
     <div class="card-body">
         <div class="row g-3">
+            {% if tax_14_amount > 0 %}
             <div class="col-md-6">
                 <div class="card bg-light h-100">
                     <div class="card-body text-center">
                         <h6 class="text-muted">إجمالي ضريبة 14%</h6>
-                        <h4 class="fw-bold text-danger">{{ tax_14_amount or 0 }}</h4>
+                        <h4 class="fw-bold text-danger">{{ tax_14_amount }}</h4>
                     </div>
                 </div>
             </div>
+            {% endif %}
+            {% if tax_85_amount > 0 %}
             <div class="col-md-6">
                 <div class="card bg-light h-100">
                     <div class="card-body text-center">
                         <h6 class="text-muted">إجمالي ضريبة 8.5%</h6>
-                        <h4 class="fw-bold text-warning">{{ tax_85_amount or 0 }}</h4>
+                        <h4 class="fw-bold text-warning">{{ tax_85_amount }}</h4>
                     </div>
                 </div>
             </div>
+            {% endif %}
         </div>
     </div>
 </div>
+{% endif %}
 
 <!-- ✅ تفاصيل العمليات -->
 <div class="card border-0 shadow-sm">
@@ -99,7 +105,7 @@
     <div class="card-body">
         {% if operations %}
         <div class="table-responsive">
-            <table class="table table-sm table-striped">
+            <table class="table table-sm table-striped table-hover">
                 <thead>
                     <tr>
                         <th>رقم الفاتورة</th>
@@ -107,8 +113,10 @@
                         <th>من</th>
                         <th>إلى</th>
                         <th>الأيام</th>
-                        <th>إجمالي التوريد</th>
+                        <th>إجمالي التأجير</th>
                         <th>الضريبة 14%</th>
+                        <th>الضريبة 8.5%</th>
+                        <th>تفاصيل</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -118,14 +126,24 @@
                         <td>{{ op.project_name or '-' }}</td>
                         <td>{{ op.start_date.strftime('%Y-%m-%d') }}</td>
                         <td>{{ op.end_date.strftime('%Y-%m-%d') if op.end_date else '-' }}</td>
-                        <td>{{ op.days_count }}</td>
-                        <td class="fw-bold">{{ op.rental_total }}</td>
+                        <td>{{ op.rental_days or op.days_count or 0 }}</td>
+                        <td class="fw-bold text-primary">{{ op.rental_total }}</td>
                         <td>
                             {% if op.tax_14_enabled %}
                                 <span class="badge bg-danger">
                                     {{ (op.rental_total * op.tax_14_value / 100)|round(2) }}
                                 </span>
                             {% else %}-{% endif %}
+                        </td>
+                        <td>
+                            {% if op.tax_85_enabled %}
+                                <span class="badge bg-warning text-dark">
+                                    {{ (op.rental_total * op.tax_85_value / 100)|round(2) }}
+                                </span>
+                            {% else %}-{% endif %}
+                        </td>
+                        <td>
+                            <button class="btn btn-sm btn-outline-info" data-bs-toggle="modal" data-bs-target="#detailsModal{{ op.id }}">📋</button>
                         </td>
                     </tr>
                     {% endfor %}
@@ -135,6 +153,8 @@
                         <td colspan="5">الإجمالي</td>
                         <td>{{ total_rental }}</td>
                         <td>{{ tax_14_amount or 0 }}</td>
+                        <td>{{ tax_85_amount or 0 }}</td>
+                        <td></td>
                     </tr>
                 </tfoot>
             </table>
@@ -144,4 +164,60 @@
         {% endif %}
     </div>
 </div>
+
+<!-- ==================== مودالات التفاصيل ==================== -->
+{% for op in operations %}
+<div class="modal fade" id="detailsModal{{ op.id }}" tabindex="-1">
+  <div class="modal-dialog modal-lg">
+    <div class="modal-content">
+      <div class="modal-header bg-success text-white">
+        <h5 class="modal-title">📋 تفاصيل العملية - {{ op.project_name or '-' }}</h5>
+        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body">
+        <h6 class="fw-bold text-success mb-3">📋 بيانات أساسية</h6>
+        <table class="table table-sm table-bordered mb-4">
+          <tbody>
+            <tr><td class="fw-bold" style="width: 40%;">المشروع</td><td>{{ op.project_name or '-' }}</td></tr>
+            <tr><td class="fw-bold">المكان</td><td>{{ op.project_location or '-' }}</td></tr>
+            <tr><td class="fw-bold">من تاريخ</td><td>{{ op.start_date.strftime('%Y-%m-%d') }}</td></tr>
+            <tr><td class="fw-bold">إلى تاريخ</td><td>{{ op.end_date.strftime('%Y-%m-%d') if op.end_date else '-' }}</td></tr>
+            <tr><td class="fw-bold">رقم الفاتورة</td><td>{{ op.invoice_number or '-' }}</td></tr>
+          </tbody>
+        </table>
+
+        <h6 class="fw-bold text-primary mb-3">💰 تفاصيل التأجير (للمورد)</h6>
+        <table class="table table-sm table-bordered mb-4">
+          <tbody>
+            <tr><td class="fw-bold" style="width: 40%;">سعر التأجير اليومي</td><td>{{ op.rental_value or 0 }}</td></tr>
+            <tr><td class="fw-bold">عدد الأيام</td><td>{{ op.rental_days or op.days_count or 0 }}</td></tr>
+            <tr><td class="fw-bold">ساعات إضافية</td><td>{{ op.rental_extra_hours or 0 }}</td></tr>
+            <tr><td class="fw-bold">سعر الساعة الإضافية</td><td>{{ op.rental_hour_rate or 0 }}</td></tr>
+            <tr><td class="fw-bold">أيام الطريق</td><td>{{ op.rental_travel_days or op.travel_days or 0 }}</td></tr>
+            <tr><td class="fw-bold">سعر يوم الطريق</td><td>{{ op.travel_rental_rate or op.travel_rate or 0 }}</td></tr>
+            <tr class="table-primary"><td class="fw-bold">إجمالي التأجير</td><td class="fw-bold">{{ op.rental_total }}</td></tr>
+          </tbody>
+        </table>
+
+        {% if op.tax_14_enabled or op.tax_85_enabled %}
+        <h6 class="fw-bold text-warning mb-3">📊 الضرايب</h6>
+        <table class="table table-sm table-bordered mb-0">
+          <tbody>
+            {% if op.tax_14_enabled %}
+            <tr class="table-warning"><td class="fw-bold" style="width: 40%;">ضريبة 14%</td><td>{{ (op.rental_total * op.tax_14_value / 100)|round(2) }}</td></tr>
+            {% endif %}
+            {% if op.tax_85_enabled %}
+            <tr class="table-warning"><td class="fw-bold">ضريبة 8.5%</td><td>{{ (op.rental_total * op.tax_85_value / 100)|round(2) }}</td></tr>
+            {% endif %}
+          </tbody>
+        </table>
+        {% endif %}
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">إغلاق</button>
+      </div>
+    </div>
+  </div>
+</div>
+{% endfor %}
 {% endblock %}
