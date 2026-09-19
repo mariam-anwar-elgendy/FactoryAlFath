@@ -3,8 +3,15 @@
 {% block title %}المصنع{% endblock %}
 
 {% block content %}
-<h2 class="fw-bold mb-4 text-purple-dark">🏭 المصنع</h2>
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h2 class="fw-bold text-purple-dark">🏭 المصنع</h2>
+    <div>
+        <a href="{{ url_for('factory_alerts') }}" class="btn btn-warning">🔔 التنبيهات</a>
+        <a href="{{ url_for('factory_profit_report') }}" class="btn btn-success">📈 تقرير الأرباح</a>
+    </div>
+</div>
 
+<!-- ✅ ملخص المصنع -->
 <div class="row g-3 mb-4">
     <div class="col-md-4">
         <div class="card border-0 shadow-sm">
@@ -41,9 +48,20 @@
         📅 ملخص اليوم ({{ now.strftime('%Y-%m-%d') }})
     </div>
     <div class="card-body">
-        <p>وارد اليوم: {{ raw_materials|length }} سجل</p>
-        <p>إنتاج اليوم: {{ production|length }} سجل</p>
-        <p>يوميات اليوم: {{ diary|length }} سجل</p>
+        <div class="row text-center">
+            <div class="col-md-4 mb-2">
+                <p class="text-muted mb-1">وارد اليوم</p>
+                <h5 class="fw-bold text-purple">{{ raw_materials|length }} سجل</h5>
+            </div>
+            <div class="col-md-4 mb-2">
+                <p class="text-muted mb-1">إنتاج اليوم</p>
+                <h5 class="fw-bold text-purple">{{ production|length }} سجل</h5>
+            </div>
+            <div class="col-md-4 mb-2">
+                <p class="text-muted mb-1">يوميات اليوم</p>
+                <h5 class="fw-bold text-purple">{{ diary|length }} سجل</h5>
+            </div>
+        </div>
     </div>
 </div>
 {% endblock %}
