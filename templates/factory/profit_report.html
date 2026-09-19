@@ -1,0 +1,225 @@
+{% extends "base.html" %}
+
+{% block title %}تقرير أرباح المصنع{% endblock %}
+
+{% block extra_css %}
+<style>
+    @media print {
+        .no-print { display: none !important; }
+        .card { border: none !important; box-shadow: none !important; }
+        body { background-color: white !important; }
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h2 class="fw-bold text-purple-dark">📈 تقرير أرباح المصنع</h2>
+    <div class="no-print">
+        <button onclick="window.print()" class="btn btn-purple">🖨️ طباعة</button>
+        <a href="{{ url_for('factory_index') }}" class="btn btn-outline-secondary">← رجوع للمصنع</a>
+    </div>
+</div>
+
+<!-- ✅ ملخص الأرباح -->
+<div class="row g-3 mb-4">
+    <div class="col-md-3">
+        <div class="card border-0 shadow-sm h-100">
+            <div class="card-body text-center">
+                <div style="font-size: 2rem;">💰</div>
+                <h6 class="text-muted mt-2">الإيرادات (بيع الأكواع)</h6>
+                <h3 class="fw-bold text-success">{{ total_revenue }}</h3>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card border-0 shadow-sm h-100">
+            <div class="card-body text-center">
+                <div style="font-size: 2rem;">🛒</div>
+                <h6 class="text-muted mt-2">تكلفة المواسير</h6>
+                <h3 class="fw-bold text-warning">{{ total_raw_cost }}</h3>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card border-0 shadow-sm h-100">
+            <div class="card-body text-center">
+                <div style="font-size: 2rem;">📔</div>
+                <h6 class="text-muted mt-2">مصاريف التشغيل</h6>
+                <h3 class="fw-bold text-danger">{{ total_diary_cost }}</h3>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card border-0 shadow-sm h-100" style="background: linear-gradient(135deg, {% if profit >= 0 %}#28a745, #1e7e34{% else %}#dc3545, #c82333{% endif %}); color: white;">
+            <div class="card-body text-center">
+                <div style="font-size: 2rem;">📊</div>
+                <h6 class="mt-2">صافي الربح</h6>
+                <h2 class="fw-bold">{{ profit }}</h2>
+                <small class="d-block">= الإيرادات - التكاليف</small>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- ✅ تفاصيل الحسابات -->
+<div class="card border-0 shadow-sm mb-4">
+    <div class="card-header bg-light fw-bold">📊 تفاصيل الحسابات</div>
+    <div class="card-body">
+        <table class="table table-bordered">
+            <tbody>
+                <tr>
+                    <td class="fw-bold">إجمالي الإيرادات (بيع الأكواع)</td>
+                    <td class="text-success fw-bold">{{ total_revenue }}</td>
+                </tr>
+                <tr>
+                    <td class="fw-bold">(-) تكلفة المواسير (الخام)</td>
+                    <td class="text-warning fw-bold">{{ total_raw_cost }}</td>
+                </tr>
+                <tr>
+                    <td class="fw-bold">(-) مصاريف التشغيل (اليوميات)</td>
+                    <td class="text-danger fw-bold">{{ total_diary_cost }}</td>
+                </tr>
+                <tr class="table-secondary">
+                    <td class="fw-bold">= إجمالي التكاليف</td>
+                    <td class="fw-bold">{{ total_costs }}</td>
+                </tr>
+                <tr class="{% if profit >= 0 %}table-success{% else %}table-danger{% endif %}">
+                    <td class="fw-bold fs-5">= صافي الربح</td>
+                    <td class="fw-bold fs-5">{{ profit }}</td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<!-- ✅ تفاصيل إيرادات بيع الأكواع -->
+{% if sales_elbows %}
+<div class="card border-0 shadow-sm mb-4">
+    <div class="card-header bg-success text-white fw-bold">
+        💰 تفاصيل إيرادات بيع الأكواع
+    </div>
+    <div class="card-body">
+        <div class="table-responsive">
+            <table class="table table-sm table-striped">
+                <thead>
+                    <tr>
+                        <th>التاريخ</th>
+                        <th>المقاس</th>
+                        <th>السماكة</th>
+                        <th>الكمية</th>
+                        <th>سعر الوحدة</th>
+                        <th>الإجمالي</th>
+                        <th>العميل</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for s in sales_elbows %}
+                    <tr>
+                        <td>{{ s.date.strftime('%Y-%m-%d') }}</td>
+                        <td>{{ s.size or '-' }}</td>
+                        <td>{{ s.spec or '-' }}</td>
+                        <td>{{ s.quantity }}</td>
+                        <td>{{ s.unit_price }}</td>
+                        <td class="fw-bold text-success">{{ s.total }}</td>
+                        <td>{{ s.customer or '-' }}</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+                <tfoot>
+                    <tr class="fw-bold table-success">
+                        <td colspan="5">الإجمالي</td>
+                        <td>{{ total_revenue }}</td>
+                        <td></td>
+                    </tr>
+                </tfoot>
+            </table>
+        </div>
+    </div>
+</div>
+{% endif %}
+
+<!-- ✅ تفاصيل تكلفة المواسير -->
+{% if raw_materials %}
+<div class="card border-0 shadow-sm mb-4">
+    <div class="card-header bg-warning text-dark fw-bold">
+        🛒 تفاصيل تكلفة المواسير
+    </div>
+    <div class="card-body">
+        <div class="table-responsive">
+            <table class="table table-sm table-striped">
+                <thead>
+                    <tr>
+                        <th>التاريخ</th>
+                        <th>المقاس</th>
+                        <th>السماكة</th>
+                        <th>الكمية</th>
+                        <th>سعر الوحدة</th>
+                        <th>الإجمالي</th>
+                        <th>المورد</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for r in raw_materials %}
+                    <tr>
+                        <td>{{ r.date.strftime('%Y-%m-%d') }}</td>
+                        <td>{{ r.pipe_size or '-' }}</td>
+                        <td>{{ r.pipe_thickness or '-' }}</td>
+                        <td>{{ r.quantity }}</td>
+                        <td>{{ r.unit_price or 0 }}</td>
+                        <td class="fw-bold text-warning">{{ r.total_cost or 0 }}</td>
+                        <td>{{ r.supplier or '-' }}</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+                <tfoot>
+                    <tr class="fw-bold table-warning">
+                        <td colspan="5">الإجمالي</td>
+                        <td>{{ total_raw_cost }}</td>
+                        <td></td>
+                    </tr>
+                </tfoot>
+            </table>
+        </div>
+    </div>
+</div>
+{% endif %}
+
+<!-- ✅ تفاصيل مصاريف التشغيل -->
+{% if diary_entries %}
+<div class="card border-0 shadow-sm">
+    <div class="card-header bg-danger text-white fw-bold">
+        📔 تفاصيل مصاريف التشغيل (اليوميات)
+    </div>
+    <div class="card-body">
+        <div class="table-responsive">
+            <table class="table table-sm table-striped">
+                <thead>
+                    <tr>
+                        <th>التاريخ</th>
+                        <th>الوصف</th>
+                        <th>المبلغ</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for d in diary_entries %}
+                    <tr>
+                        <td>{{ d.date.strftime('%Y-%m-%d') }}</td>
+                        <td>{{ d.description }}</td>
+                        <td class="fw-bold text-danger">{{ d.amount }}</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+                <tfoot>
+                    <tr class="fw-bold table-danger">
+                        <td colspan="2">الإجمالي</td>
+                        <td>{{ total_diary_cost }}</td>
+                    </tr>
+                </tfoot>
+            </table>
+        </div>
+    </div>
+</div>
+{% endif %}
+
+{% endblock %}
