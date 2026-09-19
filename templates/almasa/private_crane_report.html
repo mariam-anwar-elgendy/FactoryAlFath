@@ -8,11 +8,12 @@
     <a href="{{ url_for('almasa_private_crane_detail', crane_id=crane.id) }}" class="btn btn-outline-secondary">← رجوع</a>
 </div>
 
+<!-- ✅ ملخص عام -->
 <div class="row mb-4">
     <div class="col-md-3">
         <div class="card border-0 shadow-sm">
             <div class="card-body text-center">
-                <h6 class="text-muted">إجمالي التأجير</h6>
+                <h6 class="text-muted">إجمالي التأجير (للمورد)</h6>
                 <h4 class="fw-bold text-primary">{{ total_rental }}</h4>
             </div>
         </div>
@@ -47,4 +48,92 @@
     <h4>💰 صاحب الونش: {{ crane.owner_name }}</h4>
     <p class="mb-0 fs-3">الصافي النهائي: <strong>{{ owner_share }}</strong></p>
 </div>
+
+<!-- ✅ جدول العمليات -->
+<div class="card border-0 shadow-sm">
+    <div class="card-header bg-light fw-bold">⚙️ العمليات</div>
+    <div class="card-body">
+        {% if operations %}
+        <div class="table-responsive">
+            <table class="table table-sm table-striped table-hover">
+                <thead>
+                    <tr>
+                        <th>المشروع</th>
+                        <th>من</th>
+                        <th>إلى</th>
+                        <th>الأيام</th>
+                        <th>إجمالي التأجير</th>
+                        <th>تفاصيل</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for op in operations %}
+                    <tr>
+                        <td>{{ op.project_name or '-' }}</td>
+                        <td>{{ op.start_date.strftime('%Y-%m-%d') }}</td>
+                        <td>{{ op.end_date.strftime('%Y-%m-%d') if op.end_date else '-' }}</td>
+                        <td>{{ op.rental_days or op.days_count or 0 }}</td>
+                        <td class="fw-bold text-success">{{ op.rental_total }}</td>
+                        <td>
+                            <button class="btn btn-sm btn-outline-info" data-bs-toggle="modal" data-bs-target="#detailsModal{{ op.id }}">📋</button>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+                <tfoot>
+                    <tr class="fw-bold table-secondary">
+                        <td colspan="4">الإجمالي</td>
+                        <td>{{ total_rental }}</td>
+                        <td></td>
+                    </tr>
+                </tfoot>
+            </table>
+        </div>
+        {% else %}
+        <p class="text-muted mb-0">لا توجد عمليات</p>
+        {% endif %}
+    </div>
+</div>
+
+<!-- ==================== مودالات التفاصيل ==================== -->
+{% for op in operations %}
+<div class="modal fade" id="detailsModal{{ op.id }}" tabindex="-1">
+  <div class="modal-dialog modal-lg">
+    <div class="modal-content">
+      <div class="modal-header bg-success text-white">
+        <h5 class="modal-title">📋 تفاصيل العملية - {{ op.project_name or '-' }}</h5>
+        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body">
+        <h6 class="fw-bold text-success mb-3">📋 بيانات أساسية</h6>
+        <table class="table table-sm table-bordered mb-4">
+          <tbody>
+            <tr><td class="fw-bold" style="width: 40%;">المشروع</td><td>{{ op.project_name or '-' }}</td></tr>
+            <tr><td class="fw-bold">المكان</td><td>{{ op.project_location or '-' }}</td></tr>
+            <tr><td class="fw-bold">من تاريخ</td><td>{{ op.start_date.strftime('%Y-%m-%d') }}</td></tr>
+            <tr><td class="fw-bold">إلى تاريخ</td><td>{{ op.end_date.strftime('%Y-%m-%d') if op.end_date else '-' }}</td></tr>
+            <tr><td class="fw-bold">رقم الفاتورة</td><td>{{ op.invoice_number or '-' }}</td></tr>
+          </tbody>
+        </table>
+
+        <h6 class="fw-bold text-success mb-3">💰 تفاصيل التأجير (للمورد)</h6>
+        <table class="table table-sm table-bordered mb-0">
+          <tbody>
+            <tr><td class="fw-bold" style="width: 40%;">سعر التأجير اليومي</td><td>{{ op.rental_value or 0 }}</td></tr>
+            <tr><td class="fw-bold">عدد الأيام</td><td>{{ op.rental_days or op.days_count or 0 }}</td></tr>
+            <tr><td class="fw-bold">ساعات إضافية</td><td>{{ op.rental_extra_hours or 0 }}</td></tr>
+            <tr><td class="fw-bold">سعر الساعة الإضافية</td><td>{{ op.rental_hour_rate or 0 }}</td></tr>
+            <tr><td class="fw-bold">أيام الطريق</td><td>{{ op.rental_travel_days or op.travel_days or 0 }}</td></tr>
+            <tr><td class="fw-bold">سعر يوم الطريق</td><td>{{ op.travel_rental_rate or op.travel_rate or 0 }}</td></tr>
+            <tr class="table-success"><td class="fw-bold">إجمالي التأجير</td><td class="fw-bold">{{ op.rental_total }}</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">إغلاق</button>
+      </div>
+    </div>
+  </div>
+</div>
+{% endfor %}
 {% endblock %}
