@@ -26,6 +26,92 @@
     </div>
 </div>
 
+<!-- ✅ ملخص الأرباح الإدارية -->
+<div class="card border-0 shadow-sm mb-4">
+    <div class="card-header text-white fw-bold" style="background: linear-gradient(135deg, #1a237e, #283593);">
+        📈 الأرباح الإدارية
+    </div>
+    <div class="card-body">
+        <div class="row g-3">
+            <div class="col-md-4">
+                <div class="card bg-light h-100">
+                    <div class="card-body text-center">
+                        <h6 class="text-muted">إجمالي التوريد (من العميل)</h6>
+                        <h3 class="fw-bold text-success">{{ total_supply }}</h3>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="card bg-light h-100">
+                    <div class="card-body text-center">
+                        <h6 class="text-muted">إجمالي التأجير (للمورد)</h6>
+                        <h3 class="fw-bold text-primary">{{ total_rental }}</h3>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="card h-100" style="background: linear-gradient(135deg, #1a237e, #283593); color: white;">
+                    <div class="card-body text-center">
+                        <h6>الأرباح الإدارية</h6>
+                        <h3 class="fw-bold">{{ admin_profit }}</h3>
+                        <small>= التوريد - التأجير</small>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- ✅ ملخص الأرباح التجارية -->
+<div class="card border-0 shadow-sm mb-4">
+    <div class="card-header text-white fw-bold" style="background: linear-gradient(135deg, #1b5e20, #2e7d32);">
+        📉 الأرباح التجارية
+    </div>
+    <div class="card-body">
+        <div class="row g-3">
+            <div class="col-md-3">
+                <div class="card bg-light h-100">
+                    <div class="card-body text-center">
+                        <h6 class="text-muted">إجمالي التأجير</h6>
+                        <h3 class="fw-bold text-primary">{{ total_rental }}</h3>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="card bg-light h-100">
+                    <div class="card-body text-center">
+                        <h6 class="text-muted">ضريبة 8.5%</h6>
+                        <h3 class="fw-bold text-warning">{{ tax_85_amount or 0 }}</h3>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="card bg-light h-100">
+                    <div class="card-body text-center">
+                        <h6 class="text-muted">المصاريف</h6>
+                        <h3 class="fw-bold text-danger">{{ total_expenses }}</h3>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="card h-100" style="background: linear-gradient(135deg, #1b5e20, #2e7d32); color: white;">
+                    <div class="card-body text-center">
+                        <h6>الأرباح التجارية</h6>
+                        <h3 class="fw-bold">{{ supply_profit }}</h3>
+                        <small>= (التأجير - 8.5%) - مصاريف</small>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- ✅ إجمالي الأرباح -->
+<div class="alert alert-info mb-4">
+    <h5 class="fw-bold mb-0">💰 إجمالي الأرباح = {{ total_profit }}</h5>
+    <small>= الأرباح الإدارية ({{ admin_profit }}) + الأرباح التجارية ({{ supply_profit }})</small>
+</div>
+
 <!-- الشركاء -->
 <div class="card border-0 shadow-sm mb-4">
     <div class="card-header bg-light fw-bold">👥 الشركاء</div>
@@ -49,92 +135,6 @@
     </div>
 </div>
 
-<!-- ✅ ملخص الأرباح الإدارية -->
-<div class="card border-0 shadow-sm mb-4">
-    <div class="card-header text-white fw-bold" style="background: linear-gradient(135deg, #1a237e, #283593);">
-        📈 الأرباح الإدارية
-    </div>
-    <div class="card-body">
-        <div class="row g-3">
-            <div class="col-md-4">
-                <div class="card bg-light h-100">
-                    <div class="card-body text-center">
-                        <h6 class="text-muted">إجمالي التوريد</h6>
-                        <h3 class="fw-bold text-primary">{{ total_rental }}</h3>
-                    </div>
-                </div>
-            </div>
-            <div class="col-md-4">
-                <div class="card bg-light h-100">
-                    <div class="card-body text-center">
-                        <h6 class="text-muted">إجمالي التأجير</h6>
-                        <h3 class="fw-bold text-secondary">{{ total_supply }}</h3>
-                    </div>
-                </div>
-            </div>
-            <div class="col-md-4">
-                <div class="card h-100" style="background: linear-gradient(135deg, #1a237e, #283593); color: white;">
-                    <div class="card-body text-center">
-                        <h6>الأرباح الإدارية</h6>
-                        <h3 class="fw-bold">{{ admin_profit }}</h3>
-                        <small>= التوريد - التأجير</small>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </div>
-</div>
-
-<!-- ✅ ملخص الأرباح التوريدية -->
-<div class="card border-0 shadow-sm mb-4">
-    <div class="card-header text-white fw-bold" style="background: linear-gradient(135deg, #1b5e20, #2e7d32);">
-        📉 الأرباح التوريدية
-    </div>
-    <div class="card-body">
-        <div class="row g-3">
-            <div class="col-md-3">
-                <div class="card bg-light h-100">
-                    <div class="card-body text-center">
-                        <h6 class="text-muted">إجمالي التأجير</h6>
-                        <h3 class="fw-bold text-secondary">{{ total_supply }}</h3>
-                    </div>
-                </div>
-            </div>
-            <div class="col-md-3">
-                <div class="card bg-light h-100">
-                    <div class="card-body text-center">
-                        <h6 class="text-muted">المصاريف</h6>
-                        <h3 class="fw-bold text-danger">{{ total_expenses }}</h3>
-                    </div>
-                </div>
-            </div>
-            <div class="col-md-3">
-                <div class="card bg-light h-100">
-                    <div class="card-body text-center">
-                        <h6 class="text-muted">الضريبة 8.5%</h6>
-                        <h3 class="fw-bold text-warning">{{ tax_85_amount or 0 }}</h3>
-                    </div>
-                </div>
-            </div>
-            <div class="col-md-3">
-                <div class="card h-100" style="background: linear-gradient(135deg, #1b5e20, #2e7d32); color: white;">
-                    <div class="card-body text-center">
-                        <h6>الأرباح التوريدية</h6>
-                        <h3 class="fw-bold">{{ supply_profit }}</h3>
-                        <small>= التأجير - مصاريف - ضريبة</small>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </div>
-</div>
-
-<!-- ✅ إجمالي الأرباح -->
-<div class="alert alert-info mb-4">
-    <h5 class="fw-bold mb-0">💰 إجمالي الأرباح = {{ total_profit }}</h5>
-    <small>= الأرباح الإدارية + الأرباح التوريدية</small>
-</div>
-
 <!-- ✅ توزيع الأرباح على الشركاء -->
 <div class="card border-0 shadow-sm mb-4">
     <div class="card-header bg-light fw-bold">💰 توزيع الأرباح على الشركاء</div>
@@ -147,7 +147,7 @@
                         <th>الشريك</th>
                         <th>النسبة</th>
                         <th>حصة الأرباح الإدارية</th>
-                        <th>حصة الأرباح التوريدية</th>
+                        <th>حصة الأرباح التجارية</th>
                         <th>الإجمالي</th>
                     </tr>
                 </thead>
@@ -185,18 +185,20 @@
     <div class="card-body">
         {% if operations %}
         <div class="table-responsive">
-            <table class="table table-sm table-striped">
+            <table class="table table-sm table-striped table-hover">
                 <thead>
                     <tr>
                         <th>رقم الفاتورة</th>
                         <th>المشروع</th>
                         <th>من</th>
                         <th>إلى</th>
-                        <th>الأيام</th>
-                        <th>إجمالي التوريد</th>
+                        <th>أيام التأجير</th>
+                        <th>أيام التوريد</th>
                         <th>إجمالي التأجير</th>
+                        <th>إجمالي التوريد</th>
                         <th>الضريبة 14%</th>
                         <th>الضريبة 8.5%</th>
+                        <th>تفاصيل</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -206,33 +208,38 @@
                         <td>{{ op.project_name or '-' }}</td>
                         <td>{{ op.start_date.strftime('%Y-%m-%d') }}</td>
                         <td>{{ op.end_date.strftime('%Y-%m-%d') if op.end_date else '-' }}</td>
-                        <td>{{ op.days_count }}</td>
-                        <td class="fw-bold">{{ op.rental_total }}</td>
-                        <td>{{ op.supply_total }}</td>
+                        <td>{{ op.rental_days or op.days_count or 0 }}</td>
+                        <td>{{ op.supply_days or op.days_count or 0 }}</td>
+                        <td class="fw-bold text-primary">{{ op.rental_total }}</td>
+                        <td class="fw-bold text-success">{{ op.supply_total }}</td>
                         <td>
                             {% if op.tax_14_enabled %}
                                 <span class="badge bg-danger">
-                                    {{ (op.rental_total * op.tax_14_value / 100)|round(2) }}
+                                    {{ (op.supply_total * op.tax_14_value / 100)|round(2) }}
                                 </span>
                             {% else %}-{% endif %}
                         </td>
                         <td>
                             {% if op.tax_85_enabled %}
                                 <span class="badge bg-warning text-dark">
-                                    {{ (op.supply_total * op.tax_85_value / 100)|round(2) }}
+                                    {{ (op.rental_total * op.tax_85_value / 100)|round(2) }}
                                 </span>
                             {% else %}-{% endif %}
+                        </td>
+                        <td>
+                            <button class="btn btn-sm btn-outline-info" data-bs-toggle="modal" data-bs-target="#detailsModal{{ op.id }}">📋</button>
                         </td>
                     </tr>
                     {% endfor %}
                 </tbody>
                 <tfoot>
                     <tr class="fw-bold table-secondary">
-                        <td colspan="5">الإجمالي</td>
+                        <td colspan="6">الإجمالي</td>
                         <td>{{ total_rental }}</td>
                         <td>{{ total_supply }}</td>
                         <td>{{ tax_14_amount or 0 }}</td>
                         <td>{{ tax_85_amount or 0 }}</td>
+                        <td></td>
                     </tr>
                 </tfoot>
             </table>
@@ -241,6 +248,74 @@
         <p class="text-muted mb-0">لا توجد عمليات</p>
         {% endif %}
     </div>
-    
 </div>
+
+<!-- ==================== مودالات التفاصيل ==================== -->
+{% for op in operations %}
+<div class="modal fade" id="detailsModal{{ op.id }}" tabindex="-1">
+  <div class="modal-dialog modal-lg">
+    <div class="modal-content">
+      <div class="modal-header bg-primary text-white">
+        <h5 class="modal-title">📋 تفاصيل العملية - {{ op.project_name or '-' }}</h5>
+        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body">
+        <h6 class="fw-bold text-primary mb-3">📋 بيانات أساسية</h6>
+        <table class="table table-sm table-bordered mb-4">
+          <tbody>
+            <tr><td class="fw-bold" style="width: 40%;">المشروع</td><td>{{ op.project_name or '-' }}</td></tr>
+            <tr><td class="fw-bold">المكان</td><td>{{ op.project_location or '-' }}</td></tr>
+            <tr><td class="fw-bold">من تاريخ</td><td>{{ op.start_date.strftime('%Y-%m-%d') }}</td></tr>
+            <tr><td class="fw-bold">إلى تاريخ</td><td>{{ op.end_date.strftime('%Y-%m-%d') if op.end_date else '-' }}</td></tr>
+            <tr><td class="fw-bold">رقم الفاتورة</td><td>{{ op.invoice_number or '-' }}</td></tr>
+          </tbody>
+        </table>
+
+        <h6 class="fw-bold text-primary mb-3">💰 التأجير (للمورد)</h6>
+        <table class="table table-sm table-bordered mb-4">
+          <tbody>
+            <tr><td class="fw-bold" style="width: 40%;">سعر التأجير اليومي</td><td>{{ op.rental_value or 0 }}</td></tr>
+            <tr><td class="fw-bold">عدد أيام التأجير</td><td>{{ op.rental_days or op.days_count or 0 }}</td></tr>
+            <tr><td class="fw-bold">ساعات إضافية للتأجير</td><td>{{ op.rental_extra_hours or 0 }}</td></tr>
+            <tr><td class="fw-bold">سعر الساعة الإضافية</td><td>{{ op.rental_hour_rate or 0 }}</td></tr>
+            <tr><td class="fw-bold">أيام الطريق للتأجير</td><td>{{ op.rental_travel_days or op.travel_days or 0 }}</td></tr>
+            <tr><td class="fw-bold">سعر يوم الطريق</td><td>{{ op.travel_rental_rate or op.travel_rate or 0 }}</td></tr>
+            <tr class="table-primary"><td class="fw-bold">إجمالي التأجير</td><td class="fw-bold">{{ op.rental_total }}</td></tr>
+          </tbody>
+        </table>
+
+        <h6 class="fw-bold text-success mb-3">💰 التوريد (من العميل)</h6>
+        <table class="table table-sm table-bordered mb-4">
+          <tbody>
+            <tr><td class="fw-bold" style="width: 40%;">سعر التوريد اليومي</td><td>{{ op.supply_value or 0 }}</td></tr>
+            <tr><td class="fw-bold">عدد أيام التوريد</td><td>{{ op.supply_days or op.days_count or 0 }}</td></tr>
+            <tr><td class="fw-bold">ساعات إضافية للتوريد</td><td>{{ op.supply_extra_hours or 0 }}</td></tr>
+            <tr><td class="fw-bold">سعر الساعة الإضافية</td><td>{{ op.supply_hour_rate or 0 }}</td></tr>
+            <tr><td class="fw-bold">أيام الطريق للتوريد</td><td>{{ op.supply_travel_days or op.travel_days or 0 }}</td></tr>
+            <tr><td class="fw-bold">سعر يوم الطريق</td><td>{{ op.travel_supply_rate or op.travel_rate or 0 }}</td></tr>
+            <tr class="table-success"><td class="fw-bold">إجمالي التوريد</td><td class="fw-bold">{{ op.supply_total }}</td></tr>
+          </tbody>
+        </table>
+
+        {% if op.tax_14_enabled or op.tax_85_enabled %}
+        <h6 class="fw-bold text-warning mb-3">📊 الضرايب</h6>
+        <table class="table table-sm table-bordered mb-0">
+          <tbody>
+            {% if op.tax_14_enabled %}
+            <tr class="table-warning"><td class="fw-bold" style="width: 40%;">ضريبة 14%</td><td>{{ (op.supply_total * op.tax_14_value / 100)|round(2) }}</td></tr>
+            {% endif %}
+            {% if op.tax_85_enabled %}
+            <tr class="table-warning"><td class="fw-bold">ضريبة 8.5%</td><td>{{ (op.rental_total * op.tax_85_value / 100)|round(2) }}</td></tr>
+            {% endif %}
+          </tbody>
+        </table>
+        {% endif %}
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">إغلاق</button>
+      </div>
+    </div>
+  </div>
+</div>
+{% endfor %}
 {% endblock %}
