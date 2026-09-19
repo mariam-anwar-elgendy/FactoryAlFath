@@ -641,9 +641,6 @@ def factory_index():
     return render_template('factory/index.html', raw_materials=raw_materials, production=production, diary=diary)
 
 
-# ====================================================================
-# ✅✅✅ factory_raw_materials — إضافة unit_price + total_cost
-# ====================================================================
 @app.route('/factory/raw-materials', methods=['GET', 'POST'])
 @custom_login_required
 @role_required('meg', 'admin', 'mariam', 'rehab', 'mohamed', 'sayed')
@@ -669,7 +666,7 @@ def factory_raw_materials():
                 record.pipe_thickness = request.form.get('pipe_thickness')
                 record.quantity = float(request.form.get('quantity', 0))
                 record.unit_price = float(request.form.get('unit_price', 0))
-                record.total_cost = record.quantity * record.unit_price  # ✅ حساب تلقائي
+                record.total_cost = record.quantity * record.unit_price
                 record.supplier = request.form.get('supplier')
                 record.notes = request.form.get('notes')
                 db.session.commit()
@@ -681,7 +678,7 @@ def factory_raw_materials():
         pipe_thickness = request.form.get('pipe_thickness')
         quantity = float(request.form.get('quantity', 0))
         unit_price = float(request.form.get('unit_price', 0))
-        total_cost = quantity * unit_price  # ✅ حساب تلقائي
+        total_cost = quantity * unit_price
         supplier = request.form.get('supplier')
         notes = request.form.get('notes')
         if supplier and not Supplier.query.filter_by(name=supplier).first():
@@ -702,9 +699,6 @@ def factory_raw_materials():
     return render_template('factory/raw_materials.html', materials=materials, suppliers=suppliers)
 
 
-# ====================================================================
-# ✅✅✅ factory_production — إضافة cost_per_unit + total_cost + الربط بالمحل
-# ====================================================================
 @app.route('/factory/production', methods=['GET', 'POST'])
 @custom_login_required
 @role_required('meg', 'admin', 'mariam', 'rehab', 'mohamed', 'sayed')
@@ -714,7 +708,6 @@ def factory_production():
             record_id = int(request.form.get('delete_id'))
             record = FactoryProduction.query.get_or_404(record_id)
             if can_delete_record(current_user.role, record.date):
-                # ✅ إرجاع الكمية من المخزون قبل الحذف
                 inv = StoreInventory.query.filter_by(
                     product_type='كوع',
                     product_size=record.elbow_size,
@@ -732,7 +725,6 @@ def factory_production():
             record_id = int(request.form.get('edit_id'))
             record = FactoryProduction.query.get_or_404(record_id)
             if can_edit(current_user.role, record.date, record.created_by, current_user.id):
-                # ✅ إرجاع الكمية القديمة من المخزون
                 old_inv = StoreInventory.query.filter_by(
                     product_type='كوع',
                     product_size=record.elbow_size,
@@ -748,10 +740,9 @@ def factory_production():
                 record.quantity = float(request.form.get('quantity', 0))
                 record.raw_material_used = float(request.form.get('raw_material_used', 0))
                 record.cost_per_unit = float(request.form.get('cost_per_unit', 0))
-                record.total_cost = record.quantity * record.cost_per_unit  # ✅ حساب تلقائي
+                record.total_cost = record.quantity * record.cost_per_unit
                 record.notes = request.form.get('notes')
                 
-                # ✅ إضافة الكمية الجديدة للمخزون
                 inv = StoreInventory.query.filter_by(
                     product_type='كوع',
                     product_size=record.elbow_size,
@@ -772,14 +763,13 @@ def factory_production():
                 flash('تم تحديث السجل بنجاح', 'success')
             return redirect(url_for('factory_production'))
         
-        # ✅ إضافة إنتاج جديد
         record_date = datetime.strptime(request.form.get('date'), '%Y-%m-%d').date()
         elbow_size = request.form.get('elbow_size')
         elbow_thickness = request.form.get('elbow_thickness')
         quantity = float(request.form.get('quantity', 0))
         raw_material_used = float(request.form.get('raw_material_used', 0))
         cost_per_unit = float(request.form.get('cost_per_unit', 0))
-        total_cost = quantity * cost_per_unit  # ✅ حساب تلقائي
+        total_cost = quantity * cost_per_unit
         notes = request.form.get('notes')
         
         new_record = FactoryProduction(
@@ -791,7 +781,6 @@ def factory_production():
         )
         db.session.add(new_record)
         
-        # ✅✅✅ الربط التلقائي بالمحل — إضافة الإنتاج لمخزون المحل
         inv = StoreInventory.query.filter_by(
             product_type='كوع',
             product_size=elbow_size,
@@ -808,15 +797,12 @@ def factory_production():
             )
             db.session.add(inv)
         
-        # ✅ إضافة Category 'كوع' لو مش موجودة
         if not Category.query.filter_by(name='كوع').first():
             db.session.add(Category(name='كوع'))
         
-        # ✅ إضافة Size لو مش موجود
         if elbow_size and not Size.query.filter_by(value=elbow_size).first():
             db.session.add(Size(value=elbow_size))
         
-        # ✅ إضافة Thickness لو مش موجود
         if elbow_thickness and not Thickness.query.filter_by(value=elbow_thickness).first():
             db.session.add(Thickness(value=elbow_thickness))
         
@@ -1609,7 +1595,8 @@ def inventory_audit_monthly():
     
     return render_template('inventory_audit_monthly.html',
                            records=records, month=month,
-                           total_shortage=total_shortage, total_surplus=total_surplus)# ==================== الخزينة ====================
+                           total_shortage=total_shortage, total_surplus=total_surplus)
+# ==================== الخزينة ====================
 @app.route('/treasury')
 @custom_login_required
 @role_required('meg', 'admin', 'mariam', 'ahmed', 'eid', 'abdo', 'sayed')
@@ -1893,6 +1880,7 @@ def financial_transactions():
                            transactions=transactions, accounts=accounts,
                            customers=customers, suppliers=suppliers)
 
+
 # ==================== التقارير ====================
 @app.route('/reports')
 @custom_login_required
@@ -1997,64 +1985,59 @@ def report_single_supplier(supplier_id):
 
 
 # ====================================================================
-# ✅✅✅ كشف حساب مورد/عميل — Route جديد
+# ✅✅✅ قائمة المواردين والعملاء — Route جديد
+# ====================================================================
+@app.route('/reports/party-list')
+@custom_login_required
+@role_required('meg', 'admin', 'mariam', 'rehab', 'sayed')
+def reports_party_list():
+    """صفحة قائمة المواردين والعملاء لاختيار كشف حساب"""
+    customers = Customer.query.order_by(Customer.name.asc()).all()
+    suppliers = Supplier.query.order_by(Supplier.name.asc()).all()
+    return render_template('reports/party_list.html',
+                           customers=customers, suppliers=suppliers)
+
+
+# ====================================================================
+# ✅✅✅ كشف حساب مورد/عميل
 # ====================================================================
 @app.route('/reports/party/<string:party_name>')
 @custom_login_required
 @role_required('meg', 'admin', 'mariam', 'rehab', 'sayed')
 def reports_party_statement(party_name):
-    """
-    كشف حساب موحّد لمورد/عميل — بيجمع كل الحركات
-    - مبيعات (لو عميل)
-    - مشتريات (لو مورد)
-    - دفعات
-    - معاملات الخزينة
-    """
-    # مبيعات العميل (احنا بعنا له)
+    """كشف حساب موحّد لمورد/عميل"""
     sales = StoreSale.query.filter_by(customer_name=party_name).order_by(StoreSale.date.asc()).all()
     total_sales = sum(s.total for s in sales)
     total_sales_paid = sum(s.paid_amount for s in sales)
     total_sales_remaining = total_sales - total_sales_paid
     
-    # مشتريات المورد (احنا اشترينا منه)
     purchases = StorePurchase.query.filter_by(supplier_name=party_name).order_by(StorePurchase.date.asc()).all()
     total_purchases = sum(p.total for p in purchases)
     total_purchases_paid = sum(p.paid_amount for p in purchases)
     total_purchases_remaining = total_purchases - total_purchases_paid
     
-    # معاملات الخزينة
     treasury_txns = TreasuryTransaction.query.filter_by(source=party_name).order_by(TreasuryTransaction.date.asc()).all()
     total_deposits = sum(t.amount for t in treasury_txns if t.transaction_type == 'deposit')
     total_withdrawals = sum(t.amount for t in treasury_txns if t.transaction_type == 'withdrawal')
     
-    # الرصيد النهائي
     customer_balance = total_sales_remaining - total_deposits
     supplier_balance = total_purchases_remaining - total_withdrawals
     net_balance = customer_balance - supplier_balance
     
-    # تجميع كل الحركات في جدول واحد
     all_movements = []
     for s in sales:
         all_movements.append({
-            'date': s.date,
-            'type': 'بيع',
+            'date': s.date, 'type': 'بيع',
             'description': f"فاتورة بيع - {s.invoice_number or ''}",
-            'amount': s.total,
-            'paid': s.paid_amount,
-            'remaining': s.remaining,
-            'source': 'sale',
-            'id': s.id
+            'amount': s.total, 'paid': s.paid_amount,
+            'remaining': s.remaining, 'source': 'sale', 'id': s.id
         })
     for p in purchases:
         all_movements.append({
-            'date': p.date,
-            'type': 'شراء',
+            'date': p.date, 'type': 'شراء',
             'description': f"فاتورة شراء - {p.invoice_number or ''}",
-            'amount': p.total,
-            'paid': p.paid_amount,
-            'remaining': p.remaining,
-            'source': 'purchase',
-            'id': p.id
+            'amount': p.total, 'paid': p.paid_amount,
+            'remaining': p.remaining, 'source': 'purchase', 'id': p.id
         })
     for t in treasury_txns:
         all_movements.append({
@@ -2062,10 +2045,7 @@ def reports_party_statement(party_name):
             'type': 'إيداع' if t.transaction_type == 'deposit' else 'سحب',
             'description': t.notes or t.source or '',
             'amount': t.amount if t.transaction_type == 'deposit' else -t.amount,
-            'paid': 0,
-            'remaining': 0,
-            'source': 'treasury',
-            'id': t.id
+            'paid': 0, 'remaining': 0, 'source': 'treasury', 'id': t.id
         })
     all_movements.sort(key=lambda x: x['date'])
     
@@ -2074,22 +2054,16 @@ def reports_party_statement(party_name):
     
     return render_template('reports/party_statement.html',
                            party_name=party_name,
-                           is_customer=is_customer,
-                           is_supplier=is_supplier,
-                           sales=sales, purchases=purchases,
-                           treasury_txns=treasury_txns,
+                           is_customer=is_customer, is_supplier=is_supplier,
+                           sales=sales, purchases=purchases, treasury_txns=treasury_txns,
                            all_movements=all_movements,
-                           total_sales=total_sales,
-                           total_sales_paid=total_sales_paid,
+                           total_sales=total_sales, total_sales_paid=total_sales_paid,
                            total_sales_remaining=total_sales_remaining,
-                           total_purchases=total_purchases,
-                           total_purchases_paid=total_purchases_paid,
+                           total_purchases=total_purchases, total_purchases_paid=total_purchases_paid,
                            total_purchases_remaining=total_purchases_remaining,
-                           total_deposits=total_deposits,
-                           total_withdrawals=total_withdrawals,
+                           total_deposits=total_deposits, total_withdrawals=total_withdrawals,
                            customer_balance=customer_balance,
-                           supplier_balance=supplier_balance,
-                           net_balance=net_balance)
+                           supplier_balance=supplier_balance, net_balance=net_balance)
 
 
 # ====================================================================
@@ -2099,12 +2073,7 @@ def reports_party_statement(party_name):
 @custom_login_required
 @role_required('meg', 'admin', 'mariam', 'rehab', 'mohamed', 'sayed')
 def factory_alerts():
-    """
-    تنبيهات المصنع:
-    - علينا فلوس (للموردين)
-    - لينا فلوس (على العملاء)
-    """
-    # لينا فلوس — عملاء المصنع اللي عليهم فلوس
+    """تنبيهات المصنع: علينا فلوس / لينا فلوس"""
     customers_owed = []
     for customer in Customer.query.all():
         sales = StoreSale.query.filter_by(customer_name=customer.name).all()
@@ -2113,15 +2082,11 @@ def factory_alerts():
         remaining = total - paid
         if remaining > 0:
             customers_owed.append({
-                'name': customer.name,
-                'phone': customer.phone,
-                'total': total,
-                'paid': paid,
-                'remaining': remaining
+                'name': customer.name, 'phone': customer.phone,
+                'total': total, 'paid': paid, 'remaining': remaining
             })
     total_owed_to_us = sum(c['remaining'] for c in customers_owed)
     
-    # علينا فلوس — موردين المصنع اللي ليهم فلوس عندنا
     suppliers_we_owe = []
     for supplier in Supplier.query.all():
         purchases = StorePurchase.query.filter_by(supplier_name=supplier.name).all()
@@ -2130,19 +2095,14 @@ def factory_alerts():
         remaining = total - paid
         if remaining > 0:
             suppliers_we_owe.append({
-                'name': supplier.name,
-                'phone': supplier.phone,
-                'total': total,
-                'paid': paid,
-                'remaining': remaining
+                'name': supplier.name, 'phone': supplier.phone,
+                'total': total, 'paid': paid, 'remaining': remaining
             })
     total_we_owe = sum(s['remaining'] for s in suppliers_we_owe)
     
     return render_template('factory/alerts.html',
-                           customers_owed=customers_owed,
-                           total_owed_to_us=total_owed_to_us,
-                           suppliers_we_owe=suppliers_we_owe,
-                           total_we_owe=total_we_owe)
+                           customers_owed=customers_owed, total_owed_to_us=total_owed_to_us,
+                           suppliers_we_owe=suppliers_we_owe, total_we_owe=total_we_owe)
 
 
 # ====================================================================
@@ -2152,51 +2112,33 @@ def factory_alerts():
 @custom_login_required
 @role_required('meg', 'admin', 'mariam', 'rehab', 'mohamed', 'sayed')
 def factory_profit_report():
-    """
-    تقرير أرباح المصنع
-    - إيرادات: بيع الأكواع في المحل
-    - تكاليف: المواسير (الخام) + مصاريف التشغيل (اليوميات)
-    - الربح = الإيرادات - التكاليف
-    """
-    # الإيرادات — بيع الأكواع (اللي في StoreSale وعنصرها 'كوع')
+    """تقرير أرباح المصنع"""
     sales_elbows = []
     for sale in StoreSale.query.all():
         for item in sale.items:
             if item.product_type == 'كوع':
                 sales_elbows.append({
-                    'date': sale.date,
-                    'quantity': item.quantity,
-                    'unit_price': item.unit_price,
-                    'total': item.total,
-                    'size': item.product_size,
-                    'spec': item.product_spec,
+                    'date': sale.date, 'quantity': item.quantity,
+                    'unit_price': item.unit_price, 'total': item.total,
+                    'size': item.product_size, 'spec': item.product_spec,
                     'customer': sale.customer_name
                 })
     total_revenue = sum(s['total'] for s in sales_elbows)
     
-    # تكاليف المواسير (الخام)
     raw_materials = FactoryRawMaterial.query.all()
     total_raw_cost = sum(r.total_cost or 0 for r in raw_materials)
     
-    # مصاريف التشغيل (اليوميات)
     diary_entries = FactoryDiary.query.all()
     total_diary_cost = sum(d.amount or 0 for d in diary_entries)
     
-    # إجمالي التكاليف
     total_costs = total_raw_cost + total_diary_cost
-    
-    # الربح
     profit = total_revenue - total_costs
     
     return render_template('factory/profit_report.html',
-                           sales_elbows=sales_elbows,
-                           total_revenue=total_revenue,
-                           raw_materials=raw_materials,
-                           total_raw_cost=total_raw_cost,
-                           diary_entries=diary_entries,
-                           total_diary_cost=total_diary_cost,
-                           total_costs=total_costs,
-                           profit=profit)
+                           sales_elbows=sales_elbows, total_revenue=total_revenue,
+                           raw_materials=raw_materials, total_raw_cost=total_raw_cost,
+                           diary_entries=diary_entries, total_diary_cost=total_diary_cost,
+                           total_costs=total_costs, profit=profit)
 
 
 # ==================== الإدارة ====================
@@ -2363,6 +2305,7 @@ def admin_delete_category(category_type, item_id):
     flash('تم الحذف بنجاح', 'success')
     return redirect(url_for('admin_categories'))
 
+
 # ==================== الإعدادات ====================
 @app.route('/settings/profile', methods=['GET', 'POST'])
 @custom_login_required
@@ -2397,6 +2340,7 @@ def settings_password():
         return redirect(url_for('dashboard'))
     return render_template('settings/password.html')
 
+
 # ====================================================================
 # ==================== الشات ====================
 # ====================================================================
@@ -2408,14 +2352,10 @@ def chat_index():
         User.is_hidden == False,
         User.id != current_user.id
     ).order_by(User.full_name.asc()).all()
-    
     user_groups = ChatGroup.query.join(ChatGroupMember).filter(
         ChatGroupMember.user_id == current_user.id
     ).order_by(ChatGroup.name.asc()).all()
-    
-    return render_template('chat/index.html', 
-                           all_users=all_users, 
-                           user_groups=user_groups)
+    return render_template('chat/index.html', all_users=all_users, user_groups=user_groups)
 
 
 @app.route('/chat/send', methods=['POST'])
@@ -2424,10 +2364,8 @@ def chat_send():
     message_text = request.form.get('message', '').strip()
     chat_type = request.form.get('type')
     chat_id = request.form.get('id')
-    
     if not message_text:
         return jsonify({'success': False, 'error': 'الرسالة فارغة'})
-    
     try:
         if chat_type == 'user':
             recipient = User.query.get(int(chat_id))
@@ -2435,34 +2373,19 @@ def chat_send():
                 return jsonify({'success': False, 'error': 'المستخدم غير موجود'})
             if recipient.id == current_user.id:
                 return jsonify({'success': False, 'error': 'لا يمكن إرسال رسالة لنفسك'})
-            
-            msg = ChatMessage(
-                sender_id=current_user.id,
-                recipient_id=recipient.id,
-                message=message_text
-            )
+            msg = ChatMessage(sender_id=current_user.id, recipient_id=recipient.id, message=message_text)
         elif chat_type == 'group':
             group = ChatGroup.query.get(int(chat_id))
             if not group:
                 return jsonify({'success': False, 'error': 'المجموعة غير موجودة'})
-            
-            membership = ChatGroupMember.query.filter_by(
-                group_id=group.id, user_id=current_user.id
-            ).first()
+            membership = ChatGroupMember.query.filter_by(group_id=group.id, user_id=current_user.id).first()
             if not membership:
                 return jsonify({'success': False, 'error': 'غير مصرح'})
-            
-            msg = ChatMessage(
-                sender_id=current_user.id,
-                group_id=group.id,
-                message=message_text
-            )
+            msg = ChatMessage(sender_id=current_user.id, group_id=group.id, message=message_text)
         else:
             return jsonify({'success': False, 'error': 'نوع غير معروف'})
-        
         db.session.add(msg)
         db.session.commit()
-        
         return jsonify({'success': True, 'id': msg.id})
     except Exception as e:
         print(f"Chat send error: {e}")
@@ -2474,9 +2397,7 @@ def chat_send():
 def chat_get_messages(user_id):
     if user_id == current_user.id:
         return jsonify({'messages': []})
-    
     last_id = request.args.get('last_id', 0, type=int)
-    
     messages = ChatMessage.query.filter(
         ChatMessage.group_id == None,
         ChatMessage.id > last_id,
@@ -2485,64 +2406,48 @@ def chat_get_messages(user_id):
             and_(ChatMessage.sender_id == user_id, ChatMessage.recipient_id == current_user.id)
         )
     ).order_by(ChatMessage.created_at.asc()).all()
-    
     ChatMessage.query.filter(
         ChatMessage.sender_id == user_id,
         ChatMessage.recipient_id == current_user.id,
         ChatMessage.is_read == False
     ).update({'is_read': True})
     db.session.commit()
-    
     result = []
     for msg in messages:
         result.append({
-            'id': msg.id,
-            'sender_id': msg.sender_id,
+            'id': msg.id, 'sender_id': msg.sender_id,
             'sender_name': msg.sender.full_name if msg.sender else '',
-            'message': msg.display_message,
-            'is_deleted': msg.is_deleted,
-            'time': msg.created_at.strftime('%H:%M'),
-            'is_read': msg.is_read
+            'message': msg.display_message, 'is_deleted': msg.is_deleted,
+            'time': msg.created_at.strftime('%H:%M'), 'is_read': msg.is_read
         })
-    
     return jsonify({'messages': result})
 
 
 @app.route('/chat/group-messages/<int:group_id>')
 @custom_login_required
 def chat_get_group_messages(group_id):
-    membership = ChatGroupMember.query.filter_by(
-        group_id=group_id, user_id=current_user.id
-    ).first()
+    membership = ChatGroupMember.query.filter_by(group_id=group_id, user_id=current_user.id).first()
     if not membership:
         return jsonify({'messages': []})
-    
     last_id = request.args.get('last_id', 0, type=int)
-    
     messages = ChatMessage.query.filter(
         ChatMessage.group_id == group_id,
         ChatMessage.id > last_id
     ).order_by(ChatMessage.created_at.asc()).all()
-    
     ChatMessage.query.filter(
         ChatMessage.group_id == group_id,
         ChatMessage.sender_id != current_user.id,
         ChatMessage.is_read == False
     ).update({'is_read': True})
     db.session.commit()
-    
     result = []
     for msg in messages:
         result.append({
-            'id': msg.id,
-            'sender_id': msg.sender_id,
+            'id': msg.id, 'sender_id': msg.sender_id,
             'sender_name': msg.sender.full_name if msg.sender else '',
-            'message': msg.display_message,
-            'is_deleted': msg.is_deleted,
-            'time': msg.created_at.strftime('%H:%M'),
-            'is_read': msg.is_read
+            'message': msg.display_message, 'is_deleted': msg.is_deleted,
+            'time': msg.created_at.strftime('%H:%M'), 'is_read': msg.is_read
         })
-    
     return jsonify({'messages': result})
 
 
@@ -2550,16 +2455,12 @@ def chat_get_group_messages(group_id):
 @custom_login_required
 def chat_delete_message(msg_id):
     msg = ChatMessage.query.get_or_404(msg_id)
-    
     if msg.sender_id != current_user.id:
         return jsonify({'success': False, 'error': 'غير مصرح'})
-    
     if msg.is_deleted:
         return jsonify({'success': True})
-    
     msg.is_deleted = True
     db.session.commit()
-    
     return jsonify({'success': True})
 
 
@@ -2569,17 +2470,13 @@ def chat_delete_message(msg_id):
 def chat_create_group():
     name = request.form.get('name', '').strip()
     member_ids = request.form.getlist('members[]')
-    
     if not name:
         flash('اسم المجموعة مطلوب', 'danger')
         return redirect(url_for('chat_index'))
-    
     group = ChatGroup(name=name, created_by=current_user.id)
     db.session.add(group)
     db.session.flush()
-    
     db.session.add(ChatGroupMember(group_id=group.id, user_id=current_user.id))
-    
     for uid in member_ids:
         try:
             uid = int(uid)
@@ -2588,7 +2485,6 @@ def chat_create_group():
                     db.session.add(ChatGroupMember(group_id=group.id, user_id=uid))
         except:
             continue
-    
     db.session.commit()
     flash('تم إنشاء المجموعة بنجاح', 'success')
     return redirect(url_for('chat_index'))
@@ -2607,15 +2503,10 @@ def chat_unread_count():
         ChatMessage.is_deleted == False,
         ChatMessage.group_id == None
     ).group_by(ChatMessage.sender_id).all()
-    
     for sender_id, count in unread_users:
         by_user[str(sender_id)] = count
-    
     total = sum(by_user.values())
-    
     return jsonify({'total': total, 'by_user': by_user, 'by_group': {}})
-
-
 # ====================================================================
 # ==================== شركة الماسة ====================
 # ====================================================================
@@ -2631,38 +2522,38 @@ def almasa_index():
     private_cranes = AlMasaPrivateCrane.query.all()
     supplies = AlMasaSupply.query.all()
     
-    # ✅ الإجماليات — سعر التأجير للمورد (من كل نوع)
+    # ✅ الإجماليات
+    # مشاركة: supply_total (لأن ده اللي بيتحصّل من العميل)
     total_partnership = sum(
-        sum(o.rental_total or 0 for o in c.operations) 
+        sum(o.supply_total or 0 for o in c.operations) 
         for c in partnership_cranes
     )
+    # خاص: rental_total (لأن supply = rental في الخاص)
     total_private = sum(
         sum(o.rental_total or 0 for o in c.operations) 
         for c in private_cranes
     )
+    # توريدات: supply_total
     total_supply = sum(
-        sum(o.rental_total or 0 for o in s.operations) 
+        sum(o.supply_total or 0 for o in s.operations) 
         for s in supplies
     )
     grand_total = total_partnership + total_private + total_supply
     
-    # ✅ غير مدفوع (اللي لينا عند الناس) — سعر التوريد من العميل
+    # ✅ غير مدفوع (اللي لينا عند الناس)
     total_unpaid = 0
-    # أوناش مشاركة — supply_total (لأنه اللي بيتحصّل من العميل)
     total_unpaid += sum(
         o.supply_total or 0 
         for o in AlMasaOperation.query.filter(
             (AlMasaOperation.check_received == False) | (AlMasaOperation.check_received == None)
         ).all()
     )
-    # أوناش خاصة — rental_total (لأن supply = rental في الخاص)
     total_unpaid += sum(
         o.rental_total or 0 
         for o in AlMasaPrivateOperation.query.filter(
             (AlMasaPrivateOperation.check_received == False) | (AlMasaPrivateOperation.check_received == None)
         ).all()
     )
-    # توريدات — supply_total
     total_unpaid += sum(
         o.supply_total or 0 
         for o in AlMasaSupplyOperation.query.filter(
@@ -2670,10 +2561,10 @@ def almasa_index():
         ).all()
     )
     
-    # ✅ مدفوع (اللي استلمناه) — مجموع rental_total للعمليات اللي check_received = True
+    # ✅ مدفوع
     total_paid = 0
     total_paid += sum(
-        o.rental_total or 0 
+        o.supply_total or 0 
         for o in AlMasaOperation.query.filter(AlMasaOperation.check_received == True).all()
     )
     total_paid += sum(
@@ -2681,11 +2572,11 @@ def almasa_index():
         for o in AlMasaPrivateOperation.query.filter(AlMasaPrivateOperation.check_received == True).all()
     )
     total_paid += sum(
-        o.rental_total or 0 
+        o.supply_total or 0 
         for o in AlMasaSupplyOperation.query.filter(AlMasaSupplyOperation.check_received == True).all()
     )
     
-    # ✅ إجمالي الأرباح — الحسابات الجديدة
+    # ✅ إجمالي الأرباح
     total_profit = 0
     
     # أوناش مشاركة
@@ -2821,9 +2712,6 @@ def almasa_crane_delete(crane_id):
     return redirect(url_for('almasa_cranes'))
 
 
-# ====================================================================
-# ✅✅✅ almasa_add_operation — الحسابات الجديدة
-# ====================================================================
 @app.route('/almasa/operations/add', methods=['POST'])
 @custom_login_required
 @role_required('sayed', 'dina', 'admin', 'meg')
@@ -2914,9 +2802,6 @@ def almasa_operation_delete(op_id):
     return redirect(url_for('almasa_crane_detail', crane_id=crane_id))
 
 
-# ====================================================================
-# ✅✅✅ almasa_operation_edit — الحسابات الجديدة
-# ====================================================================
 @app.route('/almasa/operations/<int:op_id>/edit', methods=['POST'])
 @custom_login_required
 @role_required('sayed', 'dina', 'admin', 'meg')
@@ -2991,7 +2876,7 @@ def almasa_operation_receive_check(op_id):
     check = AlMasaCheck(
         crane_id=operation.crane_id, operation_id=op_id,
         check_number=check_number, company_name=operation.project_name,
-        amount = operation.supply_total + (operation.supply_total * (operation.tax_14_value / 100) if operation.tax_14_enabled else 0)
+        amount=operation.supply_total + (operation.supply_total * (operation.tax_14_value / 100) if operation.tax_14_enabled else 0)
     )
     db.session.add(check)
     operation.check_received = True
@@ -3182,8 +3067,8 @@ def almasa_private_crane_detail(crane_id):
     total_rental = sum(o.rental_total or 0 for o in operations)
     total_supply = sum(o.supply_total or 0 for o in operations)
     total_expenses = sum(e.amount or 0 for e in expenses)
-    total_paid = sum(o.supply_total or 0 for o in operations if o.check_received)
-    total_unpaid = sum(o.supply_total or 0 for o in operations if not o.check_received)
+    total_paid = sum(o.rental_total or 0 for o in operations if o.check_received)
+    total_unpaid = sum(o.rental_total or 0 for o in operations if not o.check_received)
     total_operations = total_rental
     return render_template('almasa/private_crane_detail.html',
                            crane=crane, operations=operations,
@@ -4107,8 +3992,14 @@ def almasa_crane_report(crane_id):
     total_supply = sum(o.supply_total or 0 for o in operations)
     total_expenses = sum(e.amount or 0 for e in expenses)
     
+    tax_85_amount = sum(
+        (o.rental_total * o.tax_85_value / 100) 
+        for o in operations if o.tax_85_enabled
+    )
+    rental_after_tax = total_rental - tax_85_amount
+    
     admin_profit = total_supply - total_rental
-    supply_profit = total_rental - total_expenses
+    supply_profit = rental_after_tax - total_expenses
     
     basic_partners = [p for p in partners if p.is_basic]
     basic_count = len(basic_partners) if basic_partners else 1
@@ -4131,6 +4022,8 @@ def almasa_crane_report(crane_id):
                            crane=crane, operations=operations, expenses=expenses,
                            partners=partners, total_rental=total_rental,
                            total_supply=total_supply, total_expenses=total_expenses,
+                           tax_85_amount=tax_85_amount,
+                           rental_after_tax=rental_after_tax,
                            admin_profit=admin_profit, supply_profit=supply_profit,
                            basic_diff=basic_diff, partners_profit=partners_profit,
                            report_type='partnership')
@@ -4148,14 +4041,22 @@ def almasa_private_crane_report(crane_id):
     total_supply = total_rental
     total_expenses = sum(e.amount or 0 for e in expenses)
     
+    tax_85_amount = sum(
+        (o.rental_total * o.tax_85_value / 100) 
+        for o in operations if o.tax_85_enabled
+    )
+    rental_after_tax = total_rental - tax_85_amount
+    
     admin_profit = 0
-    supply_profit = total_rental - total_expenses
+    supply_profit = rental_after_tax - total_expenses
     owner_share = supply_profit
     
     return render_template('almasa/private_crane_report.html',
                            crane=crane, operations=operations, expenses=expenses,
                            total_rental=total_rental, total_supply=total_supply,
                            total_expenses=total_expenses,
+                           tax_85_amount=tax_85_amount,
+                           rental_after_tax=rental_after_tax,
                            admin_profit=admin_profit, supply_profit=supply_profit,
                            owner_share=owner_share)
 
@@ -4248,4 +4149,4 @@ def almasa_unpaid_operations():
 
 # ==================== التشغيل ====================
 if __name__ == '__main__':
-    app.run(host='0.0.0.0', port=5000, debug=True)
+    app.run(host='0.0.0.0', port=5000, debug=True)    
