@@ -2681,16 +2681,7 @@ def almasa_index():
     )
     
     # ✅ مدفوع
-    total_paid = grand_total - sum(
-        o.rental_total or 0 
-        for o in AlMasaOperation.query.all()
-    ) + sum(
-        o.rental_total or 0 
-        for o in AlMasaOperation.query.filter(
-            (AlMasaOperation.check_received == True)
-        ).all()
-    )
-    # (تبسيط: اللي استلمناه = مجموع rental_total للعمليات اللي check_received = True)
+       # ✅ مدفوع (اللي استلمناه) — مجموع rental_total للعمليات اللي check_received = True
     total_paid = 0
     total_paid += sum(
         o.rental_total or 0 
