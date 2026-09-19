@@ -1,0 +1,306 @@
+{% extends "base.html" %}
+
+{% block title %}كشف حساب {{ party_name }}{% endblock %}
+
+{% block extra_css %}
+<style>
+    @media print {
+        .no-print { display: none !important; }
+        .card { border: none !important; box-shadow: none !important; }
+        body { background-color: white !important; }
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h2 class="fw-bold text-purple-dark">
+        📊 كشف حساب: {{ party_name }}
+        {% if is_customer %}<span class="badge bg-primary">عميل</span>{% endif %}
+        {% if is_supplier %}<span class="badge bg-success">مورد</span>{% endif %}
+    </h2>
+    <div class="no-print">
+        <button onclick="window.print()" class="btn btn-purple">🖨️ طباعة</button>
+        <a href="{{ url_for('reports_index') }}" class="btn btn-outline-secondary">← رجوع</a>
+    </div>
+</div>
+
+<!-- ✅ ملخص الرصيد -->
+<div class="row g-3 mb-4">
+    <div class="col-md-3">
+        <div class="card border-0 shadow-sm h-100">
+            <div class="card-body text-center">
+                <div style="font-size: 1.5rem;">💰</div>
+                <h6 class="text-muted mt-2">إجمالي المبيعات (لينا عنده)</h6>
+                <h4 class="fw-bold text-primary">{{ total_sales }}</h4>
+                <small class="text-muted d-block">مدفوع: {{ total_sales_paid }}</small>
+                <small class="text-danger fw-bold">متبقي: {{ total_sales_remaining }}</small>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card border-0 shadow-sm h-100">
+            <div class="card-body text-center">
+                <div style="font-size: 1.5rem;">📦</div>
+                <h6 class="text-muted mt-2">إجمالي المشتريات (علينا له)</h6>
+                <h4 class="fw-bold text-success">{{ total_purchases }}</h4>
+                <small class="text-muted d-block">مدفوع: {{ total_purchases_paid }}</small>
+                <small class="text-danger fw-bold">متبقي: {{ total_purchases_remaining }}</small>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card border-0 shadow-sm h-100">
+            <div class="card-body text-center">
+                <div style="font-size: 1.5rem;">💵</div>
+                <h6 class="text-muted mt-2">إيداعات (دفعها)</h6>
+                <h4 class="fw-bold text-info">{{ total_deposits }}</h4>
+                <small class="text-muted d-block">سحوبات: {{ total_withdrawals }}</small>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card border-0 shadow-sm h-100" style="background: linear-gradient(135deg, #1a237e, #283593); color: white;">
+            <div class="card-body text-center">
+                <div style="font-size: 1.5rem;">⚖️</div>
+                <h6 class="mt-2">الرصيد النهائي</h6>
+                <h3 class="fw-bold">
+                    {% if net_balance > 0 %}
+                        {{ net_balance }}
+                        <small class="d-block" style="font-size: 0.7rem;">ليه عندنا</small>
+                    {% elif net_balance < 0 %}
+                        {{ -net_balance }}
+                        <small class="d-block" style="font-size: 0.7rem;">علينا له</small>
+                    {% else %}
+                        0
+                        <small class="d-block" style="font-size: 0.7rem;">متساوي</small>
+                    {% endif %}
+                </h3>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- ✅ كل الحركات -->
+<div class="card border-0 shadow-sm mb-4">
+    <div class="card-header text-white fw-bold" style="background: linear-gradient(90deg, #1a237e, #283593);">
+        📋 كل الحركات
+    </div>
+    <div class="card-body">
+        {% if all_movements %}
+        <div class="table-responsive">
+            <table class="table table-sm table-striped table-hover">
+                <thead class="table-primary">
+                    <tr>
+                        <th>التاريخ</th>
+                        <th>النوع</th>
+                        <th>الوصف</th>
+                        <th>المبلغ</th>
+                        <th>مدفوع</th>
+                        <th>متبقي</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for m in all_movements %}
+                    <tr>
+                        <td>{{ m.date.strftime('%Y-%m-%d') }}</td>
+                        <td>
+                            {% if m.type == 'بيع' %}
+                                <span class="badge bg-primary">💰 بيع</span>
+                            {% elif m.type == 'شراء' %}
+                                <span class="badge bg-success">📦 شراء</span>
+                            {% elif m.type == 'إيداع' %}
+                                <span class="badge bg-info">💵 إيداع</span>
+                            {% elif m.type == 'سحب' %}
+                                <span class="badge bg-warning text-dark">💸 سحب</span>
+                            {% else %}
+                                <span class="badge bg-secondary">{{ m.type }}</span>
+                            {% endif %}
+                        </td>
+                        <td>{{ m.description }}</td>
+                        <td class="fw-bold">{{ m.amount }}</td>
+                        <td>{{ m.paid }}</td>
+                        <td>
+                            {% if m.remaining and m.remaining > 0 %}
+                                <span class="text-danger fw-bold">{{ m.remaining }}</span>
+                            {% else %}
+                                {{ m.remaining }}
+                            {% endif %}
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        {% else %}
+        <p class="text-muted mb-0 text-center">لا توجد حركات</p>
+        {% endif %}
+    </div>
+</div>
+
+<!-- ✅ تفاصيل المبيعات (لينا عنده) -->
+{% if sales %}
+<div class="card border-0 shadow-sm mb-4">
+    <div class="card-header bg-primary text-white fw-bold">
+        💰 المبيعات (لينا عنده)
+    </div>
+    <div class="card-body">
+        <div class="table-responsive">
+            <table class="table table-sm table-striped">
+                <thead>
+                    <tr>
+                        <th>التاريخ</th>
+                        <th>الفاتورة</th>
+                        <th>الإجمالي</th>
+                        <th>المدفوع</th>
+                        <th>المتبقي</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for s in sales %}
+                    <tr>
+                        <td>{{ s.date.strftime('%Y-%m-%d') }}</td>
+                        <td>{{ s.invoice_number or '-' }}</td>
+                        <td class="fw-bold">{{ s.total }}</td>
+                        <td>{{ s.paid_amount }}</td>
+                        <td class="fw-bold text-danger">{{ s.remaining }}</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+                <tfoot>
+                    <tr class="fw-bold table-secondary">
+                        <td colspan="2">الإجمالي</td>
+                        <td>{{ total_sales }}</td>
+                        <td>{{ total_sales_paid }}</td>
+                        <td class="text-danger">{{ total_sales_remaining }}</td>
+                    </tr>
+                </tfoot>
+            </table>
+        </div>
+    </div>
+</div>
+{% endif %}
+
+<!-- ✅ تفاصيل المشتريات (علينا له) -->
+{% if purchases %}
+<div class="card border-0 shadow-sm mb-4">
+    <div class="card-header bg-success text-white fw-bold">
+        📦 المشتريات (علينا له)
+    </div>
+    <div class="card-body">
+        <div class="table-responsive">
+            <table class="table table-sm table-striped">
+                <thead>
+                    <tr>
+                        <th>التاريخ</th>
+                        <th>الفاتورة</th>
+                        <th>الإجمالي</th>
+                        <th>المدفوع</th>
+                        <th>المتبقي</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for p in purchases %}
+                    <tr>
+                        <td>{{ p.date.strftime('%Y-%m-%d') }}</td>
+                        <td>{{ p.invoice_number or '-' }}</td>
+                        <td class="fw-bold">{{ p.total }}</td>
+                        <td>{{ p.paid_amount }}</td>
+                        <td class="fw-bold text-danger">{{ p.remaining }}</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+                <tfoot>
+                    <tr class="fw-bold table-secondary">
+                        <td colspan="2">الإجمالي</td>
+                        <td>{{ total_purchases }}</td>
+                        <td>{{ total_purchases_paid }}</td>
+                        <td class="text-danger">{{ total_purchases_remaining }}</td>
+                    </tr>
+                </tfoot>
+            </table>
+        </div>
+    </div>
+</div>
+{% endif %}
+
+<!-- ✅ معاملات الخزينة -->
+{% if treasury_txns %}
+<div class="card border-0 shadow-sm">
+    <div class="card-header bg-info text-white fw-bold">
+        💰 معاملات الخزينة
+    </div>
+    <div class="card-body">
+        <div class="table-responsive">
+            <table class="table table-sm table-striped">
+                <thead>
+                    <tr>
+                        <th>التاريخ</th>
+                        <th>النوع</th>
+                        <th>المبلغ</th>
+                        <th>طريقة الدفع</th>
+                        <th>ملاحظات</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for t in treasury_txns %}
+                    <tr>
+                        <td>{{ t.date.strftime('%Y-%m-%d') }}</td>
+                        <td>
+                            {% if t.transaction_type == 'deposit' %}
+                                <span class="badge bg-success">💵 إيداع</span>
+                            {% elif t.transaction_type == 'withdrawal' %}
+                                <span class="badge bg-danger">💸 سحب</span>
+                            {% else %}
+                                <span class="badge bg-secondary">{{ t.transaction_type }}</span>
+                            {% endif %}
+                        </td>
+                        <td class="fw-bold">{{ t.amount }}</td>
+                        <td>{{ t.payment_method or '-' }}</td>
+                        <td>{{ t.notes or '-' }}</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+                <tfoot>
+                    <tr class="fw-bold table-secondary">
+                        <td colspan="2">الإجمالي</td>
+                        <td>إيداع: {{ total_deposits }} | سحب: {{ total_withdrawals }}</td>
+                        <td colspan="2"></td>
+                    </tr>
+                </tfoot>
+            </table>
+        </div>
+    </div>
+</div>
+{% endif %}
+
+<!-- ✅ ملخص الرصيد النهائي -->
+<div class="card border-0 shadow-sm mt-4">
+    <div class="card-body text-center" style="background: linear-gradient(135deg, #f5f3ff, #ede9fe);">
+        <h5 class="fw-bold mb-3">📊 ملخص الحساب</h5>
+        <div class="row">
+            <div class="col-md-4">
+                <p class="mb-1"><strong>لينا عنده (من المبيعات):</strong></p>
+                <h4 class="fw-bold text-primary">{{ customer_balance }}</h4>
+            </div>
+            <div class="col-md-4">
+                <p class="mb-1"><strong>علينا له (من المشتريات):</strong></p>
+                <h4 class="fw-bold text-success">{{ supplier_balance }}</h4>
+            </div>
+            <div class="col-md-4">
+                <p class="mb-1"><strong>الرصيد النهائي:</strong></p>
+                <h4 class="fw-bold {% if net_balance > 0 %}text-primary{% elif net_balance < 0 %}text-success{% else %}text-muted{% endif %}">
+                    {% if net_balance > 0 %}
+                        {{ net_balance }} (ليه عندنا)
+                    {% elif net_balance < 0 %}
+                        {{ -net_balance }} (علينا له)
+                    {% else %}
+                        0 (متساوي)
+                    {% endif %}
+                </h4>
+            </div>
+        </div>
+    </div>
+</div>
+
+{% endblock %}
