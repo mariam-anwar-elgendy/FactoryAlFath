@@ -383,7 +383,7 @@ def init_db():
             db.session.rollback()
             print(f"⚠️ supply days_count: {e}")
         
-        # ==================== Migration للبيانات القديمة (للحقول الجديدة) ====================
+        # ==================== Migration للبيانات القديمة ====================
         try:
             db.session.execute(db.text('''
                 UPDATE almasa_operations 
@@ -398,10 +398,10 @@ def init_db():
                 WHERE rental_days IS NULL OR rental_days = 0
             '''))
             db.session.commit()
-            print("✅ تم نقل البيانات القديمة للحقول الجديدة (operations)")
+            print("✅ تم نقل البيانات القديمة (operations)")
         except Exception as e:
             db.session.rollback()
-            print(f"⚠️ نقل البيانات الجديدة (operations): {e}")
+            print(f"⚠️ نقل البيانات (operations): {e}")
 
         try:
             db.session.execute(db.text('''
@@ -417,10 +417,10 @@ def init_db():
                 WHERE rental_days IS NULL OR rental_days = 0
             '''))
             db.session.commit()
-            print("✅ تم نقل البيانات القديمة للحقول الجديدة (private)")
+            print("✅ تم نقل البيانات القديمة (private)")
         except Exception as e:
             db.session.rollback()
-            print(f"⚠️ نقل البيانات الجديدة (private): {e}")
+            print(f"⚠️ نقل البيانات (private): {e}")
 
         try:
             db.session.execute(db.text('''
@@ -436,17 +436,17 @@ def init_db():
                 WHERE rental_days IS NULL OR rental_days = 0
             '''))
             db.session.commit()
-            print("✅ تم نقل البيانات القديمة للحقول الجديدة (supply)")
+            print("✅ تم نقل البيانات القديمة (supply)")
         except Exception as e:
             db.session.rollback()
-            print(f"⚠️ نقل البيانات الجديدة (supply): {e}")
+            print(f"⚠️ نقل البيانات (supply): {e}")
         
-        # ==================== ✅ Migration للحقول الجديدة في المصنع ====================
+        # ==================== Migration للحقول الجديدة في المصنع ====================
         try:
             db.session.execute(db.text('ALTER TABLE factory_raw_materials ADD COLUMN IF NOT EXISTS unit_price FLOAT DEFAULT 0'))
             db.session.execute(db.text('ALTER TABLE factory_raw_materials ADD COLUMN IF NOT EXISTS total_cost FLOAT DEFAULT 0'))
             db.session.commit()
-            print("✅ تم إضافة حقول factory_raw_materials (unit_price, total_cost)")
+            print("✅ تم إضافة حقول factory_raw_materials")
         except Exception as e:
             db.session.rollback()
             print(f"⚠️ خطأ factory_raw_materials: {e}")
@@ -455,7 +455,7 @@ def init_db():
             db.session.execute(db.text('ALTER TABLE factory_production ADD COLUMN IF NOT EXISTS cost_per_unit FLOAT DEFAULT 0'))
             db.session.execute(db.text('ALTER TABLE factory_production ADD COLUMN IF NOT EXISTS total_cost FLOAT DEFAULT 0'))
             db.session.commit()
-            print("✅ تم إضافة حقول factory_production (cost_per_unit, total_cost)")
+            print("✅ تم إضافة حقول factory_production")
         except Exception as e:
             db.session.rollback()
             print(f"⚠️ خطأ factory_production: {e}")
@@ -1592,10 +1592,6 @@ def inventory_audit_monthly():
     
     total_shortage = sum(abs(r.difference) for r in records if r.difference < 0)
     total_surplus = sum(r.difference for r in records if r.difference > 0)
-    
-    return render_template('inventory_audit_monthly.html',
-                           records=records, month=month,
-                           total_shortage=total_shortage, total_surplus=total_surplus)
 # ==================== الخزينة ====================
 @app.route('/treasury')
 @custom_login_required
@@ -2067,7 +2063,7 @@ def reports_party_statement(party_name):
 
 
 # ====================================================================
-# ✅✅✅ تنبيهات المصنع — Route جديد
+# ✅✅✅ تنبيهات المصنع
 # ====================================================================
 @app.route('/factory/alerts')
 @custom_login_required
@@ -2106,7 +2102,7 @@ def factory_alerts():
 
 
 # ====================================================================
-# ✅✅✅ تقرير أرباح المصنع — Route جديد
+# ✅✅✅ تقرير أرباح المصنع
 # ====================================================================
 @app.route('/factory/profit-report')
 @custom_login_required
@@ -2344,7 +2340,6 @@ def settings_password():
 # ====================================================================
 # ==================== الشات ====================
 # ====================================================================
-
 @app.route('/chat')
 @custom_login_required
 def chat_index():
@@ -2507,6 +2502,10 @@ def chat_unread_count():
         by_user[str(sender_id)] = count
     total = sum(by_user.values())
     return jsonify({'total': total, 'by_user': by_user, 'by_group': {}})
+    
+    return render_template('inventory_audit_monthly.html',
+                           records=records, month=month,
+                           total_shortage=total_shortage, total_surplus=total_surplus)
 # ====================================================================
 # ==================== شركة الماسة ====================
 # ====================================================================
@@ -2523,17 +2522,14 @@ def almasa_index():
     supplies = AlMasaSupply.query.all()
     
     # ✅ الإجماليات
-    # مشاركة: supply_total (لأن ده اللي بيتحصّل من العميل)
     total_partnership = sum(
         sum(o.supply_total or 0 for o in c.operations) 
         for c in partnership_cranes
     )
-    # خاص: rental_total (لأن supply = rental في الخاص)
     total_private = sum(
         sum(o.rental_total or 0 for o in c.operations) 
         for c in private_cranes
     )
-    # توريدات: supply_total
     total_supply = sum(
         sum(o.supply_total or 0 for o in s.operations) 
         for s in supplies
@@ -2609,13 +2605,14 @@ def almasa_index():
         total_rental_s = sum(o.rental_total or 0 for o in supply.operations)
         total_supply_s = sum(o.supply_total or 0 for o in supply.operations)
         total_expenses_s = sum(e.amount or 0 for e in supply.expenses)
+        # ✅ ضريبة 8.5% على التوريد (في التوريدات فقط)
         tax_85_s = sum(
-            (o.rental_total * o.tax_85_value / 100) 
+            (o.supply_total * o.tax_85_value / 100) 
             for o in supply.operations if o.tax_85_enabled
         )
         admin_s = total_supply_s - total_rental_s
-        rental_after_tax_s = total_rental_s - tax_85_s
-        supply_s = rental_after_tax_s - total_expenses_s
+        supply_after_tax_s = total_supply_s - tax_85_s
+        supply_s = supply_after_tax_s - total_rental_s - total_expenses_s
         total_profit += admin_s + supply_s
     
     return render_template('almasa/index.html',
@@ -2865,20 +2862,128 @@ def almasa_operation_update_notes(op_id):
     return redirect(url_for('almasa_crane_detail', crane_id=operation.crane_id))
 
 
-@app.route('/almasa/operations/<int:op_id>/receive-check', methods=['POST'])
+# ✅ استلام شيك جماعي (مشاركة)
+@app.route('/almasa/operations/receive-check', methods=['POST'])
 @custom_login_required
 @role_required('sayed', 'dina', 'admin', 'meg')
-def almasa_operation_receive_check(op_id):
+def almasa_operations_receive_check():
+    check_number = request.form.get('check_number', '').strip()
+    issue_date_str = request.form.get('issue_date')
+    issue_date = datetime.strptime(issue_date_str, '%Y-%m-%d').date() if issue_date_str else date.today()
+    operation_ids = request.form.getlist('operation_ids[]')
+    
+    if not operation_ids:
+        flash('⚠️ يجب اختيار عملية واحدة على الأقل', 'danger')
+        return redirect(request.referrer or url_for('almasa_index'))
+    
+    # احسب إجمالي الشيك
+    total_amount = 0
+    crane_id = None
+    valid_operations = []
+    for op_id in operation_ids:
+        try:
+            operation = AlMasaOperation.query.get(int(op_id))
+            if operation and not operation.check_received:
+                valid_operations.append(operation)
+                crane_id = operation.crane_id
+                amount = operation.supply_total or 0
+                if operation.tax_14_enabled:
+                    amount += amount * (operation.tax_14_value / 100)
+                total_amount += amount
+        except:
+            continue
+    
+    if not valid_operations:
+        flash('⚠️ مفيش عمليات صالحة للاستلام', 'danger')
+        return redirect(request.referrer or url_for('almasa_index'))
+    
+    # إنشاء الشيك
+    check = AlMasaCheck(
+        crane_id=crane_id,
+        check_number=check_number,
+        amount=total_amount,
+        issue_date=issue_date
+    )
+    db.session.add(check)
+    db.session.flush()
+    
+    # ربط الشيك بكل العمليات + تحديث حالة الاستلام
+    for operation in valid_operations:
+        db.session.add(AlMasaCheckOperation(
+            check_id=check.id,
+            operation_id=operation.id
+        ))
+        operation.check_received = True
+        operation.check_received_date = issue_date
+    
+    db.session.commit()
+    flash(f'✅ تم استلام شيك بمبلغ {total_amount} وتغطية {len(valid_operations)} عملية', 'success')
+    return redirect(url_for('almasa_crane_detail', crane_id=crane_id))
+
+
+# ✅ إلغاء استلام شيك (مشاركة)
+@app.route('/almasa/checks/<int:check_id>/unreceive', methods=['POST'])
+@custom_login_required
+@role_required('sayed', 'dina', 'admin', 'meg')
+def almasa_check_unreceive(check_id):
+    check = AlMasaCheck.query.get_or_404(check_id)
+    crane_id = check.crane_id
+    
+    # امسح كل علاقات الشيك بالعمليات
+    check_ops = AlMasaCheckOperation.query.filter_by(check_id=check_id).all()
+    for co in check_ops:
+        operation = AlMasaOperation.query.get(co.operation_id)
+        if operation:
+            operation.check_received = False
+            operation.check_received_date = None
+        db.session.delete(co)
+    
+    # امسح الشيك نفسه
+    db.session.delete(check)
+    db.session.commit()
+    
+    flash('✅ تم إلغاء استلام الشيك', 'success')
+    return redirect(url_for('almasa_crane_detail', crane_id=crane_id))
+
+
+# ✅ تعديل بيانات الشيك (مشاركة)
+@app.route('/almasa/checks/<int:check_id>/edit', methods=['POST'])
+@custom_login_required
+@role_required('sayed', 'dina', 'admin', 'meg')
+def almasa_check_edit(check_id):
+    check = AlMasaCheck.query.get_or_404(check_id)
+    check.check_number = request.form.get('check_number', '').strip()
+    issue_date_str = request.form.get('issue_date')
+    if issue_date_str:
+        check.issue_date = datetime.strptime(issue_date_str, '%Y-%m-%d').date()
+    due_date_str = request.form.get('due_date')
+    if due_date_str:
+        check.due_date = datetime.strptime(due_date_str, '%Y-%m-%d').date()
+    else:
+        check.due_date = None
+    db.session.commit()
+    flash('✅ تم تعديل بيانات الشيك', 'success')
+    return redirect(url_for('almasa_crane_detail', crane_id=check.crane_id))
+
+
+# ✅ استلام شيك فردي (مشاركة) — مش مستخدم دلوقتي لكن موجود للاحتياط
+@app.route('/almasa/operations/<int:op_id>/receive-check-single', methods=['POST'])
+@custom_login_required
+@role_required('sayed', 'dina', 'admin', 'meg')
+def almasa_operation_receive_check_single(op_id):
     operation = AlMasaOperation.query.get_or_404(op_id)
     check_number = request.form.get('check_number', '').strip()
     issue_date_str = request.form.get('issue_date')
     issue_date = datetime.strptime(issue_date_str, '%Y-%m-%d').date() if issue_date_str else date.today()
+    amount = operation.supply_total + (operation.supply_total * (operation.tax_14_value / 100) if operation.tax_14_enabled else 0)
     check = AlMasaCheck(
         crane_id=operation.crane_id, operation_id=op_id,
         check_number=check_number, company_name=operation.project_name,
-        amount=operation.supply_total + (operation.supply_total * (operation.tax_14_value / 100) if operation.tax_14_enabled else 0)
+        amount=amount
     )
     db.session.add(check)
+    db.session.flush()
+    db.session.add(AlMasaCheckOperation(check_id=check.id, operation_id=op_id))
     operation.check_received = True
     operation.check_received_date = issue_date
     db.session.commit()
@@ -2940,7 +3045,14 @@ def almasa_expense_edit(exp_id):
 def almasa_check_delete(check_id):
     check = AlMasaCheck.query.get_or_404(check_id)
     crane_id = check.crane_id
-    AlMasaCheckOperation.query.filter_by(check_id=check_id).delete()
+    # ✅ إرجاع العمليات لحالة "غير مستلم"
+    check_ops = AlMasaCheckOperation.query.filter_by(check_id=check_id).all()
+    for co in check_ops:
+        operation = AlMasaOperation.query.get(co.operation_id)
+        if operation:
+            operation.check_received = False
+            operation.check_received_date = None
+        db.session.delete(co)
     db.session.delete(check)
     db.session.commit()
     flash('تم حذف الشيك بنجاح', 'success')
@@ -3253,26 +3365,103 @@ def almasa_private_operation_update_notes(op_id):
     return redirect(url_for('almasa_private_crane_detail', crane_id=operation.crane_id))
 
 
-@app.route('/almasa/private-operations/<int:op_id>/receive-check', methods=['POST'])
+# ✅ استلام شيك جماعي (خاص)
+@app.route('/almasa/private-operations/receive-check', methods=['POST'])
 @custom_login_required
 @role_required('sayed', 'dina', 'admin', 'meg')
-def almasa_private_operation_receive_check(op_id):
-    operation = AlMasaPrivateOperation.query.get_or_404(op_id)
+def almasa_private_operations_receive_check():
     check_number = request.form.get('check_number', '').strip()
     issue_date_str = request.form.get('issue_date')
     issue_date = datetime.strptime(issue_date_str, '%Y-%m-%d').date() if issue_date_str else date.today()
+    operation_ids = request.form.getlist('operation_ids[]')
+    
+    if not operation_ids:
+        flash('⚠️ يجب اختيار عملية واحدة على الأقل', 'danger')
+        return redirect(request.referrer or url_for('almasa_index'))
+    
+    total_amount = 0
+    crane_id = None
+    valid_operations = []
+    for op_id in operation_ids:
+        try:
+            operation = AlMasaPrivateOperation.query.get(int(op_id))
+            if operation and not operation.check_received:
+                valid_operations.append(operation)
+                crane_id = operation.crane_id
+                amount = operation.rental_total or 0
+                if operation.tax_14_enabled:
+                    amount += amount * (operation.tax_14_value / 100)
+                total_amount += amount
+        except:
+            continue
+    
+    if not valid_operations:
+        flash('⚠️ مفيش عمليات صالحة للاستلام', 'danger')
+        return redirect(request.referrer or url_for('almasa_index'))
+    
     check = AlMasaPrivateCheck(
-        crane_id=operation.crane_id, operation_id=op_id,
-        check_number=check_number, company_name=operation.project_name,
-        amount=operation.rental_total + (operation.rental_total * (operation.tax_14_value / 100) if operation.tax_14_enabled else 0),
-        issue_date=issue_date, status='مستلم'
+        crane_id=crane_id,
+        check_number=check_number,
+        amount=total_amount,
+        issue_date=issue_date,
+        status='مستلم'
     )
     db.session.add(check)
-    operation.check_received = True
-    operation.check_received_date = issue_date
+    db.session.flush()
+    
+    for operation in valid_operations:
+        db.session.add(AlMasaPrivateCheckOperation(
+            check_id=check.id,
+            operation_id=operation.id
+        ))
+        operation.check_received = True
+        operation.check_received_date = issue_date
+    
     db.session.commit()
-    flash('تم تسجيل استلام الشيك بنجاح', 'success')
-    return redirect(url_for('almasa_private_crane_detail', crane_id=operation.crane_id))
+    flash(f'✅ تم استلام شيك بمبلغ {total_amount} وتغطية {len(valid_operations)} عملية', 'success')
+    return redirect(url_for('almasa_private_crane_detail', crane_id=crane_id))
+
+
+# ✅ إلغاء استلام شيك (خاص)
+@app.route('/almasa/private-checks/<int:check_id>/unreceive', methods=['POST'])
+@custom_login_required
+@role_required('sayed', 'dina', 'admin', 'meg')
+def almasa_private_check_unreceive(check_id):
+    check = AlMasaPrivateCheck.query.get_or_404(check_id)
+    crane_id = check.crane_id
+    
+    check_ops = AlMasaPrivateCheckOperation.query.filter_by(check_id=check_id).all()
+    for co in check_ops:
+        operation = AlMasaPrivateOperation.query.get(co.operation_id)
+        if operation:
+            operation.check_received = False
+            operation.check_received_date = None
+        db.session.delete(co)
+    
+    db.session.delete(check)
+    db.session.commit()
+    flash('✅ تم إلغاء استلام الشيك', 'success')
+    return redirect(url_for('almasa_private_crane_detail', crane_id=crane_id))
+
+
+# ✅ تعديل بيانات الشيك (خاص)
+@app.route('/almasa/private-checks/<int:check_id>/edit', methods=['POST'])
+@custom_login_required
+@role_required('sayed', 'dina', 'admin', 'meg')
+def almasa_private_check_edit(check_id):
+    check = AlMasaPrivateCheck.query.get_or_404(check_id)
+    check.check_number = request.form.get('check_number', '').strip()
+    issue_date_str = request.form.get('issue_date')
+    if issue_date_str:
+        check.issue_date = datetime.strptime(issue_date_str, '%Y-%m-%d').date()
+    due_date_str = request.form.get('due_date')
+    if due_date_str:
+        check.due_date = datetime.strptime(due_date_str, '%Y-%m-%d').date()
+    else:
+        check.due_date = None
+    db.session.commit()
+    flash('✅ تم تعديل بيانات الشيك', 'success')
+    return redirect(url_for('almasa_private_crane_detail', crane_id=check.crane_id))
 
 
 @app.route('/almasa/private-expenses/add', methods=['POST'])
@@ -3329,7 +3518,14 @@ def almasa_private_expense_edit(exp_id):
 def almasa_private_check_delete(check_id):
     check = AlMasaPrivateCheck.query.get_or_404(check_id)
     crane_id = check.crane_id
-    AlMasaPrivateCheckOperation.query.filter_by(check_id=check_id).delete()
+    # ✅ إرجاع العمليات لحالة "غير مستلم"
+    check_ops = AlMasaPrivateCheckOperation.query.filter_by(check_id=check_id).all()
+    for co in check_ops:
+        operation = AlMasaPrivateOperation.query.get(co.operation_id)
+        if operation:
+            operation.check_received = False
+            operation.check_received_date = None
+        db.session.delete(co)
     db.session.delete(check)
     db.session.commit()
     flash('تم حذف الشيك بنجاح', 'success')
@@ -3684,18 +3880,19 @@ def almasa_supply_report(supply_id):
     tax_14 = total_supply * (tax_14_value / 100)
     check_amount = total_supply + tax_14
     
-    tax_85_amount = total_rental * (tax_85_value / 100)
-    rental_after_tax = total_rental - tax_85_amount
+    # ✅ ضريبة 8.5% على التوريد (في التوريدات فقط)
+    tax_85_amount = total_supply * (tax_85_value / 100)
+    supply_after_tax = total_supply - tax_85_amount
     
     admin_profit = total_supply - total_rental
-    supply_profit = rental_after_tax - total_expenses
+    supply_profit = supply_after_tax - total_rental - total_expenses
     
     return render_template('almasa/supply_report.html',
                            supply=supply, operations=operations, expenses=expenses,
                            total_rental=total_rental, total_supply=total_supply,
                            total_expenses=total_expenses, check_amount=check_amount,
                            tax_14=tax_14, tax_85_amount=tax_85_amount,
-                           rental_after_tax=rental_after_tax,
+                           supply_after_tax=supply_after_tax,
                            admin_profit=admin_profit, supply_profit=supply_profit)
 
 
@@ -3829,21 +4026,22 @@ def almasa_supply_profit_single(supply_id):
         for o in operations if o.tax_14_enabled
     )
     
+    # ✅ ضريبة 8.5% على التوريد (في التوريدات فقط)
     tax_85_amount = sum(
-        (o.rental_total * o.tax_85_value / 100) 
+        (o.supply_total * o.tax_85_value / 100) 
         for o in operations if o.tax_85_enabled
     )
     
     admin_profit = total_supply - total_rental
-    rental_after_tax = total_rental - tax_85_amount
-    supply_profit = rental_after_tax - total_expenses
+    supply_after_tax = total_supply - tax_85_amount
+    supply_profit = supply_after_tax - total_rental - total_expenses
     
     return render_template('almasa/supply_profit_single.html',
                            supply=supply, operations=operations,
                            total_rental=total_rental, total_supply=total_supply,
                            total_expenses=total_expenses,
                            tax_14_amount=tax_14_amount, tax_85_amount=tax_85_amount,
-                           rental_after_tax=rental_after_tax,
+                           supply_after_tax=supply_after_tax,
                            admin_profit=admin_profit, supply_profit=supply_profit)
 
 
@@ -4064,6 +4262,132 @@ def almasa_private_crane_report(crane_id):
 # ====================================================================
 # ==================== حساب الشريك / العميل ====================
 # ====================================================================
+@app.route('/almasa/partner-accounts/summary')
+@custom_login_required
+@role_required('sayed', 'dina', 'admin', 'meg')
+def almasa_partner_accounts_summary():
+    """التقرير العام لحساب الشركاء والعملاء"""
+    all_records = AlMasaPartnerAccount.query.order_by(AlMasaPartnerAccount.date.asc()).all()
+    
+    persons_dict = {}
+    for r in all_records:
+        if r.person_name not in persons_dict:
+            persons_dict[r.person_name] = {
+                'person_name': r.person_name,
+                'person_type': r.person_type,
+                'total_paid_to_him': 0,
+                'total_received_from_him': 0,
+                'balance': 0
+            }
+        if r.amount > 0:
+            persons_dict[r.person_name]['total_paid_to_him'] += r.amount
+        else:
+            persons_dict[r.person_name]['total_received_from_him'] += abs(r.amount)
+        persons_dict[r.person_name]['balance'] += r.amount
+    
+    persons_list = list(persons_dict.values())
+    persons_list.sort(key=lambda x: x['person_name'])
+    
+    grand_total_paid = sum(p['total_paid_to_him'] for p in persons_list)
+    grand_total_received = sum(p['total_received_from_him'] for p in persons_list)
+    grand_balance = sum(p['balance'] for p in persons_list)
+    
+    return render_template('almasa/partner_accounts_summary.html',
+                           persons=persons_list,
+                           grand_total_paid=grand_total_paid,
+                           grand_total_received=grand_total_received,
+                           grand_balance=grand_balance)
+
+
+@app.route('/almasa/partner-accounts/summary/export')
+@custom_login_required
+@role_required('sayed', 'dina', 'admin', 'meg')
+def almasa_partner_accounts_summary_export():
+    """تصدير التقرير العام - Word"""
+    from docx import Document
+    from docx.shared import Pt
+    from docx.enum.text import WD_ALIGN_PARAGRAPH
+    from io import BytesIO
+    
+    all_records = AlMasaPartnerAccount.query.order_by(AlMasaPartnerAccount.date.asc()).all()
+    
+    persons_dict = {}
+    for r in all_records:
+        if r.person_name not in persons_dict:
+            persons_dict[r.person_name] = {
+                'person_name': r.person_name,
+                'person_type': r.person_type,
+                'total_paid_to_him': 0,
+                'total_received_from_him': 0,
+                'balance': 0
+            }
+        if r.amount > 0:
+            persons_dict[r.person_name]['total_paid_to_him'] += r.amount
+        else:
+            persons_dict[r.person_name]['total_received_from_him'] += abs(r.amount)
+        persons_dict[r.person_name]['balance'] += r.amount
+    
+    persons_list = list(persons_dict.values())
+    persons_list.sort(key=lambda x: x['person_name'])
+    
+    grand_total_paid = sum(p['total_paid_to_him'] for p in persons_list)
+    grand_total_received = sum(p['total_received_from_him'] for p in persons_list)
+    grand_balance = sum(p['balance'] for p in persons_list)
+    
+    doc = Document()
+    title = doc.add_heading('شركة الماسة', 0)
+    title.alignment = WD_ALIGN_PARAGRAPH.CENTER
+    
+    subtitle = doc.add_heading('التقرير العام لحساب الشركاء والعملاء', 2)
+    subtitle.alignment = WD_ALIGN_PARAGRAPH.CENTER
+    
+    info = doc.add_paragraph(f'تاريخ التقرير: {date.today()}')
+    info.alignment = WD_ALIGN_PARAGRAPH.CENTER
+    
+    doc.add_paragraph('')
+    doc.add_heading('الإجماليات العامة', level=3)
+    doc.add_paragraph(f'إجمالي المدفوع لهم: {grand_total_paid}')
+    doc.add_paragraph(f'إجمالي المستلم منهم: {grand_total_received}')
+    doc.add_paragraph(f'الرصيد النهائي: {grand_balance}')
+    doc.add_paragraph('')
+    
+    if persons_list:
+        doc.add_heading('تفاصيل الحسابات', level=3)
+        table = doc.add_table(rows=1, cols=6)
+        table.style = 'Light Grid Accent 1'
+        
+        headers = ['#', 'الاسم', 'النوع', 'دفعنا له', 'أعطانا', 'الرصيد']
+        hdr_cells = table.rows[0].cells
+        for i, header in enumerate(headers):
+            hdr_cells[i].text = header
+            hdr_cells[i].paragraphs[0].runs[0].font.bold = True
+        
+        for idx, p in enumerate(persons_list, 1):
+            row = table.add_row().cells
+            row[0].text = str(idx)
+            row[1].text = p['person_name']
+            row[2].text = p['person_type']
+            row[3].text = str(p['total_paid_to_him'])
+            row[4].text = str(p['total_received_from_him'])
+            row[5].text = str(p['balance'])
+        
+        total_row = table.add_row().cells
+        total_row[0].text = ''
+        total_row[1].text = 'الإجمالي'
+        total_row[2].text = ''
+        total_row[3].text = str(grand_total_paid)
+        total_row[4].text = str(grand_total_received)
+        total_row[5].text = str(grand_balance)
+    
+    output = BytesIO()
+    doc.save(output)
+    output.seek(0)
+    
+    return send_file(output, as_attachment=True,
+                     download_name=f'partner_accounts_summary_{date.today()}.docx',
+                     mimetype='application/vnd.openxmlformats-officedocument.wordprocessingml.document')
+
+
 @app.route('/almasa/partner-accounts', methods=['GET', 'POST'])
 @custom_login_required
 @role_required('sayed', 'dina', 'admin', 'meg')
@@ -4110,9 +4434,97 @@ def almasa_partner_accounts():
 @role_required('sayed', 'dina', 'admin', 'meg')
 def almasa_person_report(person_name):
     records = AlMasaPartnerAccount.query.filter_by(person_name=person_name).order_by(AlMasaPartnerAccount.date.asc()).all()
-    total = sum(r.amount for r in records)
+    
+    total_paid_to_him = sum(r.amount for r in records if r.amount > 0)
+    total_received_from_him = abs(sum(r.amount for r in records if r.amount < 0))
+    balance = sum(r.amount for r in records)
+    
+    person_type = records[0].person_type if records else 'غير معروف'
+    
     return render_template('almasa/person_report.html',
-                           person_name=person_name, records=records, total=total)
+                           person_name=person_name,
+                           person_type=person_type,
+                           records=records,
+                           total_paid_to_him=total_paid_to_him,
+                           total_received_from_him=total_received_from_him,
+                           balance=balance)
+
+
+@app.route('/almasa/partner-accounts/person/<string:person_name>/export')
+@custom_login_required
+@role_required('sayed', 'dina', 'admin', 'meg')
+def almasa_person_report_export(person_name):
+    """تصدير تقرير فرد - Word"""
+    from docx import Document
+    from docx.shared import Pt
+    from docx.enum.text import WD_ALIGN_PARAGRAPH
+    from io import BytesIO
+    
+    records = AlMasaPartnerAccount.query.filter_by(person_name=person_name).order_by(AlMasaPartnerAccount.date.asc()).all()
+    
+    if not records:
+        flash('لا توجد سجلات لهذا الشخص', 'warning')
+        return redirect(url_for('almasa_partner_accounts'))
+    
+    total_paid_to_him = sum(r.amount for r in records if r.amount > 0)
+    total_received_from_him = abs(sum(r.amount for r in records if r.amount < 0))
+    balance = sum(r.amount for r in records)
+    person_type = records[0].person_type
+    
+    doc = Document()
+    title = doc.add_heading('شركة الماسة', 0)
+    title.alignment = WD_ALIGN_PARAGRAPH.CENTER
+    
+    subtitle = doc.add_heading(f'تقرير حساب: {person_name}', 2)
+    subtitle.alignment = WD_ALIGN_PARAGRAPH.CENTER
+    
+    info = doc.add_paragraph(f'النوع: {person_type}')
+    info.alignment = WD_ALIGN_PARAGRAPH.CENTER
+    
+    date_para = doc.add_paragraph(f'تاريخ التقرير: {date.today()}')
+    date_para.alignment = WD_ALIGN_PARAGRAPH.CENTER
+    
+    doc.add_paragraph('')
+    doc.add_heading('ملخص الحساب', level=3)
+    doc.add_paragraph(f'إجمالي ما دفعناه له: {total_paid_to_him}')
+    doc.add_paragraph(f'إجمالي ما استلمناه منه: {total_received_from_him}')
+    
+    if balance > 0:
+        balance_text = f'{balance} (علينا له)'
+    elif balance < 0:
+        balance_text = f'{abs(balance)} (لينا عنده)'
+    else:
+        balance_text = '0 (متساوي)'
+    doc.add_paragraph(f'الرصيد النهائي: {balance_text}')
+    doc.add_paragraph('')
+    
+    if records:
+        doc.add_heading('تفاصيل السجلات', level=3)
+        table = doc.add_table(rows=1, cols=6)
+        table.style = 'Light Grid Accent 1'
+        
+        headers = ['#', 'التاريخ', 'النوع', 'المبلغ', 'الوصف', 'ملاحظات']
+        hdr_cells = table.rows[0].cells
+        for i, header in enumerate(headers):
+            hdr_cells[i].text = header
+            hdr_cells[i].paragraphs[0].runs[0].font.bold = True
+        
+        for idx, r in enumerate(records, 1):
+            row = table.add_row().cells
+            row[0].text = str(idx)
+            row[1].text = str(r.date)
+            row[2].text = r.person_type
+            row[3].text = str(r.amount)
+            row[4].text = r.description or '-'
+            row[5].text = r.notes or '-'
+    
+    output = BytesIO()
+    doc.save(output)
+    output.seek(0)
+    
+    return send_file(output, as_attachment=True,
+                     download_name=f'person_report_{person_name}_{date.today()}.docx',
+                     mimetype='application/vnd.openxmlformats-officedocument.wordprocessingml.document')
 
 
 # ====================================================================
