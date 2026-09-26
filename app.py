@@ -3853,7 +3853,21 @@ def almasa_supply_operation_receive_check(op_id):
     db.session.commit()
     flash('تم تسجيل استلام الشيك بنجاح', 'success')
     return redirect(url_for('almasa_supply_detail', supply_id=operation.supply_id))
-
+# ✅ إلغاء استلام عملية واحدة (توريدات)
+@app.route('/almasa/supply-operations/<int:op_id>/unreceive-single', methods=['POST'])
+@custom_login_required
+@role_required('sayed', 'dina', 'admin', 'meg')
+def almasa_supply_operation_unreceive_single(op_id):
+    operation = AlMasaSupplyOperation.query.get_or_404(op_id)
+    supply_id = operation.supply_id
+    
+    # رجّع العملية "مش مستلمة"
+    operation.check_received = False
+    operation.check_received_date = None
+    
+    db.session.commit()
+    flash('✅ تم إلغاء استلام العملية وإرجاعها "غير مستلمة"', 'success')
+    return redirect(url_for('almasa_supply_detail', supply_id=supply_id))
 
 @app.route('/almasa/supply-expenses/add', methods=['POST'])
 @custom_login_required
