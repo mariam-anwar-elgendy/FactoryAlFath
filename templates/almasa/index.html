@@ -58,7 +58,7 @@
 
 <!-- ✅ الإجماليات المهمة -->
 <div class="row g-3 mb-4">
-    <div class="col-md-4">
+    <div class="col-md-6">
         <div class="card border-0 shadow-sm h-100" style="background: linear-gradient(135deg, #dc3545, #c82333); color: white;">
             <div class="card-body text-center">
                 <div style="font-size: 2rem;">💸</div>
@@ -72,23 +72,13 @@
             </div>
         </div>
     </div>
-    <div class="col-md-4">
+    <div class="col-md-6">
         <div class="card border-0 shadow-sm h-100" style="background: linear-gradient(135deg, #28a745, #1e7e34); color: white;">
             <div class="card-body text-center">
                 <div style="font-size: 2rem;">✅</div>
                 <h5 class="fw-bold mt-2">إجمالي اللي استلمناه</h5>
                 <h3 class="fw-bold mb-0">{{ total_paid or 0 }}</h3>
                 <small>العمليات المدفوعة</small>
-            </div>
-        </div>
-    </div>
-    <div class="col-md-4">
-        <div class="card border-0 shadow-sm h-100" style="background: linear-gradient(135deg, #17a2b8, #117a8b); color: white;">
-            <div class="card-body text-center">
-                <div style="font-size: 2rem;">📊</div>
-                <h5 class="fw-bold mt-2">إجمالي الأرباح</h5>
-                <h3 class="fw-bold mb-0">{{ total_profit or 0 }}</h3>
-                <small>الأرباح الإدارية + التجارية</small>
             </div>
         </div>
     </div>
