@@ -104,6 +104,9 @@
                             {% if op.check_received %}
                                 <span class="badge bg-success">✅ مستلم</span>
                                 {% if op.check_received_date %}<br><small class="text-muted">{{ op.check_received_date.strftime('%Y-%m-%d') }}</small>{% endif %}
+                                <form action="{{ url_for('almasa_private_operation_unreceive_single', op_id=op.id) }}" method="POST" class="d-inline" onsubmit="return confirm('⚠️ إلغاء استلام العملية دي؟ هتترجع مش مستلمة وتخرج من الشيك.');">
+                                    <button type="submit" class="btn btn-sm btn-outline-danger ms-1" title="إلغاء استلام العملية">↩️</button>
+                                </form>
                             {% else %}
                                 -
                             {% endif %}
@@ -305,7 +308,6 @@
             <div class="col-md-6 mb-3"><label class="form-label fw-bold">مكان المشروع</label><input type="text" name="project_location" class="form-control"></div>
           </div>
 
-          <!-- قسم التأجير -->
           <div class="card border-success mb-3">
             <div class="card-header bg-success text-white fw-bold">💰 التأجير (للمورد)</div>
             <div class="card-body">
@@ -326,7 +328,6 @@
             </div>
           </div>
 
-          <!-- قسم التوريد -->
           <div class="card border-success mb-3">
             <div class="card-header bg-success text-white fw-bold">💰 التوريد (من العميل)</div>
             <div class="card-body">
@@ -347,7 +348,6 @@
             </div>
           </div>
 
-          <!-- الضرايب -->
           <h6 class="fw-bold text-success mb-3 mt-3">📊 الضرايب</h6>
           <div class="row">
             <div class="col-md-6 mb-3">
@@ -360,49 +360,6 @@
             </div>
           </div>
 
-          <!-- طريقة الدفع -->
-          <h6 class="fw-bold text-success mb-3 mt-3">💳 طريقة الدفع</h6>
-          <div class="row">
-            <div class="col-md-4 mb-3">
-              <label class="form-label fw-bold">طريقة الدفع</label>
-              <select name="payment_method" class="form-select payment-method-select" onchange="showPaymentFields(this, 'add')">
-                <option value="">اختر...</option>
-                <option value="شيك">شيك</option>
-                <option value="نقدي">نقدي</option>
-                <option value="تحويل بنكي">تحويل بنكي</option>
-                <option value="انستا باي">انستا باي</option>
-                <option value="فودافون كاش">فودافون كاش</option>
-              </select>
-            </div>
-            <div class="col-md-8 mb-3">
-              <div id="add_payment_check" class="payment-fields" style="display:none;">
-                <div class="row">
-                  <div class="col-md-6 mb-2"><label class="form-label fw-bold small">رقم الشيك</label><input type="text" name="payment_check_number" class="form-control form-control-sm"></div>
-                  <div class="col-md-6 mb-2"><label class="form-label fw-bold small">تاريخ الاستحقاق</label><input type="date" name="payment_check_due_date" class="form-control form-control-sm"></div>
-                </div>
-              </div>
-              <div id="add_payment_bank" class="payment-fields" style="display:none;">
-                <div class="row">
-                  <div class="col-md-6 mb-2"><label class="form-label fw-bold small">اسم الحساب</label><input type="text" name="payment_account_name" class="form-control form-control-sm"></div>
-                  <div class="col-md-6 mb-2"><label class="form-label fw-bold small">التاريخ</label><input type="date" name="payment_date" class="form-control form-control-sm"></div>
-                </div>
-              </div>
-              <div id="add_payment_insta" class="payment-fields" style="display:none;">
-                <div class="row">
-                  <div class="col-md-6 mb-2"><label class="form-label fw-bold small">الرقم</label><input type="text" name="payment_account_number" class="form-control form-control-sm"></div>
-                  <div class="col-md-6 mb-2"><label class="form-label fw-bold small">التاريخ</label><input type="date" name="payment_date_insta" class="form-control form-control-sm"></div>
-                </div>
-              </div>
-              <div id="add_payment_vodafone" class="payment-fields" style="display:none;">
-                <div class="row">
-                  <div class="col-md-6 mb-2"><label class="form-label fw-bold small">الرقم</label><input type="text" name="payment_account_number_vodafone" class="form-control form-control-sm"></div>
-                  <div class="col-md-6 mb-2"><label class="form-label fw-bold small">التاريخ</label><input type="date" name="payment_date_vodafone" class="form-control form-control-sm"></div>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          <!-- الفاتورة -->
           <h6 class="fw-bold text-success mb-3 mt-3">🧾 الفاتورة</h6>
           <div class="row">
             <div class="col-md-6 mb-3"><label class="form-label fw-bold">رقم الفاتورة</label><input type="text" name="invoice_number" class="form-control"></div>
@@ -504,47 +461,6 @@
             </div>
           </div>
 
-          <h6 class="fw-bold text-success mb-3 mt-3">💳 طريقة الدفع</h6>
-          <div class="row">
-            <div class="col-md-4 mb-3">
-              <label class="form-label fw-bold">طريقة الدفع</label>
-              <select name="payment_method" class="form-select payment-method-select" onchange="showPaymentFields(this, 'edit_{{ op.id }}')">
-                <option value="">اختر...</option>
-                <option value="شيك" {% if op.payment_method == 'شيك' %}selected{% endif %}>شيك</option>
-                <option value="نقدي" {% if op.payment_method == 'نقدي' %}selected{% endif %}>نقدي</option>
-                <option value="تحويل بنكي" {% if op.payment_method == 'تحويل بنكي' %}selected{% endif %}>تحويل بنكي</option>
-                <option value="انستا باي" {% if op.payment_method == 'انستا باي' %}selected{% endif %}>انستا باي</option>
-                <option value="فودافون كاش" {% if op.payment_method == 'فودافون كاش' %}selected{% endif %}>فودافون كاش</option>
-              </select>
-            </div>
-            <div class="col-md-8 mb-3">
-              <div id="edit_{{ op.id }}_payment_check" class="payment-fields" style="display:none;">
-                <div class="row">
-                  <div class="col-md-6 mb-2"><label class="form-label fw-bold small">رقم الشيك</label><input type="text" name="payment_check_number" class="form-control form-control-sm" value="{{ op.payment_check_number or '' }}"></div>
-                  <div class="col-md-6 mb-2"><label class="form-label fw-bold small">تاريخ الاستحقاق</label><input type="date" name="payment_check_due_date" class="form-control form-control-sm" value="{{ op.payment_check_due_date.strftime('%Y-%m-%d') if op.payment_check_due_date else '' }}"></div>
-                </div>
-              </div>
-              <div id="edit_{{ op.id }}_payment_bank" class="payment-fields" style="display:none;">
-                <div class="row">
-                  <div class="col-md-6 mb-2"><label class="form-label fw-bold small">اسم الحساب</label><input type="text" name="payment_account_name" class="form-control form-control-sm" value="{{ op.payment_account_name or '' }}"></div>
-                  <div class="col-md-6 mb-2"><label class="form-label fw-bold small">التاريخ</label><input type="date" name="payment_date" class="form-control form-control-sm" value="{{ op.payment_date.strftime('%Y-%m-%d') if op.payment_date else '' }}"></div>
-                </div>
-              </div>
-              <div id="edit_{{ op.id }}_payment_insta" class="payment-fields" style="display:none;">
-                <div class="row">
-                  <div class="col-md-6 mb-2"><label class="form-label fw-bold small">الرقم</label><input type="text" name="payment_account_number" class="form-control form-control-sm" value="{{ op.payment_account_number or '' }}"></div>
-                  <div class="col-md-6 mb-2"><label class="form-label fw-bold small">التاريخ</label><input type="date" name="payment_date_insta" class="form-control form-control-sm"></div>
-                </div>
-              </div>
-              <div id="edit_{{ op.id }}_payment_vodafone" class="payment-fields" style="display:none;">
-                <div class="row">
-                  <div class="col-md-6 mb-2"><label class="form-label fw-bold small">الرقم</label><input type="text" name="payment_account_number_vodafone" class="form-control form-control-sm" value="{{ op.payment_account_number or '' }}"></div>
-                  <div class="col-md-6 mb-2"><label class="form-label fw-bold small">التاريخ</label><input type="date" name="payment_date_vodafone" class="form-control form-control-sm"></div>
-                </div>
-              </div>
-            </div>
-          </div>
-
           <h6 class="fw-bold text-success mb-3 mt-3">🧾 الفاتورة</h6>
           <div class="row">
             <div class="col-md-6 mb-3"><label class="form-label fw-bold">رقم الفاتورة</label><input type="text" name="invoice_number" class="form-control" value="{{ op.invoice_number or '' }}"></div>
@@ -557,7 +473,6 @@
   </div>
 </div>
 
-<!-- Modal تعديل الملاحظات -->
 <div class="modal fade" id="editNotesModal{{ op.id }}" tabindex="-1">
   <div class="modal-dialog">
     <div class="modal-content">
@@ -571,7 +486,7 @@
 </div>
 {% endfor %}
 
-<!-- ==================== مودالات تعديل المصاريف ==================== -->
+<!-- مودالات تعديل المصاريف -->
 {% for exp in expenses %}
 <div class="modal fade" id="editExpenseModal{{ exp.id }}" tabindex="-1">
   <div class="modal-dialog">
@@ -594,41 +509,7 @@
 
 <!-- ==================== JavaScript ==================== -->
 <script>
-function showPaymentFields(selectElement, prefix) {
-    var modal = selectElement.closest('.modal-body');
-    if (!modal) modal = selectElement.closest('form');
-    if (!modal) return;
-    var allPaymentFields = modal.querySelectorAll('.payment-fields');
-    allPaymentFields.forEach(function(field) { field.style.display = 'none'; });
-    var method = selectElement.value;
-    var targetId = '';
-    if (method === 'شيك') targetId = prefix + '_payment_check';
-    else if (method === 'تحويل بنكي') targetId = prefix + '_payment_bank';
-    else if (method === 'انستا باي') targetId = prefix + '_payment_insta';
-    else if (method === 'فودافون كاش') targetId = prefix + '_payment_vodafone';
-    if (targetId) {
-        var target = modal.querySelector('#' + targetId);
-        if (target) target.style.display = 'block';
-    }
-}
-
 document.addEventListener('DOMContentLoaded', function() {
-    document.querySelectorAll('.payment-method-select').forEach(function(select) {
-        if (select.value) {
-            var modal = select.closest('.modal-body') || select.closest('form');
-            if (modal) {
-                var prefix = 'add';
-                if (select.closest('.modal') && select.closest('.modal').id.startsWith('editOperationModal')) {
-                    var modalId = select.closest('.modal').id;
-                    var opId = modalId.replace('editOperationModal', '');
-                    prefix = 'edit_' + opId;
-                }
-                showPaymentFields(select, prefix);
-            }
-        }
-    });
-    
-    // ✅ Select All
     const selectAll = document.getElementById('selectAllOps');
     if (selectAll) {
         selectAll.addEventListener('change', function() {
@@ -638,7 +519,6 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     }
     
-    // ✅ زر الاستلام الجماعي
     const receiveBtn = document.getElementById('receiveCheckBtn');
     if (receiveBtn) {
         receiveBtn.addEventListener('click', function() {
