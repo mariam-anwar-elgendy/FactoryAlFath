@@ -1300,9 +1300,9 @@ def store_diary():
         db.session.commit()
         flash('تم تسجيل اليومية بنجاح', 'success')
         return redirect(url_for('store_diary'))
+        
     diary = StoreDiary.query.order_by(StoreDiary.date.asc(), StoreDiary.id.asc()).all()
     return render_template('store/diary.html', diary=diary)
-
 # ==================== الجرد ====================
 @app.route('/inventory-audit', methods=['GET', 'POST'])
 @custom_login_required
@@ -1592,6 +1592,12 @@ def inventory_audit_monthly():
     
     total_shortage = sum(abs(r.difference) for r in records if r.difference < 0)
     total_surplus = sum(r.difference for r in records if r.difference > 0)
+    
+    return render_template('inventory_audit_monthly.html',
+                           records=records, month=month,
+                           total_shortage=total_shortage, total_surplus=total_surplus)
+
+
 # ==================== الخزينة ====================
 @app.route('/treasury')
 @custom_login_required
@@ -2502,10 +2508,6 @@ def chat_unread_count():
         by_user[str(sender_id)] = count
     total = sum(by_user.values())
     return jsonify({'total': total, 'by_user': by_user, 'by_group': {}})
-    
-    return render_template('inventory_audit_monthly.html',
-                           records=records, month=month,
-                           total_shortage=total_shortage, total_surplus=total_surplus)
 # ====================================================================
 # ==================== شركة الماسة ====================
 # ====================================================================
@@ -2572,48 +2574,7 @@ def almasa_index():
         for o in AlMasaSupplyOperation.query.filter(AlMasaSupplyOperation.check_received == True).all()
     )
     
-    # ✅ إجمالي الأرباح
-    total_profit = 0
-    
-    # أوناش مشاركة
-    for crane in partnership_cranes:
-        total_rental_c = sum(o.rental_total or 0 for o in crane.operations)
-        total_supply_c = sum(o.supply_total or 0 for o in crane.operations)
-        total_expenses_c = sum(e.amount or 0 for e in crane.expenses)
-        tax_85_c = sum(
-            (o.rental_total * o.tax_85_value / 100) 
-            for o in crane.operations if o.tax_85_enabled
-        )
-        admin = total_supply_c - total_rental_c
-        rental_after_tax_c = total_rental_c - tax_85_c
-        supply = rental_after_tax_c - total_expenses_c
-        total_profit += admin + supply
-    
-    # أوناش خاصة
-    for crane in private_cranes:
-        total_rental_c = sum(o.rental_total or 0 for o in crane.operations)
-        total_expenses_c = sum(e.amount or 0 for e in crane.expenses)
-        tax_85_c = sum(
-            (o.rental_total * o.tax_85_value / 100) 
-            for o in crane.operations if o.tax_85_enabled
-        )
-        rental_after_tax_c = total_rental_c - tax_85_c
-        total_profit += rental_after_tax_c - total_expenses_c
-    
-    # توريدات
-    for supply in supplies:
-        total_rental_s = sum(o.rental_total or 0 for o in supply.operations)
-        total_supply_s = sum(o.supply_total or 0 for o in supply.operations)
-        total_expenses_s = sum(e.amount or 0 for e in supply.expenses)
-        # ✅ ضريبة 8.5% على التوريد (في التوريدات فقط)
-        tax_85_s = sum(
-            (o.supply_total * o.tax_85_value / 100) 
-            for o in supply.operations if o.tax_85_enabled
-        )
-        admin_s = total_supply_s - total_rental_s
-        supply_after_tax_s = total_supply_s - tax_85_s
-        supply_s = supply_after_tax_s - total_rental_s - total_expenses_s
-        total_profit += admin_s + supply_s
+    # ✅ (total_profit اتشال خلاص — مش محتاجينه)
     
     return render_template('almasa/index.html',
                            partnership_cranes=partnership_cranes,
@@ -2624,8 +2585,7 @@ def almasa_index():
                            total_supply=total_supply,
                            grand_total=grand_total,
                            total_unpaid=total_unpaid,
-                           total_paid=total_paid,
-                           total_profit=total_profit)
+                           total_paid=total_paid)
 
 
 # ====================================================================
@@ -2876,7 +2836,6 @@ def almasa_operations_receive_check():
         flash('⚠️ يجب اختيار عملية واحدة على الأقل', 'danger')
         return redirect(request.referrer or url_for('almasa_index'))
     
-    # احسب إجمالي الشيك
     total_amount = 0
     crane_id = None
     valid_operations = []
@@ -2897,7 +2856,6 @@ def almasa_operations_receive_check():
         flash('⚠️ مفيش عمليات صالحة للاستلام', 'danger')
         return redirect(request.referrer or url_for('almasa_index'))
     
-    # إنشاء الشيك
     check = AlMasaCheck(
         crane_id=crane_id,
         check_number=check_number,
@@ -2907,7 +2865,6 @@ def almasa_operations_receive_check():
     db.session.add(check)
     db.session.flush()
     
-    # ربط الشيك بكل العمليات + تحديث حالة الاستلام
     for operation in valid_operations:
         db.session.add(AlMasaCheckOperation(
             check_id=check.id,
@@ -2929,7 +2886,6 @@ def almasa_check_unreceive(check_id):
     check = AlMasaCheck.query.get_or_404(check_id)
     crane_id = check.crane_id
     
-    # امسح كل علاقات الشيك بالعمليات
     check_ops = AlMasaCheckOperation.query.filter_by(check_id=check_id).all()
     for co in check_ops:
         operation = AlMasaOperation.query.get(co.operation_id)
@@ -2938,7 +2894,6 @@ def almasa_check_unreceive(check_id):
             operation.check_received_date = None
         db.session.delete(co)
     
-    # امسح الشيك نفسه
     db.session.delete(check)
     db.session.commit()
     
@@ -3045,7 +3000,6 @@ def almasa_expense_edit(exp_id):
 def almasa_check_delete(check_id):
     check = AlMasaCheck.query.get_or_404(check_id)
     crane_id = check.crane_id
-    # ✅ إرجاع العمليات لحالة "غير مستلم"
     check_ops = AlMasaCheckOperation.query.filter_by(check_id=check_id).all()
     for co in check_ops:
         operation = AlMasaOperation.query.get(co.operation_id)
@@ -3518,7 +3472,6 @@ def almasa_private_expense_edit(exp_id):
 def almasa_private_check_delete(check_id):
     check = AlMasaPrivateCheck.query.get_or_404(check_id)
     crane_id = check.crane_id
-    # ✅ إرجاع العمليات لحالة "غير مستلم"
     check_ops = AlMasaPrivateCheckOperation.query.filter_by(check_id=check_id).all()
     for co in check_ops:
         operation = AlMasaPrivateOperation.query.get(co.operation_id)
@@ -3861,6 +3814,7 @@ def almasa_supply_expense_edit(exp_id):
     return redirect(url_for('almasa_supply_detail', supply_id=expense.supply_id))
 
 
+# ✅ تقرير التوريدة (بعد الإصلاح)
 @app.route('/almasa/supplies/<int:supply_id>/report')
 @custom_login_required
 @role_required('sayed', 'dina', 'admin', 'meg')
@@ -3884,8 +3838,9 @@ def almasa_supply_report(supply_id):
     tax_85_amount = total_supply * (tax_85_value / 100)
     supply_after_tax = total_supply - tax_85_amount
     
-    admin_profit = total_supply - total_rental
-    supply_profit = supply_after_tax - total_rental - total_expenses
+    # ✅ الأرباح الإدارية (كل حاجة)
+    admin_profit = supply_after_tax - total_rental - total_expenses
+    supply_profit = 0  # ✅ مفيش أرباح تجارية منفصلة
     
     return render_template('almasa/supply_report.html',
                            supply=supply, operations=operations, expenses=expenses,
@@ -3928,7 +3883,7 @@ def almasa_crane_profit_report(crane_id):
     admin_profit = total_supply - total_rental
     rental_after_tax = total_rental - tax_85_amount
     supply_profit = rental_after_tax - total_expenses
-    total_profit = admin_profit + supply_profit
+    # ✅ total_profit اتشال
     
     basic_partners = [p for p in partners if p.is_basic]
     basic_count = len(basic_partners) if basic_partners else 1
@@ -3961,7 +3916,6 @@ def almasa_crane_profit_report(crane_id):
                            tax_14_amount=tax_14_amount, tax_85_amount=tax_85_amount,
                            rental_after_tax=rental_after_tax,
                            admin_profit=admin_profit, supply_profit=supply_profit,
-                           total_profit=total_profit,
                            partners_profit=partners_profit,
                            total_partners_share=total_partners_share)
 
@@ -4009,6 +3963,7 @@ def almasa_private_crane_profit_report(crane_id):
                            owner_share=owner_share)
 
 
+# ✅ تقرير أرباح توريدة واحدة (بعد الإصلاح)
 @app.route('/almasa/reports/supply-profit/<int:supply_id>')
 @custom_login_required
 @role_required('sayed', 'dina', 'admin', 'meg')
@@ -4032,9 +3987,9 @@ def almasa_supply_profit_single(supply_id):
         for o in operations if o.tax_85_enabled
     )
     
-    admin_profit = total_supply - total_rental
     supply_after_tax = total_supply - tax_85_amount
-    supply_profit = supply_after_tax - total_rental - total_expenses
+    admin_profit = supply_after_tax - total_rental - total_expenses
+    supply_profit = 0  # ✅ مفيش أرباح تجارية منفصلة
     
     return render_template('almasa/supply_profit_single.html',
                            supply=supply, operations=operations,
@@ -4084,7 +4039,16 @@ def almasa_admin_profit_report():
     for supply in supplies:
         total_rental = sum(o.rental_total or 0 for o in supply.operations)
         total_supply = sum(o.supply_total or 0 for o in supply.operations)
-        admin_profit = total_supply - total_rental
+        total_expenses = sum(e.amount or 0 for e in supply.expenses)
+        
+        # ✅ ضريبة 8.5% على التوريد
+        tax_85_amount = sum(
+            (o.supply_total * o.tax_85_value / 100) 
+            for o in supply.operations if o.tax_85_enabled
+        )
+        supply_after_tax = total_supply - tax_85_amount
+        admin_profit = supply_after_tax - total_rental - total_expenses
+        
         supply_admin_profit += admin_profit
         supply_details.append({
             'supply': supply, 'total_rental': total_rental,
@@ -4106,6 +4070,7 @@ def almasa_admin_profit_report():
                            grand_admin_profit=grand_admin_profit)
 
 
+# ✅ تقرير الأرباح التجارية (الكل) — بعد الإصلاح
 @app.route('/almasa/reports/supply-profit-all')
 @custom_login_required
 @role_required('sayed', 'dina', 'admin', 'meg')
@@ -4561,4 +4526,4 @@ def almasa_unpaid_operations():
 
 # ==================== التشغيل ====================
 if __name__ == '__main__':
-    app.run(host='0.0.0.0', port=5000, debug=True)    
+    app.run(host='0.0.0.0', port=5000, debug=True)
