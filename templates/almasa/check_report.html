@@ -8,8 +8,14 @@
     <div>
         {% if report_type == 'private' %}
         <a href="{{ url_for('almasa_private_crane_detail', crane_id=crane.id) }}" class="btn btn-outline-secondary">← رجوع</a>
+        <form action="{{ url_for('almasa_private_check_unreceive', check_id=check.id) }}" method="POST" class="d-inline" onsubmit="return confirm('⚠️ إلغاء استلام هذا الشيك؟ سيتم إرجاع كل العمليات لحالة غير مستلم.');">
+            <button type="submit" class="btn btn-secondary">↩️ إلغاء الاستلام</button>
+        </form>
         {% else %}
         <a href="{{ url_for('almasa_crane_detail', crane_id=crane.id) }}" class="btn btn-outline-secondary">← رجوع</a>
+        <form action="{{ url_for('almasa_check_unreceive', check_id=check.id) }}" method="POST" class="d-inline" onsubmit="return confirm('⚠️ إلغاء استلام هذا الشيك؟ سيتم إرجاع كل العمليات لحالة غير مستلم.');">
+            <button type="submit" class="btn btn-secondary">↩️ إلغاء الاستلام</button>
+        </form>
         {% endif %}
     </div>
 </div>
@@ -168,7 +174,11 @@
                         <h6 class="fw-bold text-primary mb-3">💰 حساب الشيك</h6>
                         <table class="table table-sm table-bordered mb-0">
                             <tbody>
+                                {% if report_type == 'private' %}
+                                <tr><td>إجمالي التأجير (الأساس)</td><td class="fw-bold">{{ total_rental }}</td></tr>
+                                {% else %}
                                 <tr><td>إجمالي التوريد (من العميل)</td><td class="fw-bold">{{ total_supply }}</td></tr>
+                                {% endif %}
                                 {% if tax_14 > 0 %}
                                 <tr><td>+ ضريبة 14% (حكومية)</td><td class="text-warning fw-bold">{{ tax_14 }}</td></tr>
                                 {% endif %}
@@ -201,16 +211,12 @@
         </div>
 
         <!-- الأرباح الإدارية -->
+        {% if report_type != 'private' %}
         <div class="alert alert-info mt-3">
             <h5 class="fw-bold mb-2">📈 الأرباح الإدارية = {{ admin_profit }}</h5>
             <small>= إجمالي التوريد ({{ total_supply }}) - إجمالي التأجير ({{ total_rental }})</small>
         </div>
-
-        <!-- إجمالي الأرباح -->
-        <div class="alert alert-success">
-            <h5 class="fw-bold mb-0">💰 إجمالي الأرباح = {{ admin_profit + supply_profit }}</h5>
-            <small>= الأرباح الإدارية ({{ admin_profit }}) + الأرباح التجارية ({{ supply_profit }})</small>
-        </div>
+        {% endif %}
 
         <!-- توزيع الأرباح - للونش الخاص -->
         {% if report_type == 'private' %}
