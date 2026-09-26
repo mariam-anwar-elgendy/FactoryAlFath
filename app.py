@@ -1235,39 +1235,44 @@ def store_returns():
                 db.session.commit()
                 flash('تم حذف المرتجع بنجاح', 'success')
             return redirect(url_for('store_returns'))
+        
         if request.form.get('edit_id'):
             record_id = int(request.form.get('edit_id'))
             record = StoreReturn.query.get_or_404(record_id)
             if can_edit(current_user.role, record.date, record.created_by, current_user.id):
                 record.date = datetime.strptime(request.form.get('date'), '%Y-%m-%d').date()
-                record.return_type = request.form.get('return_type')
-                record.party_name = request.form.get('party_name')
-                record.product_type = request.form.get('product_type')
-                record.product_size = request.form.get('product_size')
-                record.product_spec = request.form.get('product_spec')
+                record.return_type = request.form.get('return_type', '').strip()
+                record.party_name = request.form.get('party_name', '').strip()
+                record.product_type = request.form.get('product_type', '').strip()
+                record.product_size = request.form.get('product_size', '').strip()
+                record.product_spec = request.form.get('product_spec', '').strip()
                 record.quantity = float(request.form.get('quantity', 0))
-                record.reason = request.form.get('reason')
+                record.reason = request.form.get('reason', '').strip()
                 db.session.commit()
                 flash('تم تحديث المرتجع بنجاح', 'success')
             return redirect(url_for('store_returns'))
+        
         record_date = datetime.strptime(request.form.get('date'), '%Y-%m-%d').date()
-        return_type = request.form.get('return_type')
-        party_name = request.form.get('party_name')
-        product_type = request.form.get('product_type')
-        product_size = request.form.get('product_size')
-        product_spec = request.form.get('product_spec')
+        return_type = request.form.get('return_type', '').strip()
+        party_name = request.form.get('party_name', '').strip()
+        product_type = request.form.get('product_type', '').strip()
+        product_size = request.form.get('product_size', '').strip()
+        product_spec = request.form.get('product_spec', '').strip()
         quantity = float(request.form.get('quantity', 0))
-        reason = request.form.get('reason')
-        new_return = StoreReturn(date=record_date, return_type=return_type, party_name=party_name,
-                                 product_type=product_type, product_size=product_size, product_spec=product_spec,
-                                 quantity=quantity, reason=reason, created_by=current_user.id, created_at=datetime.utcnow())
+        reason = request.form.get('reason', '').strip()
+        new_return = StoreReturn(
+            date=record_date, return_type=return_type, party_name=party_name,
+            product_type=product_type, product_size=product_size, product_spec=product_spec,
+            quantity=quantity, reason=reason,
+            created_by=current_user.id, created_at=datetime.utcnow()
+        )
         db.session.add(new_return)
         db.session.commit()
         flash('تم تسجيل المرتجع بنجاح', 'success')
         return redirect(url_for('store_returns'))
+    
     returns = StoreReturn.query.order_by(StoreReturn.date.asc(), StoreReturn.id.asc()).all()
     return render_template('store/returns.html', returns=returns)
-
 @app.route('/store/diary', methods=['GET', 'POST'])
 @custom_login_required
 @role_required('meg', 'admin', 'mariam', 'rehab', 'ahmed', 'sayed')
