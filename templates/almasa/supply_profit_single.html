@@ -54,51 +54,7 @@
                     <div class="card-body text-center">
                         <h6>الأرباح الإدارية</h6>
                         <h3 class="fw-bold">{{ admin_profit }}</h3>
-                        <small>= التوريد - التأجير</small>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </div>
-</div>
-
-<!-- ✅ ملخص الأرباح التجارية -->
-<div class="card border-0 shadow-sm mb-4">
-    <div class="card-header text-white fw-bold" style="background: linear-gradient(135deg, #1b5e20, #2e7d32);">
-        📉 ملخص الأرباح التجارية
-    </div>
-    <div class="card-body">
-        <div class="row g-3">
-            <div class="col-md-3">
-                <div class="card bg-light h-100">
-                    <div class="card-body text-center">
-                        <h6 class="text-muted">إجمالي التأجير</h6>
-                        <h3 class="fw-bold text-primary">{{ total_rental }}</h3>
-                    </div>
-                </div>
-            </div>
-            <div class="col-md-3">
-                <div class="card bg-light h-100">
-                    <div class="card-body text-center">
-                        <h6 class="text-muted">ضريبة 8.5%</h6>
-                        <h3 class="fw-bold text-warning">{{ tax_85_amount or 0 }}</h3>
-                    </div>
-                </div>
-            </div>
-            <div class="col-md-3">
-                <div class="card bg-light h-100">
-                    <div class="card-body text-center">
-                        <h6 class="text-muted">المصاريف</h6>
-                        <h3 class="fw-bold text-danger">{{ total_expenses }}</h3>
-                    </div>
-                </div>
-            </div>
-            <div class="col-md-3">
-                <div class="card h-100" style="background: linear-gradient(135deg, #1b5e20, #2e7d32); color: white;">
-                    <div class="card-body text-center">
-                        <h6>الأرباح التجارية</h6>
-                        <h3 class="fw-bold">{{ supply_profit }}</h3>
-                        <small>= (التأجير - 8.5%) - مصاريف</small>
+                        <small>= (التوريد - 8.5%) - التأجير - المصاريف</small>
                     </div>
                 </div>
             </div>
@@ -110,54 +66,38 @@
 <div class="card border-0 shadow-sm mb-4">
     <div class="card-header bg-light fw-bold">📊 تفاصيل الحسابات</div>
     <div class="card-body">
-        <h6 class="fw-bold text-primary mb-3">📈 الأرباح الإدارية</h6>
-        <table class="table table-bordered mb-4">
+        <h6 class="fw-bold text-warning mb-3">📈 حساب الأرباح الإدارية</h6>
+        <table class="table table-bordered mb-0">
             <tbody>
                 <tr>
                     <td class="fw-bold">إجمالي التوريد (من العميل)</td>
                     <td class="text-success fw-bold">{{ total_supply }}</td>
                 </tr>
+                {% if tax_85_amount > 0 %}
+                <tr>
+                    <td class="fw-bold">(-) ضريبة 8.5% (على التوريد)</td>
+                    <td class="text-warning fw-bold">{{ tax_85_amount }}</td>
+                </tr>
+                <tr>
+                    <td class="fw-bold">= التوريد بعد الضريبة</td>
+                    <td class="fw-bold">{{ supply_after_tax }}</td>
+                </tr>
+                {% endif %}
                 <tr>
                     <td class="fw-bold">(-) إجمالي التأجير (للمورد)</td>
                     <td class="text-primary fw-bold">{{ total_rental }}</td>
                 </tr>
-                <tr class="table-success">
+                <tr>
+                    <td class="fw-bold">(-) المصاريف</td>
+                    <td class="text-danger fw-bold">{{ total_expenses }}</td>
+                </tr>
+                <tr class="table-warning">
                     <td class="fw-bold fs-5">= الأرباح الإدارية</td>
                     <td class="fw-bold fs-5">{{ admin_profit }}</td>
                 </tr>
             </tbody>
         </table>
-
-        <h6 class="fw-bold text-success mb-3">📉 الأرباح التجارية</h6>
-        <table class="table table-bordered mb-0">
-            <tbody>
-                <tr>
-                    <td class="fw-bold">إجمالي التأجير (للمورد)</td>
-                    <td class="text-primary fw-bold">{{ total_rental }}</td>
-                </tr>
-                {% if tax_85_amount > 0 %}
-                <tr>
-                    <td class="fw-bold">(-) ضريبة 8.5%</td>
-                    <td class="text-warning fw-bold">{{ tax_85_amount }}</td>
-                </tr>
-                {% endif %}
-                <tr>
-                    <td class="fw-bold">(-) المصاريف</td>
-                    <td class="text-danger fw-bold">{{ total_expenses }}</td>
-                </tr>
-                <tr class="table-success">
-                    <td class="fw-bold fs-5">= الأرباح التجارية</td>
-                    <td class="fw-bold fs-5">{{ supply_profit }}</td>
-                </tr>
-            </tbody>
-        </table>
     </div>
-</div>
-
-<!-- ✅ إجمالي الأرباح -->
-<div class="alert alert-warning mb-4">
-    <h5 class="fw-bold mb-0">💰 إجمالي الأرباح = {{ admin_profit + supply_profit }}</h5>
-    <small>= الأرباح الإدارية ({{ admin_profit }}) + الأرباح التجارية ({{ supply_profit }})</small>
 </div>
 
 <!-- ✅ ملخص الضرايب -->
@@ -183,7 +123,7 @@
                     <div class="card-body text-center">
                         <h6 class="text-muted">إجمالي ضريبة 8.5%</h6>
                         <h4 class="fw-bold text-warning">{{ tax_85_amount }}</h4>
-                        <small class="text-muted">على التأجير (للمورد)</small>
+                        <small class="text-muted">على التوريد (في التوريدات)</small>
                     </div>
                 </div>
             </div>
@@ -236,7 +176,7 @@
                         <td>
                             {% if op.tax_85_enabled %}
                                 <span class="badge bg-warning text-dark">
-                                    {{ (op.rental_total * op.tax_85_value / 100)|round(2) }}
+                                    {{ (op.supply_total * op.tax_85_value / 100)|round(2) }}
                                 </span>
                             {% else %}-{% endif %}
                         </td>
@@ -319,7 +259,7 @@
             <tr class="table-warning"><td class="fw-bold" style="width: 40%;">ضريبة 14%</td><td>{{ (op.supply_total * op.tax_14_value / 100)|round(2) }}</td></tr>
             {% endif %}
             {% if op.tax_85_enabled %}
-            <tr class="table-warning"><td class="fw-bold">ضريبة 8.5%</td><td>{{ (op.rental_total * op.tax_85_value / 100)|round(2) }}</td></tr>
+            <tr class="table-warning"><td class="fw-bold">ضريبة 8.5% (على التوريد)</td><td>{{ (op.supply_total * op.tax_85_value / 100)|round(2) }}</td></tr>
             {% endif %}
           </tbody>
         </table>
