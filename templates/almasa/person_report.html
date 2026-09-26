@@ -4,20 +4,71 @@
 
 {% block content %}
 <div class="d-flex justify-content-between align-items-center mb-4">
-    <h2 class="fw-bold text-info">👤 تقرير: {{ person_name }}</h2>
-    <a href="{{ url_for('almasa_partner_accounts') }}" class="btn btn-outline-secondary">← رجوع</a>
+    <h2 class="fw-bold text-info">
+        👤 تقرير: {{ person_name }}
+        {% if person_type == 'شريك' %}
+            <span class="badge bg-primary">شريك</span>
+        {% elif person_type == 'عميل' %}
+            <span class="badge bg-secondary">عميل</span>
+        {% endif %}
+    </h2>
+    <div>
+        <a href="{{ url_for('almasa_person_report_export', person_name=person_name) }}" class="btn btn-success">📄 تصدير Word</a>
+        <a href="{{ url_for('almasa_partner_accounts') }}" class="btn btn-outline-secondary">← رجوع</a>
+    </div>
 </div>
 
-<div class="card border-0 shadow-sm mb-4">
+<!-- ✅ ملخص الحساب -->
+<div class="row g-3 mb-4">
+    <div class="col-md-4">
+        <div class="card border-0 shadow-sm h-100">
+            <div class="card-body text-center">
+                <div style="font-size: 1.5rem;">💰</div>
+                <h6 class="text-muted mt-2">إجمالي ما دفعناه له</h6>
+                <h3 class="fw-bold text-primary">{{ total_paid_to_him }}</h3>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="card border-0 shadow-sm h-100">
+            <div class="card-body text-center">
+                <div style="font-size: 1.5rem;">📥</div>
+                <h6 class="text-muted mt-2">إجمالي ما استلمناه منه</h6>
+                <h3 class="fw-bold text-success">{{ total_received_from_him }}</h3>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="card border-0 shadow-sm h-100" style="background: linear-gradient(135deg, #006064, #00838f); color: white;">
+            <div class="card-body text-center">
+                <div style="font-size: 1.5rem;">⚖️</div>
+                <h6 class="mt-2">الرصيد النهائي</h6>
+                <h3 class="fw-bold">
+                    {% if balance > 0 %}
+                        {{ balance }} <small class="d-block" style="font-size: 0.7rem;">علينا له</small>
+                    {% elif balance < 0 %}
+                        {{ -balance }} <small class="d-block" style="font-size: 0.7rem;">لينا عنده</small>
+                    {% else %}
+                        0 <small class="d-block" style="font-size: 0.7rem;">متساوي</small>
+                    {% endif %}
+                </h3>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- ✅ السجلات -->
+<div class="card border-0 shadow-sm">
     <div class="card-header text-white fw-bold" style="background: linear-gradient(90deg, #006064, #00838f);">
         📋 السجلات
     </div>
     <div class="card-body">
         {% if records %}
         <div class="table-responsive">
-            <table class="table table-striped">
+            <table class="table table-striped table-hover align-middle">
                 <thead>
                     <tr>
+                        <th>#</th>
                         <th>التاريخ</th>
                         <th>النوع</th>
                         <th>المبلغ</th>
@@ -28,9 +79,12 @@
                 <tbody>
                     {% for r in records %}
                     <tr>
+                        <td>{{ loop.index }}</td>
                         <td>{{ r.date.strftime('%Y-%m-%d') }}</td>
                         <td>{{ r.person_type }}</td>
-                        <td>{{ r.amount }}</td>
+                        <td class="fw-bold {% if r.amount > 0 %}text-primary{% else %}text-success{% endif %}">
+                            {{ r.amount }}
+                        </td>
                         <td>{{ r.description or '-' }}</td>
                         <td>{{ r.notes or '-' }}</td>
                     </tr>
@@ -38,15 +92,23 @@
                 </tbody>
                 <tfoot>
                     <tr class="fw-bold table-info">
-                        <td colspan="2">الإجمالي</td>
-                        <td>{{ total }}</td>
+                        <td colspan="3">الإجمالي</td>
+                        <td>
+                            {% if balance > 0 %}
+                                <span class="text-danger">+{{ balance }}</span>
+                            {% elif balance < 0 %}
+                                <span class="text-success">{{ balance }}</span>
+                            {% else %}
+                                0
+                            {% endif %}
+                        </td>
                         <td colspan="2"></td>
                     </tr>
                 </tfoot>
             </table>
         </div>
         {% else %}
-        <p class="text-muted mb-0">لا توجد سجلات</p>
+        <p class="text-muted mb-0 text-center">لا توجد سجلات</p>
         {% endif %}
     </div>
 </div>
