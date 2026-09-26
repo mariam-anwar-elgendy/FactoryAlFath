@@ -106,11 +106,7 @@
     </div>
 </div>
 
-<!-- ✅ إجمالي الأرباح -->
-<div class="alert alert-info mb-4">
-    <h5 class="fw-bold mb-0">💰 إجمالي الأرباح = {{ total_profit }}</h5>
-    <small>= الأرباح الإدارية ({{ admin_profit }}) + الأرباح التجارية ({{ supply_profit }})</small>
-</div>
+<!-- ✅ (إجمالي الأرباح اتشال خلاص) -->
 
 <!-- الشركاء -->
 <div class="card border-0 shadow-sm mb-4">
@@ -168,7 +164,7 @@
                 <tfoot>
                     <tr class="fw-bold table-secondary">
                         <td colspan="4">الإجمالي</td>
-                        <td>{{ total_partners_share or total_profit }}</td>
+                        <td>{{ total_partners_share }}</td>
                     </tr>
                 </tfoot>
             </table>
