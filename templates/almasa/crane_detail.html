@@ -4,16 +4,17 @@
 
 {% block content %}
 <div class="d-flex justify-content-between align-items-center mb-4">
-    <h2 class="fw-bold text-primary">🏗️ {{ crane.name }}</h2>
+    <h2 class="fw-bold text-success">🚛 {{ crane.name }}</h2>
     <div>
-        <a href="{{ url_for('almasa_cranes') }}" class="btn btn-outline-secondary">← رجوع</a>
-        <a href="{{ url_for('almasa_crane_report', crane_id=crane.id) }}" class="btn btn-info">📊 التقرير الكامل</a>
+        <a href="{{ url_for('almasa_private_cranes') }}" class="btn btn-outline-secondary">← رجوع</a>
+        <a href="{{ url_for('almasa_private_crane_report', crane_id=crane.id) }}" class="btn btn-info">📊 التقرير الكامل</a>
     </div>
 </div>
 
-{% if crane.notes %}
-<div class="alert alert-info">{{ crane.notes }}</div>
-{% endif %}
+<div class="alert alert-success">
+    <strong>صاحب الونش:</strong> {{ crane.owner_name }}
+    {% if crane.notes %}<br><strong>ملاحظات:</strong> {{ crane.notes }}{% endif %}
+</div>
 
 <!-- ✅ الإجماليات -->
 <div class="row mb-4">
@@ -21,7 +22,7 @@
         <div class="card border-0 shadow-sm bg-light">
             <div class="card-body text-center">
                 <h6 class="text-muted">إجمالي العمليات</h6>
-                <h3 class="fw-bold text-primary">{{ total_operations }}</h3>
+                <h3 class="fw-bold text-success">{{ total_operations }}</h3>
             </div>
         </div>
     </div>
@@ -30,7 +31,7 @@
             <div class="card-body text-center">
                 <h6 class="text-muted">إجمالي اللي لينا عند الناس</h6>
                 <h3 class="fw-bold text-danger">{{ total_unpaid }}</h3>
-                <a href="{{ url_for('almasa_crane_unpaid', crane_id=crane.id) }}" class="btn btn-sm btn-outline-danger mt-2">عرض التفاصيل</a>
+                <a href="{{ url_for('almasa_private_crane_unpaid', crane_id=crane.id) }}" class="btn btn-sm btn-outline-danger mt-2">عرض التفاصيل</a>
             </div>
         </div>
     </div>
@@ -44,28 +45,7 @@
     </div>
 </div>
 
-<!-- الشركاء -->
-<div class="card border-0 shadow-sm mb-4">
-    <div class="card-header bg-light fw-bold">👥 الشركاء</div>
-    <div class="card-body">
-        {% if partners %}
-        <table class="table table-sm">
-            <thead><tr><th>الاسم</th><th>النسبة</th><th>شريك أساسي</th></tr></thead>
-            <tbody>
-                {% for p in partners %}
-                <tr>
-                    <td>{{ p.name }}</td>
-                    <td>{{ p.percentage }}%</td>
-                    <td>{% if p.is_basic %}<span class="badge bg-success">نعم</span>{% else %}<span class="badge bg-secondary">لا</span>{% endif %}</td>
-                </tr>
-                {% endfor %}
-            </tbody>
-        </table>
-        {% else %}<p class="text-muted mb-0">لا يوجد شركاء</p>{% endif %}
-    </div>
-</div>
-
-<!-- العمليات -->
+<!-- ✅ العمليات -->
 <div class="card border-0 shadow-sm mb-4">
     <div class="card-header bg-light fw-bold d-flex justify-content-between align-items-center">
         <span>⚙️ العمليات</span>
@@ -73,13 +53,13 @@
             <button type="button" class="btn btn-sm btn-success" id="receiveCheckBtn">
                 ✅ استلام شيك جماعي
             </button>
-            <button class="btn btn-sm btn-primary" data-bs-toggle="modal" data-bs-target="#addOperationModal">➕ إضافة عملية</button>
+            <button class="btn btn-sm btn-success" data-bs-toggle="modal" data-bs-target="#addOperationModal">➕ إضافة عملية</button>
         </div>
     </div>
     <div class="card-body">
         {% if operations %}
         <div class="table-responsive">
-            <table class="table table-sm table-striped table-hover">
+            <table class="table table-sm table-striped table-hover" id="operationsTable">
                 <thead>
                     <tr>
                         <th style="width: 30px;">
@@ -118,23 +98,26 @@
                         <td>{{ op.supply_days or op.days_count or 0 }}</td>
                         <td>{{ op.rental_value }}</td>
                         <td>{{ op.supply_value }}</td>
-                        <td class="fw-bold text-primary">{{ op.rental_total }}</td>
-                        <td class="fw-bold text-success">{{ op.supply_total }}</td>
+                        <td class="fw-bold text-success">{{ op.rental_total }}</td>
+                        <td class="fw-bold text-primary">{{ op.supply_total }}</td>
                         <td>
                             {% if op.check_received %}
                                 <span class="badge bg-success">✅ مستلم</span>
                                 {% if op.check_received_date %}<br><small class="text-muted">{{ op.check_received_date.strftime('%Y-%m-%d') }}</small>{% endif %}
+                                <form action="{{ url_for('almasa_private_operation_unreceive_single', op_id=op.id) }}" method="POST" class="d-inline" onsubmit="return confirm('⚠️ إلغاء استلام العملية دي؟ هتترجع مش مستلمة وتخرج من الشيك.');">
+                                    <button type="submit" class="btn btn-sm btn-outline-danger ms-1" title="إلغاء استلام العملية">↩️</button>
+                                </form>
                             {% else %}
                                 -
                             {% endif %}
                         </td>
                         <td>
                             {% if op.notes %}<span title="{{ op.notes }}">{{ op.notes[:15] }}{% if op.notes|length > 15 %}...{% endif %}</span>{% else %}-{% endif %}
-                            <button class="btn btn-sm btn-outline-info" data-bs-toggle="modal" data-bs-target="#editNotesModal{{ op.id }}" title="تعديل الملاحظات">📝</button>
+                            <button class="btn btn-sm btn-outline-info" data-bs-toggle="modal" data-bs-target="#editNotesModal{{ op.id }}">📝</button>
                         </td>
                         <td>
                             <button class="btn btn-sm btn-warning" data-bs-toggle="modal" data-bs-target="#editOperationModal{{ op.id }}">✏️</button>
-                            <form action="{{ url_for('almasa_operation_delete', op_id=op.id) }}" method="POST" class="d-inline" onsubmit="return confirm('حذف العملية؟');">
+                            <form action="{{ url_for('almasa_private_operation_delete', op_id=op.id) }}" method="POST" class="d-inline" onsubmit="return confirm('حذف العملية؟');">
                                 <button type="submit" class="btn btn-sm btn-danger">🗑️</button>
                             </form>
                         </td>
@@ -159,15 +142,13 @@
 <div class="card border-0 shadow-sm mb-4">
     <div class="card-header bg-light fw-bold d-flex justify-content-between align-items-center">
         <span>💸 المصاريف</span>
-        <button class="btn btn-sm btn-primary" data-bs-toggle="modal" data-bs-target="#addExpenseModal">➕ إضافة مصروف</button>
+        <button class="btn btn-sm btn-success" data-bs-toggle="modal" data-bs-target="#addExpenseModal">➕ إضافة مصروف</button>
     </div>
     <div class="card-body">
         {% if expenses %}
         <div class="table-responsive">
             <table class="table table-sm table-striped">
-                <thead>
-                    <tr><th>التاريخ</th><th>النوع</th><th>المبلغ</th><th>دفعه</th><th>ملاحظات</th><th>إجراءات</th></tr>
-                </thead>
+                <thead><tr><th>التاريخ</th><th>النوع</th><th>المبلغ</th><th>دفعه</th><th>ملاحظات</th><th>إجراءات</th></tr></thead>
                 <tbody>
                     {% for exp in expenses %}
                     <tr>
@@ -178,23 +159,21 @@
                         <td>{{ exp.notes or '-' }}</td>
                         <td>
                             <button class="btn btn-sm btn-warning" data-bs-toggle="modal" data-bs-target="#editExpenseModal{{ exp.id }}">✏️</button>
-                            <form action="{{ url_for('almasa_expense_delete', exp_id=exp.id) }}" method="POST" class="d-inline" onsubmit="return confirm('حذف المصروف؟');">
+                            <form action="{{ url_for('almasa_private_expense_delete', exp_id=exp.id) }}" method="POST" class="d-inline" onsubmit="return confirm('حذف المصروف؟');">
                                 <button type="submit" class="btn btn-sm btn-danger">🗑️</button>
                             </form>
                         </td>
                     </tr>
                     {% endfor %}
                 </tbody>
-                <tfoot>
-                    <tr class="fw-bold"><td colspan="2">الإجمالي</td><td>{{ total_expenses }}</td><td colspan="3"></td></tr>
-                </tfoot>
+                <tfoot><tr class="fw-bold"><td colspan="2">الإجمالي</td><td>{{ total_expenses }}</td><td colspan="3"></td></tr></tfoot>
             </table>
         </div>
         {% else %}<p class="text-muted mb-0">لا توجد مصاريف</p>{% endif %}
     </div>
 </div>
 
-<!-- الشيكات -->
+<!-- ✅ الشيكات -->
 <div class="card border-0 shadow-sm">
     <div class="card-header bg-light fw-bold">
         💰 الشيكات
@@ -203,7 +182,17 @@
         {% if checks %}
         <div class="table-responsive">
             <table class="table table-sm table-striped">
-                <thead><tr><th>رقم الشيك</th><th>الشركة</th><th>المبلغ</th><th>تاريخ الإصدار</th><th>تاريخ الاستحقاق</th><th>الحالة</th><th>إجراءات</th></tr></thead>
+                <thead>
+                    <tr>
+                        <th>رقم الشيك</th>
+                        <th>الشركة</th>
+                        <th>المبلغ</th>
+                        <th>تاريخ الإصدار</th>
+                        <th>تاريخ الاستحقاق</th>
+                        <th>الحالة</th>
+                        <th>إجراءات</th>
+                    </tr>
+                </thead>
                 <tbody>
                     {% for check in checks %}
                     <tr>
@@ -214,12 +203,12 @@
                         <td>{{ check.due_date.strftime('%Y-%m-%d') if check.due_date else '-' }}</td>
                         <td><span class="badge bg-warning">{{ check.status }}</span></td>
                         <td>
-                            <a href="{{ url_for('almasa_check_report', check_id=check.id) }}" class="btn btn-sm btn-info" title="التقرير">📋</a>
+                            <a href="{{ url_for('almasa_private_check_report', check_id=check.id) }}" class="btn btn-sm btn-info" title="التقرير">📋</a>
                             <button class="btn btn-sm btn-warning" data-bs-toggle="modal" data-bs-target="#editCheckModal{{ check.id }}" title="تعديل">✏️</button>
-                            <form action="{{ url_for('almasa_check_unreceive', check_id=check.id) }}" method="POST" class="d-inline" onsubmit="return confirm('⚠️ إلغاء استلام هذا الشيك؟ سيتم إرجاع كل العمليات لحالة غير مستلم.');">
+                            <form action="{{ url_for('almasa_private_check_unreceive', check_id=check.id) }}" method="POST" class="d-inline" onsubmit="return confirm('⚠️ إلغاء استلام هذا الشيك؟');">
                                 <button type="submit" class="btn btn-sm btn-secondary" title="إلغاء الاستلام">↩️</button>
                             </form>
-                            <form action="{{ url_for('almasa_check_delete', check_id=check.id) }}" method="POST" class="d-inline" onsubmit="return confirm('⚠️ حذف الشيك نهائياً؟');">
+                            <form action="{{ url_for('almasa_private_check_delete', check_id=check.id) }}" method="POST" class="d-inline" onsubmit="return confirm('⚠️ حذف الشيك نهائياً؟');">
                                 <button type="submit" class="btn btn-sm btn-danger" title="حذف">🗑️</button>
                             </form>
                         </td>
@@ -232,179 +221,11 @@
     </div>
 </div>
 
-<!-- ==================== مودال إضافة عملية ==================== -->
-<div class="modal fade" id="addOperationModal" tabindex="-1">
-  <div class="modal-dialog modal-xl">
-    <div class="modal-content">
-      <form method="POST" action="{{ url_for('almasa_add_operation') }}">
-        <input type="hidden" name="crane_id" value="{{ crane.id }}">
-        <div class="modal-header bg-primary text-white">
-          <h5 class="modal-title">➕ إضافة عملية</h5>
-          <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
-        </div>
-        <div class="modal-body">
-          <h6 class="fw-bold text-primary mb-3">📋 بيانات أساسية</h6>
-          <div class="row">
-            <div class="col-md-6 mb-3"><label class="form-label fw-bold">من تاريخ</label><input type="date" name="start_date" class="form-control" required></div>
-            <div class="col-md-6 mb-3"><label class="form-label fw-bold">إلى تاريخ</label><input type="date" name="end_date" class="form-control"></div>
-          </div>
-          <div class="row">
-            <div class="col-md-6 mb-3"><label class="form-label fw-bold">اسم المشروع</label><input type="text" name="project_name" class="form-control"></div>
-            <div class="col-md-6 mb-3"><label class="form-label fw-bold">مكان المشروع</label><input type="text" name="project_location" class="form-control"></div>
-          </div>
-
-          <!-- قسم التأجير -->
-          <div class="card border-success mb-3">
-            <div class="card-header bg-success text-white fw-bold">💰 التأجير (للمورد)</div>
-            <div class="card-body">
-              <div class="row">
-                <div class="col-md-4 mb-3"><label class="form-label fw-bold">سعر التأجير (يومي)</label><input type="number" step="0.01" name="rental_value" class="form-control" value="0" required></div>
-                <div class="col-md-4 mb-3"><label class="form-label fw-bold">عدد أيام التأجير</label><input type="number" step="any" name="rental_days" class="form-control" value="0" required></div>
-              </div>
-              <h6 class="fw-bold text-success mb-3 mt-3">⏰ ساعات إضافية للتأجير</h6>
-              <div class="row">
-                <div class="col-md-6 mb-3"><label class="form-label fw-bold">عدد الساعات</label><input type="number" step="0.01" name="rental_extra_hours" class="form-control" value="0"></div>
-                <div class="col-md-6 mb-3"><label class="form-label fw-bold">سعر الساعة</label><input type="number" step="0.01" name="rental_hour_rate" class="form-control" value="0"></div>
-              </div>
-              <h6 class="fw-bold text-success mb-3 mt-3">🚛 أيام الطريق للتأجير</h6>
-              <div class="row">
-                <div class="col-md-6 mb-3"><label class="form-label fw-bold">عدد أيام الطريق</label><input type="number" step="0.01" name="rental_travel_days" class="form-control" value="0"></div>
-                <div class="col-md-6 mb-3"><label class="form-label fw-bold">سعر يوم الطريق</label><input type="number" step="0.01" name="travel_rental_rate" class="form-control" value="0"></div>
-              </div>
-            </div>
-          </div>
-
-          <!-- قسم التوريد -->
-          <div class="card border-primary mb-3">
-            <div class="card-header bg-primary text-white fw-bold">💰 التوريد (من العميل)</div>
-            <div class="card-body">
-              <div class="row">
-                <div class="col-md-4 mb-3"><label class="form-label fw-bold">سعر التوريد (يومي)</label><input type="number" step="0.01" name="supply_value" class="form-control" value="0" required></div>
-                <div class="col-md-4 mb-3"><label class="form-label fw-bold">عدد أيام التوريد</label><input type="number" step="any" name="supply_days" class="form-control" value="0" required></div>
-              </div>
-              <h6 class="fw-bold text-primary mb-3 mt-3">⏰ ساعات إضافية للتوريد</h6>
-              <div class="row">
-                <div class="col-md-6 mb-3"><label class="form-label fw-bold">عدد الساعات</label><input type="number" step="0.01" name="supply_extra_hours" class="form-control" value="0"></div>
-                <div class="col-md-6 mb-3"><label class="form-label fw-bold">سعر الساعة</label><input type="number" step="0.01" name="supply_hour_rate" class="form-control" value="0"></div>
-              </div>
-              <h6 class="fw-bold text-primary mb-3 mt-3">🚛 أيام الطريق للتوريد</h6>
-              <div class="row">
-                <div class="col-md-6 mb-3"><label class="form-label fw-bold">عدد أيام الطريق</label><input type="number" step="0.01" name="supply_travel_days" class="form-control" value="0"></div>
-                <div class="col-md-6 mb-3"><label class="form-label fw-bold">سعر يوم الطريق</label><input type="number" step="0.01" name="travel_supply_rate" class="form-control" value="0"></div>
-              </div>
-            </div>
-          </div>
-
-          <!-- الضرايب -->
-          <h6 class="fw-bold text-primary mb-3 mt-3">📊 الضرايب</h6>
-          <div class="row">
-            <div class="col-md-6 mb-3">
-              <div class="form-check"><input class="form-check-input" type="checkbox" name="tax_14_enabled" id="tax_14_add"><label class="form-check-label fw-bold" for="tax_14_add">تفعيل ضريبة 14%</label></div>
-              <input type="number" step="0.01" name="tax_14_value" class="form-control mt-2" value="14">
-            </div>
-            <div class="col-md-6 mb-3">
-              <div class="form-check"><input class="form-check-input" type="checkbox" name="tax_85_enabled" id="tax_85_add"><label class="form-check-label fw-bold" for="tax_85_add">تفعيل ضريبة 8.5%</label></div>
-              <input type="number" step="0.01" name="tax_85_value" class="form-control mt-2" value="8.5">
-            </div>
-          </div>
-
-          <!-- طريقة الدفع -->
-          <h6 class="fw-bold text-primary mb-3 mt-3">💳 طريقة الدفع</h6>
-          <div class="row">
-            <div class="col-md-4 mb-3">
-              <label class="form-label fw-bold">طريقة الدفع</label>
-              <select name="payment_method" class="form-select payment-method-select" onchange="showPaymentFields(this, 'add')">
-                <option value="">اختر...</option>
-                <option value="شيك">شيك</option>
-                <option value="نقدي">نقدي</option>
-                <option value="تحويل بنكي">تحويل بنكي</option>
-                <option value="انستا باي">انستا باي</option>
-                <option value="فودافون كاش">فودافون كاش</option>
-              </select>
-            </div>
-            <div class="col-md-8 mb-3">
-              <div id="add_payment_check" class="payment-fields" style="display:none;">
-                <div class="row">
-                  <div class="col-md-6 mb-2"><label class="form-label fw-bold small">رقم الشيك</label><input type="text" name="payment_check_number" class="form-control form-control-sm"></div>
-                  <div class="col-md-6 mb-2"><label class="form-label fw-bold small">تاريخ الاستحقاق</label><input type="date" name="payment_check_due_date" class="form-control form-control-sm"></div>
-                </div>
-              </div>
-              <div id="add_payment_bank" class="payment-fields" style="display:none;">
-                <div class="row">
-                  <div class="col-md-6 mb-2"><label class="form-label fw-bold small">اسم الحساب</label><input type="text" name="payment_account_name" class="form-control form-control-sm"></div>
-                  <div class="col-md-6 mb-2"><label class="form-label fw-bold small">التاريخ</label><input type="date" name="payment_date" class="form-control form-control-sm"></div>
-                </div>
-              </div>
-              <div id="add_payment_insta" class="payment-fields" style="display:none;">
-                <div class="row">
-                  <div class="col-md-6 mb-2"><label class="form-label fw-bold small">الرقم</label><input type="text" name="payment_account_number" class="form-control form-control-sm"></div>
-                  <div class="col-md-6 mb-2"><label class="form-label fw-bold small">التاريخ</label><input type="date" name="payment_date_insta" class="form-control form-control-sm"></div>
-                </div>
-              </div>
-              <div id="add_payment_vodafone" class="payment-fields" style="display:none;">
-                <div class="row">
-                  <div class="col-md-6 mb-2"><label class="form-label fw-bold small">الرقم</label><input type="text" name="payment_account_number_vodafone" class="form-control form-control-sm"></div>
-                  <div class="col-md-6 mb-2"><label class="form-label fw-bold small">التاريخ</label><input type="date" name="payment_date_vodafone" class="form-control form-control-sm"></div>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          <!-- الفاتورة -->
-          <h6 class="fw-bold text-primary mb-3 mt-3">🧾 الفاتورة</h6>
-          <div class="row">
-            <div class="col-md-6 mb-3"><label class="form-label fw-bold">رقم الفاتورة</label><input type="text" name="invoice_number" class="form-control"></div>
-            <div class="col-md-6 mb-3"><label class="form-label fw-bold">تاريخ إصدار الفاتورة</label><input type="date" name="invoice_date" class="form-control"></div>
-          </div>
-        </div>
-        <div class="modal-footer">
-          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">إلغاء</button>
-          <button type="submit" class="btn btn-primary">حفظ</button>
-        </div>
-      </form>
-    </div>
-  </div>
-</div>
-
-<!-- مودال إضافة مصروف -->
-<div class="modal fade" id="addExpenseModal" tabindex="-1">
-  <div class="modal-dialog">
-    <div class="modal-content">
-      <form method="POST" action="{{ url_for('almasa_add_expense') }}">
-        <input type="hidden" name="crane_id" value="{{ crane.id }}">
-        <div class="modal-header bg-primary text-white">
-          <h5 class="modal-title">➕ إضافة مصروف</h5>
-          <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
-        </div>
-        <div class="modal-body">
-          <div class="mb-3"><label class="form-label fw-bold">التاريخ</label><input type="date" name="date" class="form-control" required></div>
-          <div class="mb-3"><label class="form-label fw-bold">النوع</label><input type="text" name="expense_type" class="form-control" required></div>
-          <div class="mb-3"><label class="form-label fw-bold">المبلغ</label><input type="number" step="0.01" name="amount" class="form-control" value="0" required></div>
-          <div class="mb-3">
-            <label class="form-label fw-bold">دفعه</label>
-            <select name="paid_by" class="form-select">
-              <option value="">اختر الشريك...</option>
-              {% for p in partners %}
-              <option value="{{ p.name }}">{{ p.name }}</option>
-              {% endfor %}
-            </select>
-          </div>
-          <div class="mb-3"><label class="form-label fw-bold">ملاحظات</label><textarea name="notes" class="form-control" rows="2"></textarea></div>
-        </div>
-        <div class="modal-footer">
-          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">إلغاء</button>
-          <button type="submit" class="btn btn-primary">حفظ</button>
-        </div>
-      </form>
-    </div>
-  </div>
-</div>
-
 <!-- ✅ مودال الاستلام الجماعي -->
 <div class="modal fade" id="bulkReceiveCheckModal" tabindex="-1">
   <div class="modal-dialog">
     <div class="modal-content">
-      <form method="POST" action="{{ url_for('almasa_operations_receive_check') }}" id="bulkReceiveForm">
+      <form method="POST" action="{{ url_for('almasa_private_operations_receive_check') }}" id="bulkReceiveForm">
         <div class="modal-header bg-success text-white">
           <h5 class="modal-title">✅ تسجيل استلام شيك جماعي</h5>
           <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
@@ -437,7 +258,7 @@
 <div class="modal fade" id="editCheckModal{{ check.id }}" tabindex="-1">
   <div class="modal-dialog">
     <div class="modal-content">
-      <form method="POST" action="{{ url_for('almasa_check_edit', check_id=check.id) }}">
+      <form method="POST" action="{{ url_for('almasa_private_check_edit', check_id=check.id) }}">
         <div class="modal-header bg-warning text-dark">
           <h5 class="modal-title">✏️ تعديل بيانات الشيك</h5>
           <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
@@ -466,18 +287,123 @@
 </div>
 {% endfor %}
 
+<!-- ==================== مودال إضافة عملية ==================== -->
+<div class="modal fade" id="addOperationModal" tabindex="-1">
+  <div class="modal-dialog modal-xl">
+    <div class="modal-content">
+      <form method="POST" action="{{ url_for('almasa_add_private_operation') }}">
+        <input type="hidden" name="crane_id" value="{{ crane.id }}">
+        <div class="modal-header bg-success text-white">
+          <h5 class="modal-title">➕ إضافة عملية</h5>
+          <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+        </div>
+        <div class="modal-body">
+          <h6 class="fw-bold text-success mb-3">📋 بيانات أساسية</h6>
+          <div class="row">
+            <div class="col-md-6 mb-3"><label class="form-label fw-bold">من تاريخ</label><input type="date" name="start_date" class="form-control" required></div>
+            <div class="col-md-6 mb-3"><label class="form-label fw-bold">إلى تاريخ</label><input type="date" name="end_date" class="form-control"></div>
+          </div>
+          <div class="row">
+            <div class="col-md-6 mb-3"><label class="form-label fw-bold">اسم المشروع</label><input type="text" name="project_name" class="form-control"></div>
+            <div class="col-md-6 mb-3"><label class="form-label fw-bold">مكان المشروع</label><input type="text" name="project_location" class="form-control"></div>
+          </div>
+
+          <div class="card border-success mb-3">
+            <div class="card-header bg-success text-white fw-bold">💰 التأجير (للمورد)</div>
+            <div class="card-body">
+              <div class="row">
+                <div class="col-md-4 mb-3"><label class="form-label fw-bold">سعر التأجير (يومي)</label><input type="number" step="0.01" name="rental_value" class="form-control" value="0" required></div>
+                <div class="col-md-4 mb-3"><label class="form-label fw-bold">عدد أيام التأجير</label><input type="number" step="any" name="rental_days" class="form-control" value="0" required></div>
+              </div>
+              <h6 class="fw-bold text-success mb-3 mt-3">⏰ ساعات إضافية للتأجير</h6>
+              <div class="row">
+                <div class="col-md-6 mb-3"><label class="form-label fw-bold">عدد الساعات</label><input type="number" step="0.01" name="rental_extra_hours" class="form-control" value="0"></div>
+                <div class="col-md-6 mb-3"><label class="form-label fw-bold">سعر الساعة</label><input type="number" step="0.01" name="rental_hour_rate" class="form-control" value="0"></div>
+              </div>
+              <h6 class="fw-bold text-success mb-3 mt-3">🚛 أيام الطريق للتأجير</h6>
+              <div class="row">
+                <div class="col-md-6 mb-3"><label class="form-label fw-bold">عدد أيام الطريق</label><input type="number" step="0.01" name="rental_travel_days" class="form-control" value="0"></div>
+                <div class="col-md-6 mb-3"><label class="form-label fw-bold">سعر يوم الطريق</label><input type="number" step="0.01" name="travel_rental_rate" class="form-control" value="0"></div>
+              </div>
+            </div>
+          </div>
+
+          <div class="card border-success mb-3">
+            <div class="card-header bg-success text-white fw-bold">💰 التوريد (من العميل)</div>
+            <div class="card-body">
+              <div class="row">
+                <div class="col-md-4 mb-3"><label class="form-label fw-bold">سعر التوريد (يومي)</label><input type="number" step="0.01" name="supply_value" class="form-control" value="0" required></div>
+                <div class="col-md-4 mb-3"><label class="form-label fw-bold">عدد أيام التوريد</label><input type="number" step="any" name="supply_days" class="form-control" value="0" required></div>
+              </div>
+              <h6 class="fw-bold text-success mb-3 mt-3">⏰ ساعات إضافية للتوريد</h6>
+              <div class="row">
+                <div class="col-md-6 mb-3"><label class="form-label fw-bold">عدد الساعات</label><input type="number" step="0.01" name="supply_extra_hours" class="form-control" value="0"></div>
+                <div class="col-md-6 mb-3"><label class="form-label fw-bold">سعر الساعة</label><input type="number" step="0.01" name="supply_hour_rate" class="form-control" value="0"></div>
+              </div>
+              <h6 class="fw-bold text-success mb-3 mt-3">🚛 أيام الطريق للتوريد</h6>
+              <div class="row">
+                <div class="col-md-6 mb-3"><label class="form-label fw-bold">عدد أيام الطريق</label><input type="number" step="0.01" name="supply_travel_days" class="form-control" value="0"></div>
+                <div class="col-md-6 mb-3"><label class="form-label fw-bold">سعر يوم الطريق</label><input type="number" step="0.01" name="travel_supply_rate" class="form-control" value="0"></div>
+              </div>
+            </div>
+          </div>
+
+          <h6 class="fw-bold text-success mb-3 mt-3">📊 الضرايب</h6>
+          <div class="row">
+            <div class="col-md-6 mb-3">
+              <div class="form-check"><input class="form-check-input" type="checkbox" name="tax_14_enabled" id="tax14addp"><label class="form-check-label fw-bold" for="tax14addp">تفعيل 14%</label></div>
+              <input type="number" step="0.01" name="tax_14_value" class="form-control mt-2" value="14">
+            </div>
+            <div class="col-md-6 mb-3">
+              <div class="form-check"><input class="form-check-input" type="checkbox" name="tax_85_enabled" id="tax85addp"><label class="form-check-label fw-bold" for="tax85addp">تفعيل 8.5%</label></div>
+              <input type="number" step="0.01" name="tax_85_value" class="form-control mt-2" value="8.5">
+            </div>
+          </div>
+
+          <h6 class="fw-bold text-success mb-3 mt-3">🧾 الفاتورة</h6>
+          <div class="row">
+            <div class="col-md-6 mb-3"><label class="form-label fw-bold">رقم الفاتورة</label><input type="text" name="invoice_number" class="form-control"></div>
+            <div class="col-md-6 mb-3"><label class="form-label fw-bold">تاريخ الإصدار</label><input type="date" name="invoice_date" class="form-control"></div>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">إلغاء</button>
+          <button type="submit" class="btn btn-success">حفظ</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
+<!-- ==================== مودال إضافة مصروف ==================== -->
+<div class="modal fade" id="addExpenseModal" tabindex="-1">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <form method="POST" action="{{ url_for('almasa_add_private_expense') }}">
+        <input type="hidden" name="crane_id" value="{{ crane.id }}">
+        <div class="modal-header bg-success text-white"><h5 class="modal-title">➕ إضافة مصروف</h5><button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button></div>
+        <div class="modal-body">
+          <div class="mb-3"><label class="form-label fw-bold">التاريخ</label><input type="date" name="date" class="form-control" required></div>
+          <div class="mb-3"><label class="form-label fw-bold">النوع</label><input type="text" name="expense_type" class="form-control" required></div>
+          <div class="mb-3"><label class="form-label fw-bold">المبلغ</label><input type="number" step="0.01" name="amount" class="form-control" value="0" required></div>
+          <div class="mb-3"><label class="form-label fw-bold">دفعه</label><input type="text" name="paid_by" class="form-control" placeholder="اسم اللي دفع"></div>
+          <div class="mb-3"><label class="form-label fw-bold">ملاحظات</label><textarea name="notes" class="form-control" rows="2"></textarea></div>
+        </div>
+        <div class="modal-footer"><button type="button" class="btn btn-secondary" data-bs-dismiss="modal">إلغاء</button><button type="submit" class="btn btn-success">حفظ</button></div>
+      </form>
+    </div>
+  </div>
+</div>
+
 <!-- ==================== مودالات تعديل العمليات ==================== -->
 {% for op in operations %}
 <div class="modal fade" id="editOperationModal{{ op.id }}" tabindex="-1">
   <div class="modal-dialog modal-xl">
     <div class="modal-content">
-      <form method="POST" action="{{ url_for('almasa_operation_edit', op_id=op.id) }}">
-        <div class="modal-header bg-warning text-dark">
-          <h5 class="modal-title">✏️ تعديل العملية</h5>
-          <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-        </div>
+      <form method="POST" action="{{ url_for('almasa_private_operation_edit', op_id=op.id) }}">
+        <div class="modal-header bg-warning text-dark"><h5 class="modal-title">✏️ تعديل العملية</h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div>
         <div class="modal-body">
-          <h6 class="fw-bold text-primary mb-3">📋 بيانات أساسية</h6>
+          <h6 class="fw-bold text-success mb-3">📋 بيانات أساسية</h6>
           <div class="row">
             <div class="col-md-6 mb-3"><label class="form-label fw-bold">من تاريخ</label><input type="date" name="start_date" class="form-control" value="{{ op.start_date.strftime('%Y-%m-%d') }}" required></div>
             <div class="col-md-6 mb-3"><label class="form-label fw-bold">إلى تاريخ</label><input type="date" name="end_date" class="form-control" value="{{ op.end_date.strftime('%Y-%m-%d') if op.end_date else '' }}"></div>
@@ -494,102 +420,54 @@
                 <div class="col-md-4 mb-3"><label class="form-label fw-bold">سعر التأجير (يومي)</label><input type="number" step="0.01" name="rental_value" class="form-control" value="{{ op.rental_value or 0 }}" required></div>
                 <div class="col-md-4 mb-3"><label class="form-label fw-bold">عدد أيام التأجير</label><input type="number" step="any" name="rental_days" class="form-control" value="{{ op.rental_days or op.days_count or 0 }}" required></div>
               </div>
-              <h6 class="fw-bold text-success mb-3 mt-3">⏰ ساعات إضافية للتأجير</h6>
               <div class="row">
-                <div class="col-md-6 mb-3"><label class="form-label fw-bold">عدد الساعات</label><input type="number" step="0.01" name="rental_extra_hours" class="form-control" value="{{ op.rental_extra_hours or 0 }}"></div>
+                <div class="col-md-6 mb-3"><label class="form-label fw-bold">ساعات إضافية</label><input type="number" step="0.01" name="rental_extra_hours" class="form-control" value="{{ op.rental_extra_hours or 0 }}"></div>
                 <div class="col-md-6 mb-3"><label class="form-label fw-bold">سعر الساعة</label><input type="number" step="0.01" name="rental_hour_rate" class="form-control" value="{{ op.rental_hour_rate or 0 }}"></div>
               </div>
-              <h6 class="fw-bold text-success mb-3 mt-3">🚛 أيام الطريق للتأجير</h6>
               <div class="row">
-                <div class="col-md-6 mb-3"><label class="form-label fw-bold">عدد أيام الطريق</label><input type="number" step="0.01" name="rental_travel_days" class="form-control" value="{{ op.rental_travel_days or op.travel_days or 0 }}"></div>
+                <div class="col-md-6 mb-3"><label class="form-label fw-bold">أيام الطريق</label><input type="number" step="0.01" name="rental_travel_days" class="form-control" value="{{ op.rental_travel_days or op.travel_days or 0 }}"></div>
                 <div class="col-md-6 mb-3"><label class="form-label fw-bold">سعر يوم الطريق</label><input type="number" step="0.01" name="travel_rental_rate" class="form-control" value="{{ op.travel_rental_rate or op.travel_rate or 0 }}"></div>
               </div>
             </div>
           </div>
 
-          <div class="card border-primary mb-3">
-            <div class="card-header bg-primary text-white fw-bold">💰 التوريد (من العميل)</div>
+          <div class="card border-success mb-3">
+            <div class="card-header bg-success text-white fw-bold">💰 التوريد (من العميل)</div>
             <div class="card-body">
               <div class="row">
                 <div class="col-md-4 mb-3"><label class="form-label fw-bold">سعر التوريد (يومي)</label><input type="number" step="0.01" name="supply_value" class="form-control" value="{{ op.supply_value or 0 }}" required></div>
                 <div class="col-md-4 mb-3"><label class="form-label fw-bold">عدد أيام التوريد</label><input type="number" step="any" name="supply_days" class="form-control" value="{{ op.supply_days or op.days_count or 0 }}" required></div>
               </div>
-              <h6 class="fw-bold text-primary mb-3 mt-3">⏰ ساعات إضافية للتوريد</h6>
               <div class="row">
-                <div class="col-md-6 mb-3"><label class="form-label fw-bold">عدد الساعات</label><input type="number" step="0.01" name="supply_extra_hours" class="form-control" value="{{ op.supply_extra_hours or 0 }}"></div>
+                <div class="col-md-6 mb-3"><label class="form-label fw-bold">ساعات إضافية</label><input type="number" step="0.01" name="supply_extra_hours" class="form-control" value="{{ op.supply_extra_hours or 0 }}"></div>
                 <div class="col-md-6 mb-3"><label class="form-label fw-bold">سعر الساعة</label><input type="number" step="0.01" name="supply_hour_rate" class="form-control" value="{{ op.supply_hour_rate or 0 }}"></div>
               </div>
-              <h6 class="fw-bold text-primary mb-3 mt-3">🚛 أيام الطريق للتوريد</h6>
               <div class="row">
-                <div class="col-md-6 mb-3"><label class="form-label fw-bold">عدد أيام الطريق</label><input type="number" step="0.01" name="supply_travel_days" class="form-control" value="{{ op.supply_travel_days or op.travel_days or 0 }}"></div>
+                <div class="col-md-6 mb-3"><label class="form-label fw-bold">أيام الطريق</label><input type="number" step="0.01" name="supply_travel_days" class="form-control" value="{{ op.supply_travel_days or op.travel_days or 0 }}"></div>
                 <div class="col-md-6 mb-3"><label class="form-label fw-bold">سعر يوم الطريق</label><input type="number" step="0.01" name="travel_supply_rate" class="form-control" value="{{ op.travel_supply_rate or op.travel_rate or 0 }}"></div>
               </div>
             </div>
           </div>
 
-          <h6 class="fw-bold text-primary mb-3 mt-3">📊 الضرايب</h6>
+          <h6 class="fw-bold text-success mb-3 mt-3">📊 الضرايب</h6>
           <div class="row">
             <div class="col-md-6 mb-3">
-              <div class="form-check"><input class="form-check-input" type="checkbox" name="tax_14_enabled" id="tax_14_{{ op.id }}" {% if op.tax_14_enabled %}checked{% endif %}><label class="form-check-label fw-bold" for="tax_14_{{ op.id }}">تفعيل 14%</label></div>
+              <div class="form-check"><input class="form-check-input" type="checkbox" name="tax_14_enabled" id="ptax_14_{{ op.id }}" {% if op.tax_14_enabled %}checked{% endif %}><label class="form-check-label fw-bold" for="ptax_14_{{ op.id }}">تفعيل 14%</label></div>
               <input type="number" step="0.01" name="tax_14_value" class="form-control mt-2" value="{{ op.tax_14_value or 14 }}">
             </div>
             <div class="col-md-6 mb-3">
-              <div class="form-check"><input class="form-check-input" type="checkbox" name="tax_85_enabled" id="tax_85_{{ op.id }}" {% if op.tax_85_enabled %}checked{% endif %}><label class="form-check-label fw-bold" for="tax_85_{{ op.id }}">تفعيل 8.5%</label></div>
+              <div class="form-check"><input class="form-check-input" type="checkbox" name="tax_85_enabled" id="ptax_85_{{ op.id }}" {% if op.tax_85_enabled %}checked{% endif %}><label class="form-check-label fw-bold" for="ptax_85_{{ op.id }}">تفعيل 8.5%</label></div>
               <input type="number" step="0.01" name="tax_85_value" class="form-control mt-2" value="{{ op.tax_85_value or 8.5 }}">
             </div>
           </div>
 
-          <h6 class="fw-bold text-primary mb-3 mt-3">💳 طريقة الدفع</h6>
-          <div class="row">
-            <div class="col-md-4 mb-3">
-              <label class="form-label fw-bold">طريقة الدفع</label>
-              <select name="payment_method" class="form-select payment-method-select" onchange="showPaymentFields(this, 'edit_{{ op.id }}')">
-                <option value="">اختر...</option>
-                <option value="شيك" {% if op.payment_method == 'شيك' %}selected{% endif %}>شيك</option>
-                <option value="نقدي" {% if op.payment_method == 'نقدي' %}selected{% endif %}>نقدي</option>
-                <option value="تحويل بنكي" {% if op.payment_method == 'تحويل بنكي' %}selected{% endif %}>تحويل بنكي</option>
-                <option value="انستا باي" {% if op.payment_method == 'انستا باي' %}selected{% endif %}>انستا باي</option>
-                <option value="فودافون كاش" {% if op.payment_method == 'فودافون كاش' %}selected{% endif %}>فودافون كاش</option>
-              </select>
-            </div>
-            <div class="col-md-8 mb-3">
-              <div id="edit_{{ op.id }}_payment_check" class="payment-fields" style="display:none;">
-                <div class="row">
-                  <div class="col-md-6 mb-2"><label class="form-label fw-bold small">رقم الشيك</label><input type="text" name="payment_check_number" class="form-control form-control-sm" value="{{ op.payment_check_number or '' }}"></div>
-                  <div class="col-md-6 mb-2"><label class="form-label fw-bold small">تاريخ الاستحقاق</label><input type="date" name="payment_check_due_date" class="form-control form-control-sm" value="{{ op.payment_check_due_date.strftime('%Y-%m-%d') if op.payment_check_due_date else '' }}"></div>
-                </div>
-              </div>
-              <div id="edit_{{ op.id }}_payment_bank" class="payment-fields" style="display:none;">
-                <div class="row">
-                  <div class="col-md-6 mb-2"><label class="form-label fw-bold small">اسم الحساب</label><input type="text" name="payment_account_name" class="form-control form-control-sm" value="{{ op.payment_account_name or '' }}"></div>
-                  <div class="col-md-6 mb-2"><label class="form-label fw-bold small">التاريخ</label><input type="date" name="payment_date" class="form-control form-control-sm" value="{{ op.payment_date.strftime('%Y-%m-%d') if op.payment_date else '' }}"></div>
-                </div>
-              </div>
-              <div id="edit_{{ op.id }}_payment_insta" class="payment-fields" style="display:none;">
-                <div class="row">
-                  <div class="col-md-6 mb-2"><label class="form-label fw-bold small">الرقم</label><input type="text" name="payment_account_number" class="form-control form-control-sm" value="{{ op.payment_account_number or '' }}"></div>
-                  <div class="col-md-6 mb-2"><label class="form-label fw-bold small">التاريخ</label><input type="date" name="payment_date_insta" class="form-control form-control-sm"></div>
-                </div>
-              </div>
-              <div id="edit_{{ op.id }}_payment_vodafone" class="payment-fields" style="display:none;">
-                <div class="row">
-                  <div class="col-md-6 mb-2"><label class="form-label fw-bold small">الرقم</label><input type="text" name="payment_account_number_vodafone" class="form-control form-control-sm" value="{{ op.payment_account_number or '' }}"></div>
-                  <div class="col-md-6 mb-2"><label class="form-label fw-bold small">التاريخ</label><input type="date" name="payment_date_vodafone" class="form-control form-control-sm"></div>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          <h6 class="fw-bold text-primary mb-3 mt-3">🧾 الفاتورة</h6>
+          <h6 class="fw-bold text-success mb-3 mt-3">🧾 الفاتورة</h6>
           <div class="row">
             <div class="col-md-6 mb-3"><label class="form-label fw-bold">رقم الفاتورة</label><input type="text" name="invoice_number" class="form-control" value="{{ op.invoice_number or '' }}"></div>
             <div class="col-md-6 mb-3"><label class="form-label fw-bold">تاريخ الإصدار</label><input type="date" name="invoice_date" class="form-control" value="{{ op.invoice_date.strftime('%Y-%m-%d') if op.invoice_date else '' }}"></div>
           </div>
         </div>
-        <div class="modal-footer">
-          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">إلغاء</button>
-          <button type="submit" class="btn btn-warning">تعديل</button>
-        </div>
+        <div class="modal-footer"><button type="button" class="btn btn-secondary" data-bs-dismiss="modal">إلغاء</button><button type="submit" class="btn btn-warning">تعديل</button></div>
       </form>
     </div>
   </div>
@@ -598,7 +476,7 @@
 <div class="modal fade" id="editNotesModal{{ op.id }}" tabindex="-1">
   <div class="modal-dialog">
     <div class="modal-content">
-      <form method="POST" action="{{ url_for('almasa_operation_update_notes', op_id=op.id) }}">
+      <form method="POST" action="{{ url_for('almasa_private_operation_update_notes', op_id=op.id) }}">
         <div class="modal-header bg-info text-white"><h5 class="modal-title">📝 تعديل الملاحظات</h5><button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button></div>
         <div class="modal-body"><textarea name="notes" class="form-control" rows="4">{{ op.notes or '' }}</textarea></div>
         <div class="modal-footer"><button type="button" class="btn btn-secondary" data-bs-dismiss="modal">إلغاء</button><button type="submit" class="btn btn-info">حفظ</button></div>
@@ -613,21 +491,13 @@
 <div class="modal fade" id="editExpenseModal{{ exp.id }}" tabindex="-1">
   <div class="modal-dialog">
     <div class="modal-content">
-      <form method="POST" action="{{ url_for('almasa_expense_edit', exp_id=exp.id) }}">
+      <form method="POST" action="{{ url_for('almasa_private_expense_edit', exp_id=exp.id) }}">
         <div class="modal-header bg-warning text-dark"><h5 class="modal-title">✏️ تعديل المصروف</h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div>
         <div class="modal-body">
           <div class="mb-3"><label class="form-label fw-bold">التاريخ</label><input type="date" name="date" class="form-control" value="{{ exp.date.strftime('%Y-%m-%d') }}" required></div>
           <div class="mb-3"><label class="form-label fw-bold">النوع</label><input type="text" name="expense_type" class="form-control" value="{{ exp.expense_type }}" required></div>
           <div class="mb-3"><label class="form-label fw-bold">المبلغ</label><input type="number" step="0.01" name="amount" class="form-control" value="{{ exp.amount }}" required></div>
-          <div class="mb-3">
-            <label class="form-label fw-bold">دفعه</label>
-            <select name="paid_by" class="form-select">
-              <option value="">اختر الشريك...</option>
-              {% for p in partners %}
-              <option value="{{ p.name }}" {% if exp.paid_by == p.name %}selected{% endif %}>{{ p.name }}</option>
-              {% endfor %}
-            </select>
-          </div>
+          <div class="mb-3"><label class="form-label fw-bold">دفعه</label><input type="text" name="paid_by" class="form-control" value="{{ exp.paid_by or '' }}"></div>
           <div class="mb-3"><label class="form-label fw-bold">ملاحظات</label><textarea name="notes" class="form-control" rows="2">{{ exp.notes or '' }}</textarea></div>
         </div>
         <div class="modal-footer"><button type="button" class="btn btn-secondary" data-bs-dismiss="modal">إلغاء</button><button type="submit" class="btn btn-warning">تعديل</button></div>
@@ -637,42 +507,9 @@
 </div>
 {% endfor %}
 
+<!-- ==================== JavaScript ==================== -->
 <script>
-function showPaymentFields(selectElement, prefix) {
-    var modal = selectElement.closest('.modal-body');
-    if (!modal) modal = selectElement.closest('form');
-    if (!modal) return;
-    var allPaymentFields = modal.querySelectorAll('.payment-fields');
-    allPaymentFields.forEach(function(field) { field.style.display = 'none'; });
-    var method = selectElement.value;
-    var targetId = '';
-    if (method === 'شيك') targetId = prefix + '_payment_check';
-    else if (method === 'تحويل بنكي') targetId = prefix + '_payment_bank';
-    else if (method === 'انستا باي') targetId = prefix + '_payment_insta';
-    else if (method === 'فودافون كاش') targetId = prefix + '_payment_vodafone';
-    if (targetId) {
-        var target = modal.querySelector('#' + targetId);
-        if (target) target.style.display = 'block';
-    }
-}
-
 document.addEventListener('DOMContentLoaded', function() {
-    document.querySelectorAll('.payment-method-select').forEach(function(select) {
-        if (select.value) {
-            var modal = select.closest('.modal-body') || select.closest('form');
-            if (modal) {
-                var prefix = 'add';
-                if (select.closest('.modal') && select.closest('.modal').id.startsWith('editOperationModal')) {
-                    var modalId = select.closest('.modal').id;
-                    var opId = modalId.replace('editOperationModal', '');
-                    prefix = 'edit_' + opId;
-                }
-                showPaymentFields(select, prefix);
-            }
-        }
-    });
-    
-    // ✅ Select All للعمليات
     const selectAll = document.getElementById('selectAllOps');
     if (selectAll) {
         selectAll.addEventListener('change', function() {
@@ -682,7 +519,6 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     }
     
-    // ✅ زر الاستلام الجماعي
     const receiveBtn = document.getElementById('receiveCheckBtn');
     if (receiveBtn) {
         receiveBtn.addEventListener('click', function() {
