@@ -144,46 +144,38 @@
             </tbody>
         </table>
 
-        <!-- حساب الأرباح -->
-        <h6 class="fw-bold text-success mb-3">📈 حساب الأرباح</h6>
-        <table class="table table-bordered mb-4">
+        <!-- حساب الأرباح الإدارية -->
+        <h6 class="fw-bold text-warning mb-3">📈 حساب الأرباح الإدارية</h6>
+        <table class="table table-bordered mb-0">
             <tbody>
                 <tr>
-                    <td class="fw-bold">إجمالي التأجير (للمورد)</td>
-                    <td class="text-primary fw-bold">{{ total_rental }}</td>
+                    <td class="fw-bold">إجمالي التوريد (من العميل)</td>
+                    <td class="text-success fw-bold">{{ total_supply }}</td>
                 </tr>
                 {% if tax_85_amount > 0 %}
                 <tr>
-                    <td class="fw-bold">(-) ضريبة 8.5%</td>
+                    <td class="fw-bold">(-) ضريبة 8.5% (على التوريد)</td>
                     <td class="text-warning fw-bold">{{ tax_85_amount }}</td>
                 </tr>
                 <tr>
-                    <td class="fw-bold">= التأجير بعد الضريبة</td>
-                    <td class="fw-bold">{{ rental_after_tax }}</td>
+                    <td class="fw-bold">= التوريد بعد الضريبة</td>
+                    <td class="fw-bold">{{ supply_after_tax }}</td>
                 </tr>
                 {% endif %}
+                <tr>
+                    <td class="fw-bold">(-) إجمالي التأجير (للمورد)</td>
+                    <td class="text-primary fw-bold">{{ total_rental }}</td>
+                </tr>
                 <tr>
                     <td class="fw-bold">(-) المصاريف</td>
                     <td class="text-danger fw-bold">{{ total_expenses }}</td>
                 </tr>
-                <tr class="table-success">
-                    <td class="fw-bold fs-5">= الأرباح التجارية</td>
-                    <td class="fw-bold fs-5">{{ supply_profit }}</td>
+                <tr class="table-warning">
+                    <td class="fw-bold fs-5">= الأرباح الإدارية</td>
+                    <td class="fw-bold fs-5">{{ admin_profit }}</td>
                 </tr>
             </tbody>
         </table>
-
-        <!-- الأرباح الإدارية -->
-        <div class="alert alert-info">
-            <h5 class="fw-bold mb-2">📈 الأرباح الإدارية = {{ admin_profit }}</h5>
-            <small>= إجمالي التوريد ({{ total_supply }}) − إجمالي التأجير ({{ total_rental }})</small>
-        </div>
-
-        <!-- إجمالي الأرباح -->
-        <div class="alert alert-success">
-            <h5 class="fw-bold mb-0">💰 إجمالي الأرباح = {{ admin_profit + supply_profit }}</h5>
-            <small>= الأرباح الإدارية ({{ admin_profit }}) + الأرباح التجارية ({{ supply_profit }})</small>
-        </div>
     </div>
 </div>
 
@@ -242,7 +234,7 @@
             <tr class="table-warning"><td class="fw-bold" style="width: 40%;">ضريبة 14%</td><td>{{ (op.supply_total * op.tax_14_value / 100)|round(2) }}</td></tr>
             {% endif %}
             {% if op.tax_85_enabled %}
-            <tr class="table-warning"><td class="fw-bold">ضريبة 8.5%</td><td>{{ (op.rental_total * op.tax_85_value / 100)|round(2) }}</td></tr>
+            <tr class="table-warning"><td class="fw-bold">ضريبة 8.5% (على التوريد)</td><td>{{ (op.supply_total * op.tax_85_value / 100)|round(2) }}</td></tr>
             {% endif %}
           </tbody>
         </table>
