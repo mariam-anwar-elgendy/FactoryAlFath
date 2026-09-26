@@ -1273,6 +1273,7 @@ def store_returns():
     
     returns = StoreReturn.query.order_by(StoreReturn.date.asc(), StoreReturn.id.asc()).all()
     return render_template('store/returns.html', returns=returns)
+
 @app.route('/store/diary', methods=['GET', 'POST'])
 @custom_login_required
 @role_required('meg', 'admin', 'mariam', 'rehab', 'ahmed', 'sayed')
@@ -1305,9 +1306,6 @@ def store_diary():
         db.session.commit()
         flash('تم تسجيل اليومية بنجاح', 'success')
         return redirect(url_for('store_diary'))
-        
-    diary = StoreDiary.query.order_by(StoreDiary.date.asc(), StoreDiary.id.asc()).all()
-    return render_template('store/diary.html', diary=diary)
 # ==================== الجرد ====================
 @app.route('/inventory-audit', methods=['GET', 'POST'])
 @custom_login_required
@@ -2579,8 +2577,6 @@ def almasa_index():
         for o in AlMasaSupplyOperation.query.filter(AlMasaSupplyOperation.check_received == True).all()
     )
     
-    # ✅ (total_profit اتشال خلاص — مش محتاجينه)
-    
     return render_template('almasa/index.html',
                            partnership_cranes=partnership_cranes,
                            private_cranes=private_cranes,
@@ -2827,6 +2823,50 @@ def almasa_operation_update_notes(op_id):
     return redirect(url_for('almasa_crane_detail', crane_id=operation.crane_id))
 
 
+# ✅✅✅ إلغاء استلام عملية واحدة فقط (مشاركة) — جديد
+@app.route('/almasa/operations/<int:op_id>/unreceive-single', methods=['POST'])
+@custom_login_required
+@role_required('sayed', 'dina', 'admin', 'meg')
+def almasa_operation_unreceive_single(op_id):
+    operation = AlMasaOperation.query.get_or_404(op_id)
+    crane_id = operation.crane_id
+    
+    # 1) امسح العلاقة بين العملية والشيك
+    check_ops = AlMasaCheckOperation.query.filter_by(operation_id=op_id).all()
+    affected_checks = set()
+    for co in check_ops:
+        affected_checks.add(co.check_id)
+        db.session.delete(co)
+    
+    # 2) رجّع العملية "مش مستلمة"
+    operation.check_received = False
+    operation.check_received_date = None
+    
+    # 3) حدّث مبلغ الشيك (أو امسحه لو فاضي)
+    for check_id in affected_checks:
+        check = AlMasaCheck.query.get(check_id)
+        if check:
+            remaining_ops = AlMasaCheckOperation.query.filter_by(check_id=check_id).all()
+            if not remaining_ops:
+                # الشيك فاضي — امسحه
+                db.session.delete(check)
+            else:
+                # حدّث المبلغ
+                new_amount = 0
+                for ro in remaining_ops:
+                    op = AlMasaOperation.query.get(ro.operation_id)
+                    if op:
+                        amt = op.supply_total or 0
+                        if op.tax_14_enabled:
+                            amt += amt * (op.tax_14_value / 100)
+                        new_amount += amt
+                check.amount = new_amount
+    
+    db.session.commit()
+    flash('✅ تم إلغاء استلام العملية وإرجاعها "غير مستلمة"', 'success')
+    return redirect(url_for('almasa_crane_detail', crane_id=crane_id))
+
+
 # ✅ استلام شيك جماعي (مشاركة)
 @app.route('/almasa/operations/receive-check', methods=['POST'])
 @custom_login_required
@@ -2883,7 +2923,7 @@ def almasa_operations_receive_check():
     return redirect(url_for('almasa_crane_detail', crane_id=crane_id))
 
 
-# ✅ إلغاء استلام شيك (مشاركة)
+# ✅ إلغاء استلام شيك كامل (مشاركة)
 @app.route('/almasa/checks/<int:check_id>/unreceive', methods=['POST'])
 @custom_login_required
 @role_required('sayed', 'dina', 'admin', 'meg')
@@ -3324,6 +3364,50 @@ def almasa_private_operation_update_notes(op_id):
     return redirect(url_for('almasa_private_crane_detail', crane_id=operation.crane_id))
 
 
+# ✅✅✅ إلغاء استلام عملية واحدة فقط (خاص) — جديد
+@app.route('/almasa/private-operations/<int:op_id>/unreceive-single', methods=['POST'])
+@custom_login_required
+@role_required('sayed', 'dina', 'admin', 'meg')
+def almasa_private_operation_unreceive_single(op_id):
+    operation = AlMasaPrivateOperation.query.get_or_404(op_id)
+    crane_id = operation.crane_id
+    
+    # 1) امسح العلاقة بين العملية والشيك
+    check_ops = AlMasaPrivateCheckOperation.query.filter_by(operation_id=op_id).all()
+    affected_checks = set()
+    for co in check_ops:
+        affected_checks.add(co.check_id)
+        db.session.delete(co)
+    
+    # 2) رجّع العملية "مش مستلمة"
+    operation.check_received = False
+    operation.check_received_date = None
+    
+    # 3) حدّث مبلغ الشيك (أو امسحه لو فاضي)
+    for check_id in affected_checks:
+        check = AlMasaPrivateCheck.query.get(check_id)
+        if check:
+            remaining_ops = AlMasaPrivateCheckOperation.query.filter_by(check_id=check_id).all()
+            if not remaining_ops:
+                # الشيك فاضي — امسحه
+                db.session.delete(check)
+            else:
+                # حدّث المبلغ
+                new_amount = 0
+                for ro in remaining_ops:
+                    op = AlMasaPrivateOperation.query.get(ro.operation_id)
+                    if op:
+                        amt = op.rental_total or 0
+                        if op.tax_14_enabled:
+                            amt += amt * (op.tax_14_value / 100)
+                        new_amount += amt
+                check.amount = new_amount
+    
+    db.session.commit()
+    flash('✅ تم إلغاء استلام العملية وإرجاعها "غير مستلمة"', 'success')
+    return redirect(url_for('almasa_private_crane_detail', crane_id=crane_id))
+
+
 # ✅ استلام شيك جماعي (خاص)
 @app.route('/almasa/private-operations/receive-check', methods=['POST'])
 @custom_login_required
@@ -3381,7 +3465,7 @@ def almasa_private_operations_receive_check():
     return redirect(url_for('almasa_private_crane_detail', crane_id=crane_id))
 
 
-# ✅ إلغاء استلام شيك (خاص)
+# ✅ إلغاء استلام شيك كامل (خاص)
 @app.route('/almasa/private-checks/<int:check_id>/unreceive', methods=['POST'])
 @custom_login_required
 @role_required('sayed', 'dina', 'admin', 'meg')
@@ -3819,7 +3903,7 @@ def almasa_supply_expense_edit(exp_id):
     return redirect(url_for('almasa_supply_detail', supply_id=expense.supply_id))
 
 
-# ✅ تقرير التوريدة (بعد الإصلاح)
+# ✅ تقرير التوريدة
 @app.route('/almasa/supplies/<int:supply_id>/report')
 @custom_login_required
 @role_required('sayed', 'dina', 'admin', 'meg')
@@ -3839,13 +3923,13 @@ def almasa_supply_report(supply_id):
     tax_14 = total_supply * (tax_14_value / 100)
     check_amount = total_supply + tax_14
     
-    # ✅ ضريبة 8.5% على التوريد (في التوريدات فقط)
+    # ✅ ضريبة 8.5% على التوريد
     tax_85_amount = total_supply * (tax_85_value / 100)
     supply_after_tax = total_supply - tax_85_amount
     
     # ✅ الأرباح الإدارية (كل حاجة)
     admin_profit = supply_after_tax - total_rental - total_expenses
-    supply_profit = 0  # ✅ مفيش أرباح تجارية منفصلة
+    supply_profit = 0
     
     return render_template('almasa/supply_report.html',
                            supply=supply, operations=operations, expenses=expenses,
@@ -3853,9 +3937,9 @@ def almasa_supply_report(supply_id):
                            total_expenses=total_expenses, check_amount=check_amount,
                            tax_14=tax_14, tax_85_amount=tax_85_amount,
                            supply_after_tax=supply_after_tax,
-                           admin_profit=admin_profit, supply_profit=supply_profit)
-
-
+                           admin_profit=admin_profit, supply_profit=supply_profit)    
+    diary = StoreDiary.query.order_by(StoreDiary.date.asc(), StoreDiary.id.asc()).all()
+    return render_template('store/diary.html', diary=diary)
 # ====================================================================
 # ==================== تقارير الماسة (لكل ونش) ====================
 # ====================================================================
@@ -3888,7 +3972,6 @@ def almasa_crane_profit_report(crane_id):
     admin_profit = total_supply - total_rental
     rental_after_tax = total_rental - tax_85_amount
     supply_profit = rental_after_tax - total_expenses
-    # ✅ total_profit اتشال
     
     basic_partners = [p for p in partners if p.is_basic]
     basic_count = len(basic_partners) if basic_partners else 1
@@ -3968,7 +4051,6 @@ def almasa_private_crane_profit_report(crane_id):
                            owner_share=owner_share)
 
 
-# ✅ تقرير أرباح توريدة واحدة (بعد الإصلاح)
 @app.route('/almasa/reports/supply-profit/<int:supply_id>')
 @custom_login_required
 @role_required('sayed', 'dina', 'admin', 'meg')
@@ -3986,7 +4068,7 @@ def almasa_supply_profit_single(supply_id):
         for o in operations if o.tax_14_enabled
     )
     
-    # ✅ ضريبة 8.5% على التوريد (في التوريدات فقط)
+    # ✅ ضريبة 8.5% على التوريد
     tax_85_amount = sum(
         (o.supply_total * o.tax_85_value / 100) 
         for o in operations if o.tax_85_enabled
@@ -3994,7 +4076,7 @@ def almasa_supply_profit_single(supply_id):
     
     supply_after_tax = total_supply - tax_85_amount
     admin_profit = supply_after_tax - total_rental - total_expenses
-    supply_profit = 0  # ✅ مفيش أرباح تجارية منفصلة
+    supply_profit = 0
     
     return render_template('almasa/supply_profit_single.html',
                            supply=supply, operations=operations,
@@ -4075,7 +4157,6 @@ def almasa_admin_profit_report():
                            grand_admin_profit=grand_admin_profit)
 
 
-# ✅ تقرير الأرباح التجارية (الكل) — بعد الإصلاح
 @app.route('/almasa/reports/supply-profit-all')
 @custom_login_required
 @role_required('sayed', 'dina', 'admin', 'meg')
@@ -4531,4 +4612,4 @@ def almasa_unpaid_operations():
 
 # ==================== التشغيل ====================
 if __name__ == '__main__':
-    app.run(host='0.0.0.0', port=5000, debug=True)
+    app.run(host='0.0.0.0', port=5000, debug=True)    
