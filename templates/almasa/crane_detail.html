@@ -69,7 +69,12 @@
 <div class="card border-0 shadow-sm mb-4">
     <div class="card-header bg-light fw-bold d-flex justify-content-between align-items-center">
         <span>⚙️ العمليات</span>
-        <button class="btn btn-sm btn-primary" data-bs-toggle="modal" data-bs-target="#addOperationModal">➕ إضافة عملية</button>
+        <div>
+            <button type="button" class="btn btn-sm btn-success" id="receiveCheckBtn">
+                ✅ استلام شيك جماعي
+            </button>
+            <button class="btn btn-sm btn-primary" data-bs-toggle="modal" data-bs-target="#addOperationModal">➕ إضافة عملية</button>
+        </div>
     </div>
     <div class="card-body">
         {% if operations %}
@@ -77,6 +82,9 @@
             <table class="table table-sm table-striped table-hover">
                 <thead>
                     <tr>
+                        <th style="width: 30px;">
+                            <input type="checkbox" class="form-check-input" id="selectAllOps">
+                        </th>
                         <th>رقم الفاتورة</th>
                         <th>المشروع</th>
                         <th>المكان</th>
@@ -96,6 +104,11 @@
                 <tbody>
                     {% for op in operations %}
                     <tr class="{% if op.check_received %}table-success{% endif %}">
+                        <td>
+                            {% if not op.check_received %}
+                            <input type="checkbox" class="form-check-input operation-checkbox" value="{{ op.id }}">
+                            {% endif %}
+                        </td>
                         <td>{{ op.invoice_number or '-' }}</td>
                         <td>{{ op.project_name or '-' }}</td>
                         <td>{{ op.project_location or '-' }}</td>
@@ -112,7 +125,7 @@
                                 <span class="badge bg-success">✅ مستلم</span>
                                 {% if op.check_received_date %}<br><small class="text-muted">{{ op.check_received_date.strftime('%Y-%m-%d') }}</small>{% endif %}
                             {% else %}
-                                <button class="btn btn-sm btn-outline-success" data-bs-toggle="modal" data-bs-target="#receiveCheckModal{{ op.id }}" title="تسجيل استلام الشيك">☐ استلام</button>
+                                -
                             {% endif %}
                         </td>
                         <td>
@@ -130,7 +143,7 @@
                 </tbody>
                 <tfoot>
                     <tr class="fw-bold table-secondary">
-                        <td colspan="9">الإجمالي</td>
+                        <td colspan="10">الإجمالي</td>
                         <td>{{ total_rental }}</td>
                         <td>{{ total_supply }}</td>
                         <td colspan="3"></td>
@@ -195,15 +208,19 @@
                     {% for check in checks %}
                     <tr>
                         <td>{{ check.check_number }}</td>
-                        <td>{{ check.company_name }}</td>
+                        <td>{{ check.company_name or '-' }}</td>
                         <td>{{ check.amount }}</td>
                         <td>{{ check.issue_date.strftime('%Y-%m-%d') if check.issue_date else '-' }}</td>
                         <td>{{ check.due_date.strftime('%Y-%m-%d') if check.due_date else '-' }}</td>
                         <td><span class="badge bg-warning">{{ check.status }}</span></td>
                         <td>
-                            <a href="{{ url_for('almasa_check_report', check_id=check.id) }}" class="btn btn-sm btn-info">📋 التقرير</a>
-                            <form action="{{ url_for('almasa_check_delete', check_id=check.id) }}" method="POST" class="d-inline" onsubmit="return confirm('حذف الشيك؟');">
-                                <button type="submit" class="btn btn-sm btn-danger">🗑️</button>
+                            <a href="{{ url_for('almasa_check_report', check_id=check.id) }}" class="btn btn-sm btn-info" title="التقرير">📋</a>
+                            <button class="btn btn-sm btn-warning" data-bs-toggle="modal" data-bs-target="#editCheckModal{{ check.id }}" title="تعديل">✏️</button>
+                            <form action="{{ url_for('almasa_check_unreceive', check_id=check.id) }}" method="POST" class="d-inline" onsubmit="return confirm('⚠️ إلغاء استلام هذا الشيك؟ سيتم إرجاع كل العمليات لحالة غير مستلم.');">
+                                <button type="submit" class="btn btn-sm btn-secondary" title="إلغاء الاستلام">↩️</button>
+                            </form>
+                            <form action="{{ url_for('almasa_check_delete', check_id=check.id) }}" method="POST" class="d-inline" onsubmit="return confirm('⚠️ حذف الشيك نهائياً؟');">
+                                <button type="submit" class="btn btn-sm btn-danger" title="حذف">🗑️</button>
                             </form>
                         </td>
                     </tr>
@@ -214,6 +231,7 @@
         {% else %}<p class="text-muted mb-0">لا توجد شيكات</p>{% endif %}
     </div>
 </div>
+
 <!-- ==================== مودال إضافة عملية ==================== -->
 <div class="modal fade" id="addOperationModal" tabindex="-1">
   <div class="modal-dialog modal-xl">
@@ -235,11 +253,9 @@
             <div class="col-md-6 mb-3"><label class="form-label fw-bold">مكان المشروع</label><input type="text" name="project_location" class="form-control"></div>
           </div>
 
-          <!-- ==================== قسم التأجير (للمورد) ==================== -->
+          <!-- قسم التأجير -->
           <div class="card border-success mb-3">
-            <div class="card-header bg-success text-white fw-bold">
-              💰 التأجير (للمورد)
-            </div>
+            <div class="card-header bg-success text-white fw-bold">💰 التأجير (للمورد)</div>
             <div class="card-body">
               <div class="row">
                 <div class="col-md-4 mb-3"><label class="form-label fw-bold">سعر التأجير (يومي)</label><input type="number" step="0.01" name="rental_value" class="form-control" value="0" required></div>
@@ -258,11 +274,9 @@
             </div>
           </div>
 
-          <!-- ==================== قسم التوريد (من العميل) ==================== -->
+          <!-- قسم التوريد -->
           <div class="card border-primary mb-3">
-            <div class="card-header bg-primary text-white fw-bold">
-              💰 التوريد (من العميل)
-            </div>
+            <div class="card-header bg-primary text-white fw-bold">💰 التوريد (من العميل)</div>
             <div class="card-body">
               <div class="row">
                 <div class="col-md-4 mb-3"><label class="form-label fw-bold">سعر التوريد (يومي)</label><input type="number" step="0.01" name="supply_value" class="form-control" value="0" required></div>
@@ -281,7 +295,7 @@
             </div>
           </div>
 
-          <!-- ==================== الضرايب ==================== -->
+          <!-- الضرايب -->
           <h6 class="fw-bold text-primary mb-3 mt-3">📊 الضرايب</h6>
           <div class="row">
             <div class="col-md-6 mb-3">
@@ -294,7 +308,7 @@
             </div>
           </div>
 
-          <!-- ==================== طريقة الدفع + الحقول الديناميكية ==================== -->
+          <!-- طريقة الدفع -->
           <h6 class="fw-bold text-primary mb-3 mt-3">💳 طريقة الدفع</h6>
           <div class="row">
             <div class="col-md-4 mb-3">
@@ -309,28 +323,24 @@
               </select>
             </div>
             <div class="col-md-8 mb-3">
-              <!-- حقول الشيك -->
               <div id="add_payment_check" class="payment-fields" style="display:none;">
                 <div class="row">
                   <div class="col-md-6 mb-2"><label class="form-label fw-bold small">رقم الشيك</label><input type="text" name="payment_check_number" class="form-control form-control-sm"></div>
                   <div class="col-md-6 mb-2"><label class="form-label fw-bold small">تاريخ الاستحقاق</label><input type="date" name="payment_check_due_date" class="form-control form-control-sm"></div>
                 </div>
               </div>
-              <!-- حقول التحويل البنكي -->
               <div id="add_payment_bank" class="payment-fields" style="display:none;">
                 <div class="row">
                   <div class="col-md-6 mb-2"><label class="form-label fw-bold small">اسم الحساب</label><input type="text" name="payment_account_name" class="form-control form-control-sm"></div>
                   <div class="col-md-6 mb-2"><label class="form-label fw-bold small">التاريخ</label><input type="date" name="payment_date" class="form-control form-control-sm"></div>
                 </div>
               </div>
-              <!-- حقول انستا باي -->
               <div id="add_payment_insta" class="payment-fields" style="display:none;">
                 <div class="row">
                   <div class="col-md-6 mb-2"><label class="form-label fw-bold small">الرقم</label><input type="text" name="payment_account_number" class="form-control form-control-sm"></div>
                   <div class="col-md-6 mb-2"><label class="form-label fw-bold small">التاريخ</label><input type="date" name="payment_date_insta" class="form-control form-control-sm"></div>
                 </div>
               </div>
-              <!-- حقول فودافون كاش -->
               <div id="add_payment_vodafone" class="payment-fields" style="display:none;">
                 <div class="row">
                   <div class="col-md-6 mb-2"><label class="form-label fw-bold small">الرقم</label><input type="text" name="payment_account_number_vodafone" class="form-control form-control-sm"></div>
@@ -340,7 +350,7 @@
             </div>
           </div>
 
-          <!-- ==================== الفاتورة ==================== -->
+          <!-- الفاتورة -->
           <h6 class="fw-bold text-primary mb-3 mt-3">🧾 الفاتورة</h6>
           <div class="row">
             <div class="col-md-6 mb-3"><label class="form-label fw-bold">رقم الفاتورة</label><input type="text" name="invoice_number" class="form-control"></div>
@@ -355,7 +365,8 @@
     </div>
   </div>
 </div>
-<!-- ==================== مودال إضافة مصروف ==================== -->
+
+<!-- مودال إضافة مصروف -->
 <div class="modal fade" id="addExpenseModal" tabindex="-1">
   <div class="modal-dialog">
     <div class="modal-content">
@@ -389,29 +400,65 @@
   </div>
 </div>
 
-<!-- ==================== مودالات استلام الشيك ==================== -->
-{% for op in operations if not op.check_received %}
-<div class="modal fade" id="receiveCheckModal{{ op.id }}" tabindex="-1">
+<!-- ✅ مودال الاستلام الجماعي -->
+<div class="modal fade" id="bulkReceiveCheckModal" tabindex="-1">
   <div class="modal-dialog">
     <div class="modal-content">
-      <form method="POST" action="{{ url_for('almasa_operation_receive_check', op_id=op.id) }}">
+      <form method="POST" action="{{ url_for('almasa_operations_receive_check') }}" id="bulkReceiveForm">
         <div class="modal-header bg-success text-white">
-          <h5 class="modal-title">✅ تسجيل استلام الشيك</h5>
+          <h5 class="modal-title">✅ تسجيل استلام شيك جماعي</h5>
           <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
         </div>
         <div class="modal-body">
           <div class="alert alert-info">
-            <strong>العملية:</strong> {{ op.project_name or '-' }}<br>
-            <strong>من:</strong> {{ op.start_date.strftime('%Y-%m-%d') }}<br>
-            <strong>إلى:</strong> {{ op.end_date.strftime('%Y-%m-%d') if op.end_date else '-' }}<br>
-            <strong>إجمالي التوريد:</strong> {{ op.rental_total }}
+            <strong>عدد العمليات المختارة:</strong> <span id="selectedOpsCount">0</span>
           </div>
-          <div class="mb-3"><label class="form-label fw-bold">رقم الشيك</label><input type="text" name="check_number" class="form-control" required></div>
-          <div class="mb-3"><label class="form-label fw-bold">تاريخ الإصدار</label><input type="date" name="issue_date" class="form-control" value="{{ now.strftime('%Y-%m-%d') }}" required></div>
+          <div id="selectedOpsList" class="mb-3"></div>
+          <div class="mb-3">
+            <label class="form-label fw-bold">رقم الشيك</label>
+            <input type="text" name="check_number" class="form-control" required>
+          </div>
+          <div class="mb-3">
+            <label class="form-label fw-bold">تاريخ الإصدار</label>
+            <input type="date" name="issue_date" class="form-control" value="{{ now.strftime('%Y-%m-%d') }}" required>
+          </div>
         </div>
         <div class="modal-footer">
           <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">إلغاء</button>
           <button type="submit" class="btn btn-success">تسجيل الاستلام</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
+<!-- ✅ مودالات تعديل الشيكات -->
+{% for check in checks %}
+<div class="modal fade" id="editCheckModal{{ check.id }}" tabindex="-1">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <form method="POST" action="{{ url_for('almasa_check_edit', check_id=check.id) }}">
+        <div class="modal-header bg-warning text-dark">
+          <h5 class="modal-title">✏️ تعديل بيانات الشيك</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+        </div>
+        <div class="modal-body">
+          <div class="mb-3">
+            <label class="form-label fw-bold">رقم الشيك</label>
+            <input type="text" name="check_number" class="form-control" value="{{ check.check_number or '' }}" required>
+          </div>
+          <div class="mb-3">
+            <label class="form-label fw-bold">تاريخ الإصدار</label>
+            <input type="date" name="issue_date" class="form-control" value="{{ check.issue_date.strftime('%Y-%m-%d') if check.issue_date else '' }}">
+          </div>
+          <div class="mb-3">
+            <label class="form-label fw-bold">تاريخ الاستحقاق</label>
+            <input type="date" name="due_date" class="form-control" value="{{ check.due_date.strftime('%Y-%m-%d') if check.due_date else '' }}">
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">إلغاء</button>
+          <button type="submit" class="btn btn-warning">حفظ التعديلات</button>
         </div>
       </form>
     </div>
@@ -440,11 +487,8 @@
             <div class="col-md-6 mb-3"><label class="form-label fw-bold">مكان المشروع</label><input type="text" name="project_location" class="form-control" value="{{ op.project_location or '' }}"></div>
           </div>
 
-          <!-- ==================== قسم التأجير (للمورد) ==================== -->
           <div class="card border-success mb-3">
-            <div class="card-header bg-success text-white fw-bold">
-              💰 التأجير (للمورد)
-            </div>
+            <div class="card-header bg-success text-white fw-bold">💰 التأجير (للمورد)</div>
             <div class="card-body">
               <div class="row">
                 <div class="col-md-4 mb-3"><label class="form-label fw-bold">سعر التأجير (يومي)</label><input type="number" step="0.01" name="rental_value" class="form-control" value="{{ op.rental_value or 0 }}" required></div>
@@ -463,11 +507,8 @@
             </div>
           </div>
 
-          <!-- ==================== قسم التوريد (من العميل) ==================== -->
           <div class="card border-primary mb-3">
-            <div class="card-header bg-primary text-white fw-bold">
-              💰 التوريد (من العميل)
-            </div>
+            <div class="card-header bg-primary text-white fw-bold">💰 التوريد (من العميل)</div>
             <div class="card-body">
               <div class="row">
                 <div class="col-md-4 mb-3"><label class="form-label fw-bold">سعر التوريد (يومي)</label><input type="number" step="0.01" name="supply_value" class="form-control" value="{{ op.supply_value or 0 }}" required></div>
@@ -486,7 +527,6 @@
             </div>
           </div>
 
-          <!-- ==================== الضرايب ==================== -->
           <h6 class="fw-bold text-primary mb-3 mt-3">📊 الضرايب</h6>
           <div class="row">
             <div class="col-md-6 mb-3">
@@ -499,7 +539,6 @@
             </div>
           </div>
 
-          <!-- ==================== طريقة الدفع + الحقول الديناميكية ==================== -->
           <h6 class="fw-bold text-primary mb-3 mt-3">💳 طريقة الدفع</h6>
           <div class="row">
             <div class="col-md-4 mb-3">
@@ -514,28 +553,24 @@
               </select>
             </div>
             <div class="col-md-8 mb-3">
-              <!-- حقول الشيك -->
               <div id="edit_{{ op.id }}_payment_check" class="payment-fields" style="display:none;">
                 <div class="row">
                   <div class="col-md-6 mb-2"><label class="form-label fw-bold small">رقم الشيك</label><input type="text" name="payment_check_number" class="form-control form-control-sm" value="{{ op.payment_check_number or '' }}"></div>
                   <div class="col-md-6 mb-2"><label class="form-label fw-bold small">تاريخ الاستحقاق</label><input type="date" name="payment_check_due_date" class="form-control form-control-sm" value="{{ op.payment_check_due_date.strftime('%Y-%m-%d') if op.payment_check_due_date else '' }}"></div>
                 </div>
               </div>
-              <!-- حقول التحويل البنكي -->
               <div id="edit_{{ op.id }}_payment_bank" class="payment-fields" style="display:none;">
                 <div class="row">
                   <div class="col-md-6 mb-2"><label class="form-label fw-bold small">اسم الحساب</label><input type="text" name="payment_account_name" class="form-control form-control-sm" value="{{ op.payment_account_name or '' }}"></div>
                   <div class="col-md-6 mb-2"><label class="form-label fw-bold small">التاريخ</label><input type="date" name="payment_date" class="form-control form-control-sm" value="{{ op.payment_date.strftime('%Y-%m-%d') if op.payment_date else '' }}"></div>
                 </div>
               </div>
-              <!-- حقول انستا باي -->
               <div id="edit_{{ op.id }}_payment_insta" class="payment-fields" style="display:none;">
                 <div class="row">
                   <div class="col-md-6 mb-2"><label class="form-label fw-bold small">الرقم</label><input type="text" name="payment_account_number" class="form-control form-control-sm" value="{{ op.payment_account_number or '' }}"></div>
                   <div class="col-md-6 mb-2"><label class="form-label fw-bold small">التاريخ</label><input type="date" name="payment_date_insta" class="form-control form-control-sm"></div>
                 </div>
               </div>
-              <!-- حقول فودافون كاش -->
               <div id="edit_{{ op.id }}_payment_vodafone" class="payment-fields" style="display:none;">
                 <div class="row">
                   <div class="col-md-6 mb-2"><label class="form-label fw-bold small">الرقم</label><input type="text" name="payment_account_number_vodafone" class="form-control form-control-sm" value="{{ op.payment_account_number or '' }}"></div>
@@ -545,7 +580,6 @@
             </div>
           </div>
 
-          <!-- ==================== الفاتورة ==================== -->
           <h6 class="fw-bold text-primary mb-3 mt-3">🧾 الفاتورة</h6>
           <div class="row">
             <div class="col-md-6 mb-3"><label class="form-label fw-bold">رقم الفاتورة</label><input type="text" name="invoice_number" class="form-control" value="{{ op.invoice_number or '' }}"></div>
@@ -561,7 +595,6 @@
   </div>
 </div>
 
-<!-- Modal تعديل الملاحظات -->
 <div class="modal fade" id="editNotesModal{{ op.id }}" tabindex="-1">
   <div class="modal-dialog">
     <div class="modal-content">
@@ -575,7 +608,7 @@
 </div>
 {% endfor %}
 
-<!-- ==================== مودالات تعديل المصاريف ==================== -->
+<!-- مودالات تعديل المصاريف -->
 {% for exp in expenses %}
 <div class="modal fade" id="editExpenseModal{{ exp.id }}" tabindex="-1">
   <div class="modal-dialog">
@@ -603,62 +636,87 @@
   </div>
 </div>
 {% endfor %}
-<!-- ==================== JavaScript للقائمة المنبثقة ==================== -->
+
 <script>
 function showPaymentFields(selectElement, prefix) {
-    // إخفاء كل حقول الدفع
     var modal = selectElement.closest('.modal-body');
     if (!modal) modal = selectElement.closest('form');
     if (!modal) return;
-    
     var allPaymentFields = modal.querySelectorAll('.payment-fields');
-    allPaymentFields.forEach(function(field) {
-        field.style.display = 'none';
-    });
-    
-    // إظهار الحقول حسب طريقة الدفع
+    allPaymentFields.forEach(function(field) { field.style.display = 'none'; });
     var method = selectElement.value;
     var targetId = '';
-    
-    if (method === 'شيك') {
-        targetId = prefix + '_payment_check';
-    } else if (method === 'تحويل بنكي') {
-        targetId = prefix + '_payment_bank';
-    } else if (method === 'انستا باي') {
-        targetId = prefix + '_payment_insta';
-    } else if (method === 'فودافون كاش') {
-        targetId = prefix + '_payment_vodafone';
-    }
-    
+    if (method === 'شيك') targetId = prefix + '_payment_check';
+    else if (method === 'تحويل بنكي') targetId = prefix + '_payment_bank';
+    else if (method === 'انستا باي') targetId = prefix + '_payment_insta';
+    else if (method === 'فودافون كاش') targetId = prefix + '_payment_vodafone';
     if (targetId) {
         var target = modal.querySelector('#' + targetId);
-        if (target) {
-            target.style.display = 'block';
-        }
+        if (target) target.style.display = 'block';
     }
 }
 
-// عند فتح مودال التعديل — إظهار الحقول المناسبة
 document.addEventListener('DOMContentLoaded', function() {
-    // لكل مودال فيه payment-method-select
     document.querySelectorAll('.payment-method-select').forEach(function(select) {
-        // إظهار الحقول لو فيه قيمة مختارة
         if (select.value) {
             var modal = select.closest('.modal-body') || select.closest('form');
             if (modal) {
-                var prefix = '';
-                // تحديد الـ prefix
-                if (select.id && select.id.startsWith('edit_')) {
-                    prefix = select.id.replace('_payment_method', '');
-                } else {
-                    // لو في مودال إضافة — نستخدم 'add'
-                    prefix = 'add';
+                var prefix = 'add';
+                if (select.closest('.modal') && select.closest('.modal').id.startsWith('editOperationModal')) {
+                    var modalId = select.closest('.modal').id;
+                    var opId = modalId.replace('editOperationModal', '');
+                    prefix = 'edit_' + opId;
                 }
                 showPaymentFields(select, prefix);
             }
         }
     });
+    
+    // ✅ Select All للعمليات
+    const selectAll = document.getElementById('selectAllOps');
+    if (selectAll) {
+        selectAll.addEventListener('change', function() {
+            document.querySelectorAll('.operation-checkbox').forEach(cb => {
+                if (!cb.disabled) cb.checked = selectAll.checked;
+            });
+        });
+    }
+    
+    // ✅ زر الاستلام الجماعي
+    const receiveBtn = document.getElementById('receiveCheckBtn');
+    if (receiveBtn) {
+        receiveBtn.addEventListener('click', function() {
+            const selected = document.querySelectorAll('.operation-checkbox:checked');
+            if (selected.length === 0) {
+                alert('⚠️ يجب اختيار عملية واحدة على الأقل');
+                return;
+            }
+            const form = document.getElementById('bulkReceiveForm');
+            form.querySelectorAll('input[name="operation_ids[]"]').forEach(el => el.remove());
+            selected.forEach(cb => {
+                const hidden = document.createElement('input');
+                hidden.type = 'hidden';
+                hidden.name = 'operation_ids[]';
+                hidden.value = cb.value;
+                form.appendChild(hidden);
+            });
+            document.getElementById('selectedOpsCount').innerText = selected.length;
+            const opsList = document.getElementById('selectedOpsList');
+            opsList.innerHTML = '<ul class="list-group">';
+            selected.forEach(cb => {
+                const row = cb.closest('tr');
+                const invoice = row.cells[1].innerText;
+                const project = row.cells[2].innerText;
+                const total = row.cells[11].innerText;
+                opsList.innerHTML += `<li class="list-group-item d-flex justify-content-between">
+                    <span>${invoice} - ${project}</span>
+                    <span class="fw-bold text-success">${total}</span>
+                </li>`;
+            });
+            opsList.innerHTML += '</ul>';
+            new bootstrap.Modal(document.getElementById('bulkReceiveCheckModal')).show();
+        });
+    }
 });
 </script>
-
 {% endblock %}
